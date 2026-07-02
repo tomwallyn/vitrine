@@ -14,14 +14,19 @@ import { getDb } from '../db/client.js';
 import { galleryItems, generations } from '../db/schema.js';
 import { findOwnedGeneration } from '../services/generations.js';
 import { upsertShopByAuthId } from '../services/shops.js';
+import { trySignedReadUrl } from '../services/storage.js';
 
 type GalleryItemRow = typeof galleryItems.$inferSelect;
 
-/** Ligne gallery_items + colonnes de la génération jointe → contrat `GalleryItem`. */
-function serializeGalleryItem(
+/**
+ * Ligne gallery_items + colonnes de la génération jointe → contrat `GalleryItem`.
+ * Bucket privé : la vignette `resultImageUrl` est renvoyée **signée GET**
+ * (repli : URL brute si la signature échoue).
+ */
+async function serializeGalleryItem(
   row: GalleryItemRow,
   generation: { renderType: RenderType; resultImageUrl: string | null },
-): GalleryItem {
+): Promise<GalleryItem> {
   return {
     id: row.id,
     shopId: row.shopId,
@@ -29,7 +34,9 @@ function serializeGalleryItem(
     title: row.title,
     tags: row.tags,
     renderType: generation.renderType,
-    resultImageUrl: generation.resultImageUrl,
+    resultImageUrl: generation.resultImageUrl
+      ? await trySignedReadUrl(generation.resultImageUrl)
+      : null,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -90,11 +97,13 @@ export function registerGalleryRoutes(app: FastifyInstance): void {
 
     const page = rows.slice(0, limit);
     return galleryResponseSchema.parse({
-      items: page.map((r) =>
-        serializeGalleryItem(r.item, {
-          renderType: r.renderType,
-          resultImageUrl: r.resultImageUrl,
-        }),
+      items: await Promise.all(
+        page.map((r) =>
+          serializeGalleryItem(r.item, {
+            renderType: r.renderType,
+            resultImageUrl: r.resultImageUrl,
+          }),
+        ),
       ),
       total: totalRow?.total ?? page.length,
       hasMore: rows.length > limit,
@@ -153,7 +162,7 @@ export function registerGalleryRoutes(app: FastifyInstance): void {
     }
 
     const payload = addToGalleryResponseSchema.parse({
-      item: serializeGalleryItem(row, {
+      item: await serializeGalleryItem(row, {
         renderType: generation.renderType,
         resultImageUrl: generation.resultImageUrl,
       }),

@@ -6,6 +6,9 @@ import type { SignUploadResponse, UploadContentType, UploadKind } from '@vitrine
 /** Durée de validité des URLs signées d'upload (~10 min). */
 const SIGNED_UPLOAD_TTL_MS = 10 * 60 * 1000;
 
+/** Durée de validité par défaut des URLs signées de lecture (1 h). */
+const SIGNED_READ_TTL_SECONDS = 3600;
+
 /** Extension de fichier par type MIME accepté (contrat partagé). */
 const EXTENSION_BY_CONTENT_TYPE: Record<UploadContentType, string> = {
   'image/jpeg': 'jpg',
@@ -81,6 +84,62 @@ export async function createSignedUpload(
     objectPath,
     publicUrl: `https://storage.googleapis.com/${bucket}/${objectPath}`,
   };
+}
+
+/**
+ * Extrait le chemin d'objet GCS depuis une URL publique
+ * (`https://storage.googleapis.com/<bucket>/<path>`) — ou renvoie l'entrée
+ * telle quelle si c'est déjà un chemin d'objet (`sources/uid/x.jpg`).
+ * Renvoie null si l'URL pointe hors du bucket (rien à signer).
+ */
+function extractObjectPath(objectPathOrPublicUrl: string, bucket: string): string | null {
+  if (!/^https?:\/\//i.test(objectPathOrPublicUrl)) return objectPathOrPublicUrl;
+  const prefix = `https://storage.googleapis.com/${bucket}/`;
+  if (!objectPathOrPublicUrl.startsWith(prefix)) return null;
+  const path = objectPathOrPublicUrl.slice(prefix.length).split('?')[0] ?? '';
+  return path ? decodeURIComponent(path) : null;
+}
+
+/**
+ * URL signée GET v4 (défaut 1 h) pour lire un objet du bucket **privé** :
+ * indispensable pour que fal télécharge la photo source / le fond custom,
+ * et pour que l'app affiche les rendus. Accepte un chemin d'objet ou l'URL
+ * publique canonique stockée en base ; une URL hors bucket (ex. images de
+ * mannequins hébergées ailleurs) est renvoyée telle quelle.
+ */
+export async function signedReadUrl(
+  objectPathOrPublicUrl: string,
+  ttlSeconds = SIGNED_READ_TTL_SECONDS,
+): Promise<string> {
+  const { storage, bucket } = getGcs();
+  const objectPath = extractObjectPath(objectPathOrPublicUrl, bucket);
+  if (!objectPath) return objectPathOrPublicUrl;
+
+  const [url] = await storage
+    .bucket(bucket)
+    .file(objectPath)
+    .getSignedUrl({
+      version: 'v4',
+      action: 'read',
+      expires: Date.now() + ttlSeconds * 1000,
+    });
+  return url;
+}
+
+/**
+ * Variante tolérante de {@link signedReadUrl} pour la sérialisation : si la
+ * signature échoue (credentials absents, etc.), renvoie l'URL brute plutôt
+ * que de faire échouer la réponse HTTP.
+ */
+export async function trySignedReadUrl(
+  objectPathOrPublicUrl: string,
+  ttlSeconds = SIGNED_READ_TTL_SECONDS,
+): Promise<string> {
+  try {
+    return await signedReadUrl(objectPathOrPublicUrl, ttlSeconds);
+  } catch {
+    return objectPathOrPublicUrl;
+  }
 }
 
 /** Extension du rendu selon son Content-Type (fal renvoie du PNG par défaut). */

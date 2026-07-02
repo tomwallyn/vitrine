@@ -3,11 +3,13 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { getDb } from '../db/client.js';
-import { generations, shops } from '../db/schema.js';
-import { ADAPTERS } from '../services/ai/adapters.js';
-import { refundCredit } from '../services/credits.js';
-import { serializeGeneration, type GenerationRow } from '../services/generations.js';
-import { uploadResultImage } from '../services/storage.js';
+import { generations } from '../db/schema.js';
+import {
+  finalizeGenerationFailure,
+  finalizeGenerationSuccess,
+  serializeGeneration,
+  type GenerationRow,
+} from '../services/generations.js';
 
 /** Query du webhook : generationId injecté par nous à la soumission (+ secret optionnel). */
 const falWebhookQuerySchema = z.object({
@@ -50,9 +52,10 @@ function extractFalError(body: FalWebhookBody): string {
  *   (TODO durcissement : vérification ED25519 des headers X-Fal-Webhook-*.)
  * - **Idempotent** : génération déjà `done`/`failed` → 200 no-op (fal rejoue
  *   le webhook en cas de non-2xx ; le refund est lui-même idempotent).
- * - Succès → télécharge le rendu fal, l'upload en GCS
- *   (results/{authUserId}/{genId}.png), status `done` + completed_at.
- * - Échec fal → refund du crédit + status `failed` + error.
+ * - Succès → finalizeGenerationSuccess (download du rendu + upload GCS
+ *   results/{authUserId}/{genId}, status `done` + completed_at) — logique
+ *   partagée avec le reconcile/polling (services/generations.ts).
+ * - Échec fal → finalizeGenerationFailure (refund + status `failed` + error).
  * - Erreur interne transitoire (download/GCS/DB) → 500, fal retente.
  */
 export function registerWebhookRoutes(app: FastifyInstance): void {
@@ -100,63 +103,24 @@ export function registerWebhookRoutes(app: FastifyInstance): void {
 
     // Idempotence : terminée (done/failed) → no-op.
     if (row.status === 'done' || row.status === 'failed') {
-      return { ok: true, idempotent: true, generation: serializeGeneration(row) };
+      return { ok: true, idempotent: true, generation: await serializeGeneration(row) };
     }
 
     // ── Échec côté fal → refund (idempotent) + failed ────────────
     if (body.data.status !== 'OK') {
-      const error = extractFalError(body.data);
-      await refundCredit(db, row.shopId, row.id);
-      const [failed] = await db
-        .update(generations)
-        .set({ status: 'failed', error, completedAt: new Date() })
-        .where(eq(generations.id, row.id))
-        .returning();
-      req.log.info({ generationId: row.id, error }, 'Génération fal échouée — crédit remboursé');
-      return { ok: true, generation: serializeGeneration(failed ?? row) };
+      const failed = await finalizeGenerationFailure(db, row, extractFalError(body.data), req.log);
+      return { ok: true, generation: await serializeGeneration(failed) };
     }
 
-    // ── Succès : extraire l'URL du rendu selon l'adapter du provider ──
-    let falImageUrl: string;
+    // ── Succès : parse → download → GCS → done (logique partagée) ──
+    let finalized: GenerationRow;
     try {
-      if (!row.provider) throw new Error(`Génération ${row.id} sans provider — parse impossible`);
-      falImageUrl = ADAPTERS[row.provider].parseOutput(body.data.payload).imageUrl;
+      finalized = await finalizeGenerationSuccess(db, row, body.data.payload, req.log);
     } catch (err) {
-      // fal dit OK mais pas d'image exploitable : retenter ne changera rien.
+      // Erreur transitoire (shop/download/GCS/DB) → 500, fal rejouera le webhook.
       const error = err instanceof Error ? err.message : String(err);
-      await refundCredit(db, row.shopId, row.id);
-      const [failed] = await db
-        .update(generations)
-        .set({ status: 'failed', error, completedAt: new Date() })
-        .where(eq(generations.id, row.id))
-        .returning();
-      req.log.error({ generationId: row.id, error }, 'Payload fal OK mais sans image — refund');
-      return { ok: true, generation: serializeGeneration(failed ?? row) };
+      return reply.code(500).send({ error });
     }
-
-    // Télécharge le rendu puis le stocke en GCS. Toute erreur ici est
-    // considérée transitoire → 500, fal rejouera le webhook.
-    const [shop] = await db.select().from(shops).where(eq(shops.id, row.shopId));
-    if (!shop) return reply.code(500).send({ error: 'Shop introuvable' });
-
-    const res = await fetch(falImageUrl);
-    if (!res.ok) {
-      return reply.code(500).send({ error: `Téléchargement du rendu impossible (${res.status})` });
-    }
-    const data = Buffer.from(await res.arrayBuffer());
-    const resultImageUrl = await uploadResultImage(
-      shop.authId,
-      row.id,
-      data,
-      res.headers.get('content-type'),
-    );
-
-    const [done] = await db
-      .update(generations)
-      .set({ status: 'done', resultImageUrl, error: null, completedAt: new Date() })
-      .where(eq(generations.id, row.id))
-      .returning();
-    req.log.info({ generationId: row.id, resultImageUrl }, 'Génération terminée (done)');
-    return { ok: true, generation: serializeGeneration(done ?? row) };
+    return { ok: true, generation: await serializeGeneration(finalized) };
   });
 }

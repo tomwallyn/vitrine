@@ -45,3 +45,11 @@ export function resolveAiRoute(renderType: RenderType, mannequinOption: Mannequi
     renderType === 'model' && mannequinOption !== 'studio' ? resolveOnModelProvider() : 'nanobanana';
   return { provider, endpoint: FAL_ENDPOINTS[provider], adapter: ADAPTERS[provider] };
 }
+
+/**
+ * Slug d'endpoint fal du provider d'une génération existante — utilisé par le
+ * reconcile (polling queue fal) pour retrouver l'endpoint depuis la row.
+ */
+export function endpointForProvider(provider: Provider): string {
+  return FAL_ENDPOINTS[provider];
+}

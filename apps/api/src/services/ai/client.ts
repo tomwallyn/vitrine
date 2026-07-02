@@ -1,4 +1,4 @@
-import { fal } from '@fal-ai/client';
+import { fal, type QueueStatus } from '@fal-ai/client';
 
 /**
  * Client fal.ai — soumission ASYNCHRONE via la queue avec webhook (génération
@@ -55,4 +55,25 @@ export async function submitToFal(
     webhookUrl,
   });
   return requestId;
+}
+
+/**
+ * Statut queue fal d'une requête soumise — polling DEV/local où le webhook
+ * (localhost) est injoignable par fal. `status` ∈ IN_QUEUE | IN_PROGRESS |
+ * COMPLETED (cf. types @fal-ai/client).
+ */
+export async function getFalQueueStatus(endpoint: string, requestId: string): Promise<QueueStatus> {
+  return getFal().queue.status(endpoint, { requestId });
+}
+
+/**
+ * Résultat final d'une requête fal terminée — `data` = payload de sortie du
+ * modèle (même forme que `payload` du webhook). Lève un `ApiError` si la
+ * requête a échoué côté fal (le résultat stocké est l'erreur d'origine).
+ */
+export async function getFalQueueResult(
+  endpoint: string,
+  requestId: string,
+): Promise<{ data: unknown }> {
+  return getFal().queue.result(endpoint, { requestId });
 }

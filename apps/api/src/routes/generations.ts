@@ -14,6 +14,7 @@ import { getBalance, InsufficientCreditsError } from '../services/credits.js';
 import {
   createGeneration,
   findOwnedGeneration,
+  reconcileGeneration,
   serializeGeneration,
   type GenerationRow,
 } from '../services/generations.js';
@@ -66,7 +67,7 @@ export function registerGenerationRoutes(app: FastifyInstance): void {
 
     const creditsRemaining = await getBalance(db, shop.id);
     const payload = createGenerationResponseSchema.parse({
-      generation: serializeGeneration(row),
+      generation: await serializeGeneration(row),
       creditsRemaining,
     });
     // Soumission fal échouée → crédit remboursé, génération failed : 502 explicite.
@@ -82,7 +83,11 @@ export function registerGenerationRoutes(app: FastifyInstance): void {
     const row = await findOwnedGeneration(db, shop.id, params.data.id);
     if (!row) return reply.code(404).send({ error: 'Not Found' });
 
-    return getGenerationResponseSchema.parse({ generation: serializeGeneration(row) });
+    // DEV/local sans webhook public : le polling de l'app pilote la complétion
+    // (statut fal → finalisation done/failed). Ne jette jamais (cf. reconcile).
+    const reconciled = await reconcileGeneration(db, row, req.log);
+
+    return getGenerationResponseSchema.parse({ generation: await serializeGeneration(reconciled) });
   });
 
   app.post('/generations/:id/regenerate', async (req, reply) => {
@@ -104,7 +109,7 @@ export function registerGenerationRoutes(app: FastifyInstance): void {
 
     const creditsRemaining = await getBalance(db, shop.id);
     const payload = createGenerationResponseSchema.parse({
-      generation: serializeGeneration(row),
+      generation: await serializeGeneration(row),
       creditsRemaining,
     });
     return reply.code(row.status === 'failed' ? 502 : 201).send(payload);
@@ -150,7 +155,7 @@ export function registerGenerationRoutes(app: FastifyInstance): void {
       return reply.code(402).send({ error: 'Insufficient credits', balance: creditsRemaining });
     }
     const payload = createVariantsResponseSchema.parse({
-      generations: rows.map(serializeGeneration),
+      generations: await Promise.all(rows.map((r) => serializeGeneration(r))),
       creditsRemaining,
     });
     return reply.code(201).send(payload);
