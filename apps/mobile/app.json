@@ -29,7 +29,19 @@
         }
       ],
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "VITRINE utilise la caméra pour photographier vos vêtements sur cintre."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "VITRINE accède à vos photos pour importer un vêtement ou un fond personnalisé."
+        }
+      ]
     ]
   }
 }

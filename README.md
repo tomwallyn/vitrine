@@ -40,8 +40,9 @@ pnpm --filter api db:generate            # génère les migrations SQL Drizzle
 pnpm --filter api db:migrate             # applique les migrations sur DATABASE_URL
 ```
 
-`GET /health` répond `{ status: "ok" }`. `GET/PATCH /me` sont fonctionnels (M1,
-auth Clerk obligatoire) ; les autres endpoints sont des stubs `501` — voir
+`GET /health` répond `{ status: "ok" }`. `GET/PATCH /me` (M1) et
+`POST /uploads/sign` (M2, URL signée GCS) sont fonctionnels (auth Clerk
+obligatoire) ; les autres endpoints sont des stubs `501` — voir
 `apps/api/src/app.ts`.
 
 ### Mobile (apps/mobile)
@@ -59,7 +60,26 @@ pnpm --filter mobile exec expo start           # dev server Expo (device réel c
 |---|---|
 | `DATABASE_URL` | [Neon](https://neon.tech) → créer un projet → *Connection string* (garder `?sslmode=require`). |
 | `CLERK_SECRET_KEY` | [Clerk](https://dashboard.clerk.com) → votre application → **API Keys** → *Secret key* (`sk_test_…` en dev). Sert à vérifier les JWT côté API. |
-| `FAL_KEY`, `GCS_*`, `REVENUECAT_WEBHOOK_SECRET` | Jalon M2+ — peuvent rester vides pour M1. |
+| `GCS_BUCKET`, `GCS_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS` | Google Cloud Storage (M2, `POST /uploads/sign`) — voir ci-dessous. |
+| `FAL_KEY`, `REVENUECAT_WEBHOOK_SECRET` | Jalon M3+ — peuvent rester vides. |
+
+#### Google Cloud Storage (M2 — upload des photos)
+
+1. Créer un projet GCP (`GCS_PROJECT_ID`) puis un bucket (par ex.
+   `vitrine-images`, région `europe-west1`) → `GCS_BUCKET` :
+   `gcloud storage buckets create gs://vitrine-images --location=europe-west1`.
+2. Créer un service account et lui donner le rôle **Storage Object Admin**
+   sur le bucket :
+   `gcloud iam service-accounts create vitrine-api` puis
+   `gcloud storage buckets add-iam-policy-binding gs://vitrine-images --member="serviceAccount:vitrine-api@<PROJET>.iam.gserviceaccount.com" --role="roles/storage.objectAdmin"`.
+3. En local : exporter une clé JSON
+   (`gcloud iam service-accounts keys create key.json --iam-account=vitrine-api@<PROJET>.iam.gserviceaccount.com`)
+   et pointer `GOOGLE_APPLICATION_CREDENTIALS` vers ce fichier — ou utiliser
+   `gcloud auth application-default login` (laisser la variable vide).
+   Sur Cloud Run : attacher le service account au service, aucune clé à gérer.
+
+L'API compile et démarre sans ces variables (init GCS paresseuse) : seul
+`POST /uploads/sign` échouera tant qu'elles ne sont pas renseignées.
 
 ### `apps/mobile/.env`
 
@@ -75,8 +95,13 @@ et, si souhaité, les connexions **Apple** / **Google** (OAuth) dans
 ## Jalons
 
 - **M0 — Fondations** : monorepo, design system, 8 écrans shells, API stub + schéma Drizzle, Dockerfile Cloud Run.
-- **M1 — Auth + Profil** (ce commit) : Clerk (mobile + vérification JWT API), garde d'auth
+- **M1 — Auth + Profil** : Clerk (mobile + vérification JWT API), garde d'auth
   expo-router, création du shop au premier `GET /me`, profil branché (TanStack Query),
   écran « Ma boutique » (`PATCH /me`), solde de crédits réel (SUM du ledger).
-- M2 — Capture + Upload GCS · M3 — Moteur IA (fal.ai) ·
-  M4 — Crédits & IAP (RevenueCat) · M5 — Galerie & Export · M6 — Finitions & stores.
+- **M2 — Capture + Upload** (ce commit) : écran caméra (expo-camera : flash,
+  switch, guide de cadrage) + import galerie (expo-image-picker),
+  `POST /uploads/sign` (URL signée GCS PUT v4, init paresseuse), upload mobile
+  (`uploadImageAsync`), écran « Choisir le rendu » branché (STYLE / MANNEQUIN /
+  FOND personnalisé uploadé), brouillon de rendu Zustand.
+- M3 — Moteur IA (fal.ai) · M4 — Crédits & IAP (RevenueCat) ·
+  M5 — Galerie & Export · M6 — Finitions & stores.

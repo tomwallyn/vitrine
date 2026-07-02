@@ -6,6 +6,7 @@ import Fastify, {
 
 import { registerAuth } from './plugins/auth.js';
 import { registerMeRoutes } from './routes/me.js';
+import { registerUploadRoutes } from './routes/uploads.js';
 
 /** Handler stub M0 : 501 + TODO explicite vers le jalon concerné. */
 function notImplemented(todo: string) {
@@ -27,10 +28,7 @@ export function buildApp(): FastifyInstance {
   }));
 
   // ── Upload (M2) ──────────────────────────────────────────────
-  app.post(
-    '/uploads/sign',
-    notImplemented('TODO(M2): générer une URL signée GCS pour la photo source'),
-  );
+  registerUploadRoutes(app);
 
   // ── Générations (M3) ─────────────────────────────────────────
   app.post(

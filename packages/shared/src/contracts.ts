@@ -9,6 +9,40 @@ import {
 } from './enums.js';
 
 // ─────────────────────────────────────────────────────────────────
+// Uploads — POST /uploads/sign (URL signée GCS, PUT v4 ~10 min)
+// ─────────────────────────────────────────────────────────────────
+
+/** Destination de l'upload : photo source du vêtement ou fond personnalisé. */
+export const uploadKindSchema = z.enum(['source', 'background']);
+export type UploadKind = z.infer<typeof uploadKindSchema>;
+export const UPLOAD_KINDS = uploadKindSchema.options;
+
+/** Types MIME image acceptés par l'URL signée (verrouillés dans la signature). */
+export const uploadContentTypeSchema = z.enum([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+]);
+export type UploadContentType = z.infer<typeof uploadContentTypeSchema>;
+
+export const signUploadRequestSchema = z.object({
+  contentType: uploadContentTypeSchema,
+  kind: uploadKindSchema.default('source'),
+});
+export type SignUploadRequest = z.infer<typeof signUploadRequestSchema>;
+
+export const signUploadResponseSchema = z.object({
+  /** URL signée (PUT v4, ~10 min) vers laquelle envoyer le binaire. */
+  uploadUrl: z.string().url(),
+  /** Chemin de l'objet dans le bucket : shops/{authUserId}/{sources|backgrounds}/{uuid}. */
+  objectPath: z.string().min(1),
+  /** URL publique de lecture (https://storage.googleapis.com/...). */
+  publicUrl: z.string().url(),
+});
+export type SignUploadResponse = z.infer<typeof signUploadResponseSchema>;
+
+// ─────────────────────────────────────────────────────────────────
 // Generation — POST /generations · GET /generations/:id
 // ─────────────────────────────────────────────────────────────────
 

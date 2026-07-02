@@ -33,7 +33,7 @@ export default function WelcomeScreen() {
             Un cintre.{'\n'}Une vitrine pro.
           </Text>
           <Text className="mt-3 font-body text-base leading-6 text-gray2">
-            Photographiez un vêtement sur cintre, l'IA en fait un visuel produit
+            Photographiez un vêtement sur cintre, l{"'"}IA en fait un visuel produit
             professionnel. Sans studio, sans shooting.
           </Text>
         </View>

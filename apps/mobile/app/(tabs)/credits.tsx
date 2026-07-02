@@ -64,7 +64,7 @@ export default function CreditsScreen() {
           accessibilityRole="button"
           className="mt-6 items-center rounded-2xl border border-dashed border-gray px-5 py-4 active:bg-paper2"
         >
-          <Text className="font-body-semibold text-sm text-ink">Passer à l'abonnement</Text>
+          <Text className="font-body-semibold text-sm text-ink">Passer à l{"'"}abonnement</Text>
           <Text className="mt-1 font-body text-xs text-gray2">
             Crédits chaque mois, moins cher au visuel
           </Text>

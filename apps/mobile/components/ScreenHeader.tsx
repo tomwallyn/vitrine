@@ -39,7 +39,7 @@ export function ScreenHeader({ title, subtitle, showBack = true, right }: Screen
         ) : null}
         <Text className="font-heading text-base uppercase tracking-[2px] text-ink">{title}</Text>
       </View>
-      <View className="w-10 items-end">{right}</View>
+      <View className="min-w-10 items-end">{right}</View>
     </View>
   );
 }

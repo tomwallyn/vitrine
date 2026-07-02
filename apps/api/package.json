@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@clerk/backend": "^3.10.0",
+    "@google-cloud/storage": "^7.21.0",
     "@neondatabase/serverless": "^1.0.0",
     "@vitrine/shared": "workspace:*",
     "drizzle-orm": "^0.44.0",

@@ -19,7 +19,7 @@ export default function HomeScreen() {
             <Text className="font-heading-bold text-lg uppercase tracking-[4px] text-ink">
               Vitrine
             </Text>
-            <Text className="font-body text-xs text-gray2">L'Atelier Nord · Lille</Text>
+            <Text className="font-body text-xs text-gray2">L{"'"}Atelier Nord · Lille</Text>
           </View>
           <CreditBadge credits={12} />
         </View>
