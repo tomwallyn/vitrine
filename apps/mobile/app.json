@@ -48,7 +48,8 @@
           "photosPermission": "VITRINE accède à votre photothèque pour enregistrer vos visuels générés.",
           "savePhotosPermission": "VITRINE enregistre vos visuels générés dans votre photothèque."
         }
-      ]
+      ],
+      "./plugins/withRevenueCat.js"
     ]
   }
 }

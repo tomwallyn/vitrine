@@ -125,23 +125,40 @@ export const creditPackSchema = z.object({
 });
 export type CreditPack = z.infer<typeof creditPackSchema>;
 
+/** Pack renvoyé par l'API : pack + prix/visuel calculé (0,90 / 0,68 / 0,55 €). */
+export const creditPackOfferSchema = creditPackSchema.extend({
+  pricePerCreditEur: z.number().positive(),
+});
+export type CreditPackOffer = z.infer<typeof creditPackOfferSchema>;
+
 export const creditPacksResponseSchema = z.object({
-  packs: z.array(creditPackSchema),
+  packs: z.array(creditPackOfferSchema),
 });
 export type CreditPacksResponse = z.infer<typeof creditPacksResponseSchema>;
 
-/** Réponse de GET /credits (solde + historique, écran 07). */
+/** Query de GET /credits — pagination offset simple de l'historique. */
+export const creditsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+export type CreditsQuery = z.infer<typeof creditsQuerySchema>;
+
+/** Ligne d'historique du ledger (achat, génération, refund, bonus). */
+export const creditsLedgerEntrySchema = z.object({
+  id: z.string().uuid(),
+  delta: z.number().int(),
+  reason: ledgerReasonSchema,
+  ref: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type CreditsLedgerEntry = z.infer<typeof creditsLedgerEntrySchema>;
+
+/** Réponse de GET /credits (solde + historique paginé, écran 07). */
 export const creditsResponseSchema = z.object({
   balance: z.number().int(),
-  history: z.array(
-    z.object({
-      id: z.string().uuid(),
-      delta: z.number().int(),
-      reason: ledgerReasonSchema,
-      ref: z.string().nullable(),
-      createdAt: z.string(),
-    }),
-  ),
+  history: z.array(creditsLedgerEntrySchema),
+  /** true s'il reste des lignes au-delà de offset+limit. */
+  hasMore: z.boolean(),
 });
 export type CreditsResponse = z.infer<typeof creditsResponseSchema>;
 

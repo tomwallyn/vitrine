@@ -6,8 +6,10 @@ import Fastify, {
 
 import { registerAuth } from './plugins/auth.js';
 import { registerBackgroundRoutes } from './routes/backgrounds.js';
+import { registerCreditRoutes } from './routes/credits.js';
 import { registerGenerationRoutes } from './routes/generations.js';
 import { registerMeRoutes } from './routes/me.js';
+import { registerRevenueCatWebhookRoutes } from './routes/revenuecat.js';
 import { registerUploadRoutes } from './routes/uploads.js';
 import { registerWebhookRoutes } from './routes/webhooks.js';
 
@@ -47,23 +49,14 @@ export function buildApp(): FastifyInstance {
   registerMeRoutes(app);
 
   // ── Crédits & packs (M4) ─────────────────────────────────────
-  app.get('/credits', notImplemented('TODO(M4): solde (SUM ledger) + historique — écran 07'));
-  app.get(
-    '/credit-packs',
-    notImplemented('TODO(M4): miroir des offerings RevenueCat (CREDIT_PACKS de @vitrine/shared)'),
-  );
+  registerCreditRoutes(app);
 
   // ── Fonds personnalisés (M3a) ────────────────────────────────
   registerBackgroundRoutes(app);
 
   // ── Webhooks (M3a / M4) ──────────────────────────────────────
   registerWebhookRoutes(app);
-  app.post(
-    '/webhooks/revenuecat',
-    notImplemented(
-      'TODO(M4): achat validé — +N crédits au ledger, idempotent sur rc_transaction_id',
-    ),
-  );
+  registerRevenueCatWebhookRoutes(app);
 
   return app;
 }

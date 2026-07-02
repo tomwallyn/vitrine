@@ -9,6 +9,8 @@ import type {
   CreateGenerationResponse,
   CreateVariantsRequest,
   CreateVariantsResponse,
+  CreditPacksResponse,
+  CreditsResponse,
   GetGenerationResponse,
 } from '@vitrine/shared';
 
@@ -99,6 +101,14 @@ export function useApi() {
         /** POST /generations/:id/variants — autres types de rendu (1 crédit / type). */
         createVariants: (id: string, payload: CreateVariantsRequest) =>
           request<CreateVariantsResponse>('POST', `/generations/${id}/variants`, payload),
+      },
+
+      /** Crédits & packs (écran 07). */
+      credits: {
+        /** GET /credits — solde + historique paginé du ledger. */
+        get: () => request<CreditsResponse>('GET', '/credits'),
+        /** GET /credit-packs — les 3 packs avec prix/visuel calculé. */
+        packs: () => request<CreditPacksResponse>('GET', '/credit-packs'),
       },
 
       /** Fonds personnalisés réutilisables (écran 03 — FOND). */
