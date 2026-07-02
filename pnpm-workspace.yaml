@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - infra/*
 allowBuilds:
   '@clerk/shared': true
   browser-tabs-lock: true
@@ -9,3 +10,5 @@ allowBuilds:
   esbuild: true
   unrs-resolver: true
   utf-8-validate: true
+minimumReleaseAgeExclude:
+  - tsx@4.22.5

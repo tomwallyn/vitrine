@@ -29,6 +29,12 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
+# Benchmark IA M3.0 : rendus locaux + photos réelles (on ne committe que le harnais)
+infra/benchmark/outputs/
+infra/benchmark/inputs/*
+!infra/benchmark/inputs/.gitkeep
+!infra/benchmark/inputs/README.md
+
 # macOS
 .DS_Store
 

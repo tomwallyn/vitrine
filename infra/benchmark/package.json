@@ -1,0 +1,21 @@
+{
+  "name": "@vitrine/benchmark",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "M3.0 — Harnais de benchmark fal.ai : FASHN v1.6 vs Kling Kolors vs Nano Banana sur de vraies photos de vêtements",
+  "scripts": {
+    "bench": "tsx run.ts",
+    "report": "tsx report.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fal-ai/client": "^1.10.1",
+    "@vitrine/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.22.5",
+    "typescript": "~5.8.3"
+  }
+}
