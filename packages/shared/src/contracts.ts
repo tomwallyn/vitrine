@@ -46,15 +46,25 @@ export type SignUploadResponse = z.infer<typeof signUploadResponseSchema>;
 // Generation — POST /generations · GET /generations/:id
 // ─────────────────────────────────────────────────────────────────
 
-export const createGenerationRequestSchema = z.object({
-  /** URL GCS de la photo source (obtenue via POST /uploads/sign). */
-  sourceImageUrl: z.string().url(),
-  renderType: renderTypeSchema,
-  mannequinOption: mannequinOptionSchema,
-  backgroundOption: backgroundOptionSchema.default('studio'),
-  /** Requis si backgroundOption === 'custom' (fond uploadé réutilisable). */
-  customBackgroundUrl: z.string().url().optional(),
-});
+export const createGenerationRequestSchema = z
+  .object({
+    /** URL GCS de la photo source (obtenue via POST /uploads/sign). */
+    sourceImageUrl: z.string().url(),
+    renderType: renderTypeSchema,
+    mannequinOption: mannequinOptionSchema,
+    backgroundOption: backgroundOptionSchema.default('studio'),
+    /** Requis si backgroundOption === 'custom' (fond uploadé réutilisable). */
+    customBackgroundUrl: z.string().url().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.backgroundOption === 'custom' && !data.customBackgroundUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['customBackgroundUrl'],
+        message: "customBackgroundUrl est requis quand backgroundOption vaut 'custom'",
+      });
+    }
+  });
 export type CreateGenerationRequest = z.infer<typeof createGenerationRequestSchema>;
 
 export const generationSchema = z.object({
@@ -86,6 +96,22 @@ export const getGenerationResponseSchema = z.object({
   generation: generationSchema,
 });
 export type GetGenerationResponse = z.infer<typeof getGenerationResponseSchema>;
+
+/**
+ * POST /generations/:id/variants — génère la même source sous d'autres types
+ * de rendu (écran 05 « Variantes »). 1 crédit réservé PAR type demandé.
+ */
+export const createVariantsRequestSchema = z.object({
+  renderTypes: z.array(renderTypeSchema).min(1).max(4),
+});
+export type CreateVariantsRequest = z.infer<typeof createVariantsRequestSchema>;
+
+export const createVariantsResponseSchema = z.object({
+  generations: z.array(generationSchema),
+  /** Solde après réservation des crédits (holds). */
+  creditsRemaining: z.number().int(),
+});
+export type CreateVariantsResponse = z.infer<typeof createVariantsResponseSchema>;
 
 // ─────────────────────────────────────────────────────────────────
 // Credit packs — GET /credit-packs (miroir des offerings RevenueCat)
@@ -178,3 +204,9 @@ export const backgroundsResponseSchema = z.object({
   backgrounds: z.array(backgroundSchema),
 });
 export type BackgroundsResponse = z.infer<typeof backgroundsResponseSchema>;
+
+/** Réponse de POST /backgrounds (fond enregistré, réutilisable). */
+export const createBackgroundResponseSchema = z.object({
+  background: backgroundSchema,
+});
+export type CreateBackgroundResponse = z.infer<typeof createBackgroundResponseSchema>;

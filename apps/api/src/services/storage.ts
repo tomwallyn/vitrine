@@ -76,3 +76,32 @@ export async function createSignedUpload(
     publicUrl: `https://storage.googleapis.com/${bucket}/${objectPath}`,
   };
 }
+
+/** Extension du rendu selon son Content-Type (fal renvoie du PNG par défaut). */
+function resultExtension(contentType: string | null | undefined): string {
+  if (contentType === 'image/jpeg') return 'jpg';
+  if (contentType === 'image/webp') return 'webp';
+  return 'png';
+}
+
+/**
+ * Stocke un rendu IA téléchargé depuis fal dans le bucket, rangé par shop :
+ * shops/{authUserId}/results/{generationId}.png — retourne l'URL publique
+ * (persistée en generations.result_image_url).
+ */
+export async function uploadResultImage(
+  authUserId: string,
+  generationId: string,
+  data: Buffer,
+  contentType?: string | null,
+): Promise<string> {
+  const { storage, bucket } = getGcs();
+  const objectPath = `shops/${authUserId}/results/${generationId}.${resultExtension(contentType)}`;
+
+  await storage
+    .bucket(bucket)
+    .file(objectPath)
+    .save(data, { contentType: contentType ?? 'image/png', resumable: false });
+
+  return `https://storage.googleapis.com/${bucket}/${objectPath}`;
+}

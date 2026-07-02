@@ -5,8 +5,11 @@ import Fastify, {
 } from 'fastify';
 
 import { registerAuth } from './plugins/auth.js';
+import { registerBackgroundRoutes } from './routes/backgrounds.js';
+import { registerGenerationRoutes } from './routes/generations.js';
 import { registerMeRoutes } from './routes/me.js';
 import { registerUploadRoutes } from './routes/uploads.js';
+import { registerWebhookRoutes } from './routes/webhooks.js';
 
 /** Handler stub M0 : 501 + TODO explicite vers le jalon concerné. */
 function notImplemented(todo: string) {
@@ -30,25 +33,8 @@ export function buildApp(): FastifyInstance {
   // ── Upload (M2) ──────────────────────────────────────────────
   registerUploadRoutes(app);
 
-  // ── Générations (M3) ─────────────────────────────────────────
-  app.post(
-    '/generations',
-    notImplemented(
-      'TODO(M3): valider le solde, réserver 1 crédit (hold), créer la génération, soumettre à fal.ai avec fal_webhook',
-    ),
-  );
-  app.get(
-    '/generations/:id',
-    notImplemented('TODO(M3): statut de la génération — polling écran 04'),
-  );
-  app.post(
-    '/generations/:id/regenerate',
-    notImplemented('TODO(M3): régénérer — nouveau rendu, 1 crédit'),
-  );
-  app.post(
-    '/generations/:id/variants',
-    notImplemented('TODO(M3): variantes — autres types de rendu à partir de la même source'),
-  );
+  // ── Générations (M3a) ────────────────────────────────────────
+  registerGenerationRoutes(app);
 
   // ── Galerie (M5) ─────────────────────────────────────────────
   app.get(
@@ -67,17 +53,11 @@ export function buildApp(): FastifyInstance {
     notImplemented('TODO(M4): miroir des offerings RevenueCat (CREDIT_PACKS de @vitrine/shared)'),
   );
 
-  // ── Fonds personnalisés (M3) ─────────────────────────────────
-  app.get('/backgrounds', notImplemented('TODO(M3): liste des fonds personnalisés réutilisables'));
-  app.post('/backgrounds', notImplemented('TODO(M3): enregistrer un fond personnalisé uploadé'));
+  // ── Fonds personnalisés (M3a) ────────────────────────────────
+  registerBackgroundRoutes(app);
 
-  // ── Webhooks (M3 / M4) ───────────────────────────────────────
-  app.post(
-    '/webhooks/fal',
-    notImplemented(
-      'TODO(M3): callback fal — télécharger le rendu vers GCS, status=done, commit du crédit (ou refund si échec)',
-    ),
-  );
+  // ── Webhooks (M3a / M4) ──────────────────────────────────────
+  registerWebhookRoutes(app);
   app.post(
     '/webhooks/revenuecat',
     notImplemented(

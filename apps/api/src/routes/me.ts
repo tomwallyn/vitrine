@@ -9,7 +9,8 @@ import type { FastifyInstance } from 'fastify';
 
 import { getDb } from '../db/client.js';
 import { shops } from '../db/schema.js';
-import { getCreditBalance, serializeShop, upsertShopByAuthId } from '../services/shops.js';
+import { getBalance } from '../services/credits.js';
+import { serializeShop, upsertShopByAuthId } from '../services/shops.js';
 
 /**
  * Profil / boutique (écran 08) :
@@ -20,7 +21,7 @@ export function registerMeRoutes(app: FastifyInstance): void {
   app.get('/me', async (req): Promise<MeResponse> => {
     const db = getDb();
     const shop = await upsertShopByAuthId(db, req.authUserId);
-    const credits = await getCreditBalance(db, shop.id);
+    const credits = await getBalance(db, shop.id);
     return meResponseSchema.parse({ shop: serializeShop(shop), credits });
   });
 
@@ -51,7 +52,7 @@ export function registerMeRoutes(app: FastifyInstance): void {
       if (row) updated = row;
     }
 
-    const credits = await getCreditBalance(db, updated.id);
+    const credits = await getBalance(db, updated.id);
     return meResponseSchema.parse({ shop: serializeShop(updated), credits });
   });
 }

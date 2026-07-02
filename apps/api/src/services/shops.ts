@@ -1,8 +1,7 @@
 import { shopSettingsSchema, type Shop } from '@vitrine/shared';
-import { eq, sql } from 'drizzle-orm';
 
 import type { Db } from '../db/client.js';
-import { creditsLedger, shops } from '../db/schema.js';
+import { shops } from '../db/schema.js';
 
 export type ShopRow = typeof shops.$inferSelect;
 
@@ -24,15 +23,6 @@ export async function upsertShopByAuthId(db: Db, authId: string): Promise<ShopRo
     throw new Error(`Upsert du shop impossible pour auth_id=${authId}`);
   }
   return shop;
-}
-
-/** Solde de crédits = SUM(credits_ledger.delta) pour le shop (0 si aucun). */
-export async function getCreditBalance(db: Db, shopId: string): Promise<number> {
-  const [row] = await db
-    .select({ balance: sql<number>`coalesce(sum(${creditsLedger.delta}), 0)::int` })
-    .from(creditsLedger)
-    .where(eq(creditsLedger.shopId, shopId));
-  return row?.balance ?? 0;
 }
 
 /** Ligne Drizzle → contrat `Shop` de @vitrine/shared (dates ISO, settings normalisés). */
