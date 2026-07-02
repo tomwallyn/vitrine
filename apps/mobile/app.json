@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "VITRINE",
+    "slug": "vitrine",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "vitrine",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "backgroundColor": "#f5f3ec",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.vitrine.mobile"
+    },
+    "android": {
+      "package": "app.vitrine.mobile",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#f5f3ec"
+        }
+      ]
+    ]
+  }
+}
