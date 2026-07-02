@@ -69,6 +69,9 @@ export default function RenderConfigScreen() {
         ...(me.shop.settings.defaultMannequinOption
           ? { defaultMannequinOption: me.shop.settings.defaultMannequinOption }
           : {}),
+        ...(me.shop.settings.defaultBackgroundOption
+          ? { defaultBackgroundOption: me.shop.settings.defaultBackgroundOption }
+          : {}),
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

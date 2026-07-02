@@ -7,7 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, Switch, Text, View } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useApi } from '@/lib/api';
-import { colors, type MeResponse } from '@vitrine/shared';
+import { colors, formatTimeSaved, type MeResponse } from '@vitrine/shared';
 
 /** Initiales de la boutique (« L'Atelier Nord » → « AN »). */
 function initials(name: string): string {
@@ -82,7 +82,8 @@ export default function ProfileScreen() {
     {
       icon: 'options-outline',
       label: 'Préréglages de rendu',
-      hint: 'Style et mannequin par défaut',
+      hint: 'Style, mannequin et fond par défaut',
+      href: '/render-presets',
     },
     {
       icon: 'water-outline',
@@ -105,8 +106,18 @@ export default function ProfileScreen() {
         />
       ),
     },
-    { icon: 'card-outline', label: 'Facturation', hint: 'Aucun abonnement — packs de crédits' },
-    { icon: 'help-circle-outline', label: 'Aide & support' },
+    {
+      icon: 'card-outline',
+      label: 'Facturation',
+      hint: "Historique d'achats — packs de crédits",
+      href: '/billing',
+    },
+    {
+      icon: 'help-circle-outline',
+      label: 'Aide & support',
+      hint: 'Contact, confidentialité, version',
+      href: '/support',
+    },
   ];
 
   const onSignOut = async () => {
@@ -151,12 +162,15 @@ export default function ProfileScreen() {
           </Pressable>
         )}
 
-        {/* Stats : Visuels / Crédits / Temps gagné (crédits réels, le reste factice jusqu'à M3) */}
+        {/* Stats GET /me : Visuels (générations done) / Crédits / Temps gagné (~15 min par visuel) */}
         <View className="mt-4 flex-row gap-3">
           {[
-            { value: '—', label: 'Visuels' },
+            { value: data ? String(data.stats.visualsCount) : '—', label: 'Visuels' },
             { value: data ? String(data.credits) : '—', label: 'Crédits' },
-            { value: '—', label: 'Temps gagné' },
+            {
+              value: data ? formatTimeSaved(data.stats.timeSavedMinutes) : '—',
+              label: 'Temps gagné',
+            },
           ].map((stat) => (
             <View
               key={stat.label}

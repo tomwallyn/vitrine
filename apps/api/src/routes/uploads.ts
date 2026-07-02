@@ -11,7 +11,8 @@ import { createSignedUpload } from '../services/storage.js';
  * Upload GCS (écrans 02/03) :
  * - POST /uploads/sign : URL signée PUT v4 (~10 min) pour la photo source
  *   (`kind: 'source'`) ou un fond personnalisé (`kind: 'background'`),
- *   rangée par shop (shops/{authUserId}/...).
+ *   rangée par type puis par shop ({sources|backgrounds}/{authUserId}/...,
+ *   les sources sont purgées à 30 jours — infra/gcs/lifecycle.json).
  */
 export function registerUploadRoutes(app: FastifyInstance): void {
   app.post('/uploads/sign', async (req, reply): Promise<SignUploadResponse | void> => {

@@ -52,6 +52,7 @@ type RenderDraftState = {
   applyShopDefaults: (defaults: {
     defaultRenderType?: RenderType;
     defaultMannequinOption?: MannequinOption;
+    defaultBackgroundOption?: BackgroundOption;
   }) => void;
   setPendingGeneration: (payload: CreateGenerationRequest) => void;
   reset: () => void;
@@ -129,6 +130,11 @@ export const useRenderDraft = create<RenderDraftState>((set) => ({
         ...(defaults.defaultRenderType ? { renderType: defaults.defaultRenderType } : {}),
         ...(defaults.defaultMannequinOption
           ? { mannequinOption: defaults.defaultMannequinOption }
+          : {}),
+        // « custom » présélectionne l'option, le fond lui-même restant à
+        // choisir (Mes fonds / upload) — le CTA reste bloqué tant qu'il manque.
+        ...(defaults.defaultBackgroundOption
+          ? { backgroundOption: defaults.defaultBackgroundOption }
           : {}),
       };
     }),

@@ -50,12 +50,13 @@ export const shops = pgTable('shops', {
   name: text('name').notNull(),
   city: text('city'),
   avatarUrl: text('avatar_url'),
-  /** { watermark: boolean, defaultRenderType?, defaultMannequinOption? } */
+  /** { watermark, defaultRenderType?, defaultMannequinOption?, defaultBackgroundOption? } */
   settings: jsonb('settings')
     .$type<{
       watermark: boolean;
       defaultRenderType?: 'model' | 'hanger' | 'folded' | 'studio';
       defaultMannequinOption?: 'femme' | 'homme' | 'silhouette' | 'studio';
+      defaultBackgroundOption?: 'studio' | 'custom';
     }>()
     .notNull()
     .default({ watermark: true }),

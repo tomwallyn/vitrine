@@ -23,6 +23,27 @@ export const CREDIT_PACKS: readonly CreditPack[] = [
 export const GENERATION_COST_CREDITS = 1;
 
 /**
+ * Minutes « gagnées » par visuel généré (vs shooting produit artisanal :
+ * installation, prise de vue, retouche). Base de la stat « Temps gagné »
+ * de l'écran 08 : timeSavedMinutes = visualsCount × 15.
+ */
+export const MINUTES_SAVED_PER_VISUAL = 15;
+
+/** Temps gagné (minutes) pour un nombre de visuels générés. */
+export function timeSavedMinutes(visualsCount: number): number {
+  return Math.max(0, visualsCount) * MINUTES_SAVED_PER_VISUAL;
+}
+
+/**
+ * Formate le temps gagné pour l'écran 08 : « 45 min » sous l'heure,
+ * sinon arrondi à l'heure — ex. 2460 min → « ~41h ».
+ */
+export function formatTimeSaved(minutes: number): string {
+  if (minutes < 60) return `${Math.max(0, Math.round(minutes))} min`;
+  return `~${Math.round(minutes / 60)}h`;
+}
+
+/**
  * Abonnement auto-renouvelable (upsell « Passer à l'abonnement » de l'écran 07).
  * Crédite `creditsPerPeriod` à chaque période via le webhook RevenueCat
  * (INITIAL_PURCHASE / RENEWAL). Pricing store à affiner en M6.

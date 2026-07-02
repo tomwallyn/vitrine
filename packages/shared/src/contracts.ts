@@ -35,7 +35,7 @@ export type SignUploadRequest = z.infer<typeof signUploadRequestSchema>;
 export const signUploadResponseSchema = z.object({
   /** URL signée (PUT v4, ~10 min) vers laquelle envoyer le binaire. */
   uploadUrl: z.string().url(),
-  /** Chemin de l'objet dans le bucket : shops/{authUserId}/{sources|backgrounds}/{uuid}. */
+  /** Chemin de l'objet dans le bucket : {sources|backgrounds}/{authUserId}/{uuid}. */
   objectPath: z.string().min(1),
   /** URL publique de lecture (https://storage.googleapis.com/...). */
   publicUrl: z.string().url(),
@@ -231,10 +231,17 @@ export type CreditsResponse = z.infer<typeof creditsResponseSchema>;
 // Me / Shop — GET /me · PATCH /me (écran 08)
 // ─────────────────────────────────────────────────────────────────
 
+/**
+ * Réglages de la boutique (jsonb `shops.settings`) — tous optionnels sauf le
+ * filigrane : les champs `default*` forment le « préréglage de rendu » appliqué
+ * comme défaut à l'écran 03 (édité par l'écran Préréglages, M6). Les settings
+ * existants sans ces champs restent valides (rétrocompatible).
+ */
 export const shopSettingsSchema = z.object({
   watermark: z.boolean().default(true),
   defaultRenderType: renderTypeSchema.optional(),
   defaultMannequinOption: mannequinOptionSchema.optional(),
+  defaultBackgroundOption: backgroundOptionSchema.optional(),
 });
 export type ShopSettings = z.infer<typeof shopSettingsSchema>;
 
@@ -249,9 +256,19 @@ export const shopSchema = z.object({
 });
 export type Shop = z.infer<typeof shopSchema>;
 
+/** Stats du profil (écran 08) : visuels générés + temps gagné estimé. */
+export const meStatsSchema = z.object({
+  /** Nombre de générations `done` du shop (= visuels réellement produits). */
+  visualsCount: z.number().int().min(0),
+  /** visualsCount × MINUTES_SAVED_PER_VISUAL (voir constants.ts). */
+  timeSavedMinutes: z.number().int().min(0),
+});
+export type MeStats = z.infer<typeof meStatsSchema>;
+
 export const meResponseSchema = z.object({
   shop: shopSchema,
   credits: z.number().int(),
+  stats: meStatsSchema,
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
 

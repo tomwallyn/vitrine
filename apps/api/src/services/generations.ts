@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { CreateGenerationRequest, Generation } from '@vitrine/shared';
-import { eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
 import { getTxDb, type Db } from '../db/client.js';
 import { generations } from '../db/schema.js';
@@ -109,6 +109,18 @@ export async function createGeneration(
       .returning();
     return failed ?? { ...row, status: 'failed' as const, error: errorMessage(err) };
   }
+}
+
+/**
+ * Nombre de générations `done` du shop — stat « Visuels » de l'écran 08
+ * (le temps gagné en découle : × MINUTES_SAVED_PER_VISUAL).
+ */
+export async function countDoneGenerations(db: Db, shopId: string): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(generations)
+    .where(and(eq(generations.shopId, shopId), eq(generations.status, 'done')));
+  return row?.count ?? 0;
 }
 
 /** Génération scopée propriétaire (shop courant) — null si absente/étrangère. */

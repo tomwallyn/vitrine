@@ -108,10 +108,16 @@ export function useApi() {
           request<CreateVariantsResponse>('POST', `/generations/${id}/variants`, payload),
       },
 
-      /** Crédits & packs (écran 07). */
+      /** Crédits & packs (écrans 07 + Facturation). */
       credits: {
-        /** GET /credits — solde + historique paginé du ledger. */
-        get: () => request<CreditsResponse>('GET', '/credits'),
+        /** GET /credits — solde + historique paginé du ledger (?limit&offset). */
+        get: (params?: { limit?: number; offset?: number }) => {
+          const query = new URLSearchParams();
+          if (params?.limit !== undefined) query.set('limit', String(params.limit));
+          if (params?.offset !== undefined) query.set('offset', String(params.offset));
+          const qs = query.toString();
+          return request<CreditsResponse>('GET', qs ? `/credits?${qs}` : '/credits');
+        },
         /** GET /credit-packs — les 3 packs avec prix/visuel calculé. */
         packs: () => request<CreditPacksResponse>('GET', '/credit-packs'),
       },

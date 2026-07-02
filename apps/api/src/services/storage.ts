@@ -14,7 +14,13 @@ const EXTENSION_BY_CONTENT_TYPE: Record<UploadContentType, string> = {
   'image/heic': 'heic',
 };
 
-/** Sous-dossier GCS par destination d'upload. */
+/**
+ * Préfixe GCS par destination d'upload — le **type d'objet en tête de chemin**
+ * ({sources|backgrounds|results}/{authUserId}/...) permet la purge RGPD par
+ * lifecycle GCS (`matchesPrefix` ne supporte pas les wildcards) : les photos
+ * sources sont supprimées après 30 jours, les rendus et fonds sont conservés
+ * — voir infra/gcs/lifecycle.json.
+ */
 const FOLDER_BY_KIND: Record<UploadKind, string> = {
   source: 'sources',
   background: 'backgrounds',
@@ -46,9 +52,9 @@ export function getGcs(): Gcs {
 
 /**
  * Génère une URL signée PUT v4 (~10 min) pour uploader une image, rangée
- * par shop : shops/{authUserId}/sources/{uuid} (ou .../backgrounds/{uuid}).
- * Le Content-Type est verrouillé dans la signature : le PUT doit l'envoyer
- * à l'identique.
+ * par type puis par shop : sources/{authUserId}/{uuid} (purgée à 30 jours,
+ * RGPD) ou backgrounds/{authUserId}/{uuid} (conservé). Le Content-Type est
+ * verrouillé dans la signature : le PUT doit l'envoyer à l'identique.
  */
 export async function createSignedUpload(
   authUserId: string,
@@ -58,7 +64,7 @@ export async function createSignedUpload(
   const { storage, bucket } = getGcs();
 
   const extension = EXTENSION_BY_CONTENT_TYPE[contentType];
-  const objectPath = `shops/${authUserId}/${FOLDER_BY_KIND[kind]}/${randomUUID()}.${extension}`;
+  const objectPath = `${FOLDER_BY_KIND[kind]}/${authUserId}/${randomUUID()}.${extension}`;
 
   const [uploadUrl] = await storage
     .bucket(bucket)
@@ -85,9 +91,10 @@ function resultExtension(contentType: string | null | undefined): string {
 }
 
 /**
- * Stocke un rendu IA téléchargé depuis fal dans le bucket, rangé par shop :
- * shops/{authUserId}/results/{generationId}.png — retourne l'URL publique
- * (persistée en generations.result_image_url).
+ * Stocke un rendu IA téléchargé depuis fal dans le bucket :
+ * results/{authUserId}/{generationId}.png — retourne l'URL publique
+ * (persistée en generations.result_image_url). Hors de portée de la purge
+ * RGPD (les rendus n'exposent que des mannequins synthétiques).
  */
 export async function uploadResultImage(
   authUserId: string,
@@ -96,7 +103,7 @@ export async function uploadResultImage(
   contentType?: string | null,
 ): Promise<string> {
   const { storage, bucket } = getGcs();
-  const objectPath = `shops/${authUserId}/results/${generationId}.${resultExtension(contentType)}`;
+  const objectPath = `results/${authUserId}/${generationId}.${resultExtension(contentType)}`;
 
   await storage
     .bucket(bucket)

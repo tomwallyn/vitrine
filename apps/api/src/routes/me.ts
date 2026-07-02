@@ -1,28 +1,45 @@
 import {
   meResponseSchema,
   shopSettingsSchema,
+  timeSavedMinutes,
   updateMeRequestSchema,
   type MeResponse,
 } from '@vitrine/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { getDb } from '../db/client.js';
+import { getDb, type Db } from '../db/client.js';
 import { shops } from '../db/schema.js';
 import { getBalance } from '../services/credits.js';
-import { serializeShop, upsertShopByAuthId } from '../services/shops.js';
+import { countDoneGenerations } from '../services/generations.js';
+import { serializeShop, upsertShopByAuthId, type ShopRow } from '../services/shops.js';
+
+/**
+ * Shop → MeResponse : solde (SUM du ledger) + stats de l'écran 08
+ * (visuels = générations `done`, temps gagné = visuels × 15 min).
+ */
+async function buildMeResponse(db: Db, shop: ShopRow): Promise<MeResponse> {
+  const [credits, visualsCount] = await Promise.all([
+    getBalance(db, shop.id),
+    countDoneGenerations(db, shop.id),
+  ]);
+  return meResponseSchema.parse({
+    shop: serializeShop(shop),
+    credits,
+    stats: { visualsCount, timeSavedMinutes: timeSavedMinutes(visualsCount) },
+  });
+}
 
 /**
  * Profil / boutique (écran 08) :
- * - GET  /me : shop courant (créé à la première connexion) + solde de crédits.
+ * - GET  /me : shop courant (créé à la première connexion) + solde + stats.
  * - PATCH /me : met à jour name / city / avatarUrl / settings (merge partiel).
  */
 export function registerMeRoutes(app: FastifyInstance): void {
   app.get('/me', async (req): Promise<MeResponse> => {
     const db = getDb();
     const shop = await upsertShopByAuthId(db, req.authUserId);
-    const credits = await getBalance(db, shop.id);
-    return meResponseSchema.parse({ shop: serializeShop(shop), credits });
+    return buildMeResponse(db, shop);
   });
 
   app.patch('/me', async (req, reply): Promise<MeResponse | void> => {
@@ -52,7 +69,6 @@ export function registerMeRoutes(app: FastifyInstance): void {
       if (row) updated = row;
     }
 
-    const credits = await getBalance(db, updated.id);
-    return meResponseSchema.parse({ shop: serializeShop(updated), credits });
+    return buildMeResponse(db, updated);
   });
 }

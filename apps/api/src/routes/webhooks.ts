@@ -51,7 +51,7 @@ function extractFalError(body: FalWebhookBody): string {
  * - **Idempotent** : génération déjà `done`/`failed` → 200 no-op (fal rejoue
  *   le webhook en cas de non-2xx ; le refund est lui-même idempotent).
  * - Succès → télécharge le rendu fal, l'upload en GCS
- *   (shops/{authUserId}/results/{genId}.png), status `done` + completed_at.
+ *   (results/{authUserId}/{genId}.png), status `done` + completed_at.
  * - Échec fal → refund du crédit + status `failed` + error.
  * - Erreur interne transitoire (download/GCS/DB) → 500, fal retente.
  */

@@ -68,6 +68,9 @@ function RootNavigator() {
       <Stack.Protected guard={!!isSignedIn}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="my-shop" />
+        <Stack.Screen name="render-presets" />
+        <Stack.Screen name="billing" />
+        <Stack.Screen name="support" />
         <Stack.Screen name="capture" options={{ presentation: 'fullScreenModal' }} />
         <Stack.Screen name="render-config" />
         <Stack.Screen name="generating/[id]" options={{ gestureEnabled: false }} />

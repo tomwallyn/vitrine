@@ -14,7 +14,7 @@ vitrine/
     api/       # Fastify + Drizzle + Neon (Dockerfile Cloud Run)
   packages/
     shared/    # @vitrine/shared : types, schémas zod (contrats API), packs de crédits, theme tokens
-  infra/       # scripts déploiement, config Neon/GCS (à venir)
+  infra/       # benchmark fal.ai + lifecycle GCS (purge RGPD des sources)
 ```
 
 ## Prérequis
@@ -92,6 +92,20 @@ Côté Clerk, activer **Email + mot de passe** (avec code de vérification email
 et, si souhaité, les connexions **Apple** / **Google** (OAuth) dans
 *User & Authentication → Email, Phone, Username / Social connections*.
 
+## RGPD & confidentialité
+
+- **Photos sources purgées à 30 jours** : les photos brutes envoyées par les
+  boutiques (préfixe GCS `sources/`) peuvent contenir des données personnelles
+  incidentes ; une règle de lifecycle GCS les supprime automatiquement après
+  30 jours (minimisation, art. 5.1.c RGPD). Application :
+  `gcloud storage buckets update gs://$GCS_BUCKET --lifecycle-file=infra/gcs/lifecycle.json`
+  — détails et justification dans [`infra/gcs/README.md`](infra/gcs/README.md).
+- **Rendus IA conservés** (`results/`) : ils n'exposent que des **mannequins
+  synthétiques** — aucune donnée personnelle réelle. Idem pour les fonds
+  personnalisés (`backgrounds/`), uploadés volontairement pour réutilisation.
+- Conséquence assumée : « Régénérer » / « Variantes » ne fonctionnent plus sur
+  une génération dont la source a été purgée (> 30 jours).
+
 ## Jalons
 
 - **M0 — Fondations** : monorepo, design system, 8 écrans shells, API stub + schéma Drizzle, Dockerfile Cloud Run.
@@ -104,4 +118,12 @@ et, si souhaité, les connexions **Apple** / **Google** (OAuth) dans
   (`uploadImageAsync`), écran « Choisir le rendu » branché (STYLE / MANNEQUIN /
   FOND personnalisé uploadé), brouillon de rendu Zustand.
 - M3 — Moteur IA (fal.ai) · M4 — Crédits & IAP (RevenueCat) ·
-  M5 — Galerie & Export · M6 — Finitions & stores.
+  M5 — Galerie & Export.
+- **M6a — Finitions code** : préréglages de rendu (style / mannequin / fond par
+  défaut, écran Préréglages + application à l'écran 03), stats profil réelles
+  (Visuels = générations `done`, Temps gagné ≈ 15 min/visuel via `GET /me`),
+  purge RGPD des sources (lifecycle GCS, `infra/gcs/`), écrans Facturation
+  (historique d'achats) et Aide & support.
+- M6b — Stores (à la main) : clés live (fal / Clerk / Neon / GCS / RevenueCat),
+  produits IAP, migrations Neon, builds EAS, TestFlight / Play Internal,
+  soumission review.
