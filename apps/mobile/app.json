@@ -41,6 +41,13 @@
         {
           "photosPermission": "VITRINE accède à vos photos pour importer un vêtement ou un fond personnalisé."
         }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "VITRINE accède à votre photothèque pour enregistrer vos visuels générés.",
+          "savePhotosPermission": "VITRINE enregistre vos visuels générés dans votre photothèque."
+        }
       ]
     ]
   }

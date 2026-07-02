@@ -46,6 +46,8 @@ type RenderDraftState = {
   setCustomBackgroundUploading: (localUri: string) => void;
   setCustomBackgroundUploaded: (publicUrl: string) => void;
   setCustomBackgroundUploadFailed: (message: string) => void;
+  /** Sélectionne un fond réutilisable déjà uploadé (GET /backgrounds). */
+  selectExistingBackground: (imageUrl: string) => void;
 
   applyShopDefaults: (defaults: {
     defaultRenderType?: RenderType;
@@ -110,6 +112,14 @@ export const useRenderDraft = create<RenderDraftState>((set) => ({
     }),
   setCustomBackgroundUploadFailed: (message) =>
     set({ customBackgroundUploadStatus: 'error', customBackgroundUploadError: message }),
+  selectExistingBackground: (imageUrl) =>
+    set({
+      backgroundOption: 'custom',
+      customBackgroundLocalUri: imageUrl,
+      customBackgroundUrl: imageUrl,
+      customBackgroundUploadStatus: 'done',
+      customBackgroundUploadError: null,
+    }),
 
   applyShopDefaults: (defaults) =>
     set((state) => {

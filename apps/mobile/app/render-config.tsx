@@ -1,9 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -11,13 +19,15 @@ import { CreditBadge } from '@/components/CreditBadge';
 import { MannequinSelector } from '@/components/MannequinSelector';
 import { RenderTypeSelector } from '@/components/RenderTypeSelector';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { useApi } from '@/lib/api';
+import { isInsufficientCredits, useApi } from '@/lib/api';
 import { useRenderDraft } from '@/lib/render-draft';
 import { uploadImageAsync } from '@/lib/upload';
 import {
   colors,
   createGenerationRequestSchema,
   GENERATION_COST_CREDITS,
+  type CreateGenerationRequest,
+  type GetGenerationResponse,
   type MeResponse,
 } from '@vitrine/shared';
 
@@ -33,6 +43,7 @@ function SectionTitle({ children }: { children: string }) {
 export default function RenderConfigScreen() {
   const router = useRouter();
   const api = useApi();
+  const queryClient = useQueryClient();
   const draft = useRenderDraft();
 
   // Solde de crédits + préréglages boutique (GET /me).
@@ -40,6 +51,13 @@ export default function RenderConfigScreen() {
     queryKey: ['me'],
     queryFn: () => api.get<MeResponse>('/me'),
   });
+
+  // Fonds personnalisés réutilisables du shop (GET /backgrounds).
+  const { data: backgroundsData } = useQuery({
+    queryKey: ['backgrounds'],
+    queryFn: () => api.backgrounds.list(),
+  });
+  const savedBackgrounds = backgroundsData?.backgrounds ?? [];
 
   // Pré-remplit STYLE / MANNEQUIN depuis les settings du shop (une seule fois par brouillon).
   useEffect(() => {
@@ -55,6 +73,39 @@ export default function RenderConfigScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me, draft.settingsApplied]);
+
+  /**
+   * POST /generations : réserve 1 crédit et lance le pipeline fal.
+   * Réponse 502 acceptée (génération `failed`, crédit remboursé) : on navigue
+   * quand même vers l'écran 04 qui affiche l'état d'échec + remboursement.
+   */
+  const generateMutation = useMutation({
+    mutationFn: (payload: CreateGenerationRequest) => api.generations.create(payload),
+    onSuccess: ({ generation }) => {
+      queryClient.setQueryData<GetGenerationResponse>(['generation', generation.id], {
+        generation,
+      });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      router.push(`/generating/${generation.id}`);
+    },
+    onError: (err) => {
+      if (isInsufficientCredits(err)) {
+        Alert.alert(
+          'Crédits insuffisants',
+          `Il faut ${GENERATION_COST_CREDITS} crédit pour générer un visuel. Rechargez votre solde pour continuer.`,
+          [
+            { text: 'Plus tard', style: 'cancel' },
+            { text: 'Recharger', onPress: () => router.push('/(tabs)/credits') },
+          ],
+        );
+        return;
+      }
+      Alert.alert(
+        'Génération impossible',
+        err instanceof Error ? err.message : 'Réessayez dans un instant.',
+      );
+    },
+  });
 
   /** Relance l'upload de la photo source après un échec. */
   const retrySourceUpload = () => {
@@ -72,7 +123,10 @@ export default function RenderConfigScreen() {
       );
   };
 
-  /** Fond personnalisé : import galerie puis upload GCS (kind=background). */
+  /**
+   * Fond personnalisé : import galerie, upload GCS (kind=background), puis
+   * enregistrement POST /backgrounds pour réutilisation (best effort).
+   */
   const pickCustomBackground = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -85,7 +139,19 @@ export default function RenderConfigScreen() {
     store.setBackgroundOption('custom');
     store.setCustomBackgroundUploading(asset.uri);
     uploadImageAsync(api, asset.uri, 'background')
-      .then(({ publicUrl }) => useRenderDraft.getState().setCustomBackgroundUploaded(publicUrl))
+      .then(async ({ publicUrl }) => {
+        useRenderDraft.getState().setCustomBackgroundUploaded(publicUrl);
+        // Sauvegarde du fond pour réutilisation — non bloquant pour la génération.
+        try {
+          await api.backgrounds.create({
+            imageUrl: publicUrl,
+            name: `Fond du ${new Date().toLocaleDateString('fr-FR')}`,
+          });
+          await queryClient.invalidateQueries({ queryKey: ['backgrounds'] });
+        } catch {
+          // L'enregistrement du fond réutilisable a échoué : le rendu reste possible.
+        }
+      })
       .catch((err: unknown) =>
         useRenderDraft
           .getState()
@@ -104,9 +170,12 @@ export default function RenderConfigScreen() {
     draft.backgroundOption !== 'custom' ||
     (!!draft.customBackgroundUrl && draft.customBackgroundUploadStatus === 'done');
   const canGenerate =
-    !!draft.sourceUrl && draft.sourceUploadStatus === 'done' && customBackgroundReady;
+    !!draft.sourceUrl &&
+    draft.sourceUploadStatus === 'done' &&
+    customBackgroundReady &&
+    !generateMutation.isPending;
 
-  /** Valide + assemble le payload de génération ; POST /generations arrive en M3. */
+  /** Valide le payload (contrat zod partagé) puis lance POST /generations. */
   const onGenerate = () => {
     if (!canGenerate || !draft.sourceUrl) return;
     const payload = createGenerationRequestSchema.parse({
@@ -119,12 +188,12 @@ export default function RenderConfigScreen() {
         : {}),
     });
     draft.setPendingGeneration(payload);
-    // TODO(M3): POST /generations → id réel ; en attendant, id temporaire.
-    router.push(`/generating/draft-${Date.now()}`);
+    generateMutation.mutate(payload);
   };
 
-  const generateLabel =
-    draft.sourceUploadStatus === 'uploading'
+  const generateLabel = generateMutation.isPending
+    ? 'Lancement du rendu…'
+    : draft.sourceUploadStatus === 'uploading'
       ? 'Envoi de la photo…'
       : `Générer le visuel · ${GENERATION_COST_CREDITS} crédit`;
 
@@ -213,7 +282,7 @@ export default function RenderConfigScreen() {
           </>
         ) : null}
 
-        {/* FOND — studio / personnalisé (upload) */}
+        {/* FOND — studio / personnalisé (upload) / fonds réutilisables */}
         <SectionTitle>Fond</SectionTitle>
         <View className="flex-row gap-3">
           <Pressable
@@ -288,6 +357,49 @@ export default function RenderConfigScreen() {
             )}
           </Pressable>
         </View>
+
+        {/* MES FONDS — vignettes réutilisables (GET /backgrounds) */}
+        {savedBackgrounds.length > 0 ? (
+          <View className="mt-4">
+            <Text className="mb-2 font-body-semibold text-[10px] uppercase tracking-[2px] text-gray">
+              Mes fonds
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerClassName="gap-2.5 pr-5"
+            >
+              {savedBackgrounds.map((bg) => {
+                const selected =
+                  draft.backgroundOption === 'custom' &&
+                  draft.customBackgroundUrl === bg.imageUrl;
+                return (
+                  <Pressable
+                    key={bg.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Fond ${bg.name}`}
+                    accessibilityState={{ selected }}
+                    onPress={() => draft.selectExistingBackground(bg.imageUrl)}
+                    className={`overflow-hidden rounded-xl border-2 ${
+                      selected ? 'border-ink' : 'border-paper3'
+                    }`}
+                  >
+                    <Image
+                      source={{ uri: bg.imageUrl }}
+                      className="h-16 w-16 bg-paper3"
+                      resizeMode="cover"
+                    />
+                    {selected ? (
+                      <View className="absolute right-1 top-1 h-4 w-4 items-center justify-center rounded-full bg-ink">
+                        <Ionicons name="checkmark" size={10} color={colors.offwhite} />
+                      </View>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
       </ScrollView>
 
       {/* CTA */}

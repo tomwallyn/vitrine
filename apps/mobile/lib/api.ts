@@ -1,6 +1,17 @@
 import { useAuth } from '@clerk/clerk-expo';
 import { useMemo } from 'react';
 
+import type {
+  BackgroundsResponse,
+  CreateBackgroundRequest,
+  CreateBackgroundResponse,
+  CreateGenerationRequest,
+  CreateGenerationResponse,
+  CreateVariantsRequest,
+  CreateVariantsResponse,
+  GetGenerationResponse,
+} from '@vitrine/shared';
+
 /** Base URL de l'API Fastify (device réel : IP LAN de la machine, pas localhost). */
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080';
 
@@ -14,6 +25,21 @@ export class ApiError extends Error {
   }
 }
 
+/** 402 Payment Required — solde de crédits insuffisant (écran Crédits à proposer). */
+export function isInsufficientCredits(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 402;
+}
+
+type RequestOptions = {
+  /**
+   * Statuts non-2xx dont le corps JSON reste un payload métier valide.
+   * Ex. POST /generations renvoie 502 avec la génération `failed` (crédit
+   * remboursé) quand la soumission fal échoue : on veut la génération, pas
+   * une exception.
+   */
+  allowStatuses?: readonly number[];
+};
+
 /**
  * Client API authentifié : injecte le Bearer token Clerk sur chaque requête.
  * À consommer via TanStack Query (`queryFn` / `mutationFn`).
@@ -22,7 +48,12 @@ export function useApi() {
   const { getToken } = useAuth();
 
   return useMemo(() => {
-    const request = async <T>(method: string, path: string, body?: unknown): Promise<T> => {
+    const request = async <T>(
+      method: string,
+      path: string,
+      body?: unknown,
+      options?: RequestOptions,
+    ): Promise<T> => {
       const token = await getToken();
       const res = await fetch(`${API_URL}${path}`, {
         method,
@@ -33,7 +64,7 @@ export function useApi() {
         ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
       });
 
-      if (!res.ok) {
+      if (!res.ok && !options?.allowStatuses?.includes(res.status)) {
         let message = `Erreur API (${res.status})`;
         try {
           const data = (await res.json()) as { error?: unknown };
@@ -50,6 +81,32 @@ export function useApi() {
       get: <T>(path: string) => request<T>('GET', path),
       post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
       patch: <T>(path: string, body: unknown) => request<T>('PATCH', path, body),
+
+      /** Pipeline de génération IA (écrans 03 → 04 → 05). */
+      generations: {
+        /** POST /generations — réserve 1 crédit, crée la génération (502 = failed + refund). */
+        create: (payload: CreateGenerationRequest) =>
+          request<CreateGenerationResponse>('POST', '/generations', payload, {
+            allowStatuses: [502],
+          }),
+        /** GET /generations/:id — polling écran 04. */
+        get: (id: string) => request<GetGenerationResponse>('GET', `/generations/${id}`),
+        /** POST /generations/:id/regenerate — mêmes params, 1 crédit. */
+        regenerate: (id: string) =>
+          request<CreateGenerationResponse>('POST', `/generations/${id}/regenerate`, undefined, {
+            allowStatuses: [502],
+          }),
+        /** POST /generations/:id/variants — autres types de rendu (1 crédit / type). */
+        createVariants: (id: string, payload: CreateVariantsRequest) =>
+          request<CreateVariantsResponse>('POST', `/generations/${id}/variants`, payload),
+      },
+
+      /** Fonds personnalisés réutilisables (écran 03 — FOND). */
+      backgrounds: {
+        list: () => request<BackgroundsResponse>('GET', '/backgrounds'),
+        create: (payload: CreateBackgroundRequest) =>
+          request<CreateBackgroundResponse>('POST', '/backgrounds', payload),
+      },
     };
   }, [getToken]);
 }
