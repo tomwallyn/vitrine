@@ -1,4 +1,13 @@
 import type { CreditPack } from './contracts.js';
+import type { RenderType } from './enums.js';
+
+/** Libellés FR des types de rendu (écrans 03/05/06 + titres de galerie). */
+export const RENDER_TYPE_LABELS: Record<RenderType, string> = {
+  model: 'Sur modèle',
+  hanger: 'Sur cintre',
+  folded: 'Plié à plat',
+  studio: 'Fond studio',
+} as const;
 
 /**
  * Les 3 packs de crédits (écran 07), miroir des consommables RevenueCat.

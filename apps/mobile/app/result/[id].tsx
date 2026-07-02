@@ -1,9 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import * as FileSystem from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
-import * as Sharing from 'expo-sharing';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,22 +19,17 @@ import { Button } from '@/components/Button';
 import { CreditBadge } from '@/components/CreditBadge';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { isInsufficientCredits, useApi } from '@/lib/api';
+import { useResultExport } from '@/lib/export';
 import {
   colors,
   GENERATION_COST_CREDITS,
+  RENDER_TYPE_LABELS,
   RENDER_TYPES,
   type Generation,
   type GetGenerationResponse,
   type MeResponse,
   type RenderType,
 } from '@vitrine/shared';
-
-const RENDER_TYPE_LABELS: Record<RenderType, string> = {
-  model: 'Sur modèle',
-  hanger: 'Sur cintre',
-  folded: 'Plié à plat',
-  studio: 'Fond studio',
-};
 
 const MANNEQUIN_LABELS: Record<Generation['mannequinOption'], string> = {
   femme: 'Femme',
@@ -94,8 +86,6 @@ export default function ResultScreen() {
 
   const [variantsOpen, setVariantsOpen] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<RenderType[]>([]);
-  const [exporting, setExporting] = useState(false);
-  const [savedToGallery, setSavedToGallery] = useState(false);
 
   const { data, isPending, error } = useQuery({
     queryKey: ['generation', id],
@@ -108,6 +98,12 @@ export default function ResultScreen() {
     queryKey: ['me'],
     queryFn: () => api.get<MeResponse>('/me'),
   });
+
+  // Export & filigrane : « VITRINE » apposé avant partage/enregistrement
+  // quand le réglage boutique est actif (défaut : actif).
+  const watermarkEnabled = me?.shop.settings.watermark ?? true;
+  const { share, saveToPhotos, exporting, watermarkOverlay } =
+    useResultExport(watermarkEnabled);
 
   const creditError = (err: unknown, fallbackTitle: string) => {
     if (isInsufficientCredits(err)) {
@@ -152,80 +148,31 @@ export default function ResultScreen() {
     onError: (err) => creditError(err, 'Variantes impossibles'),
   });
 
-  /** Télécharge le rendu dans le cache local (préalable au partage/enregistrement). */
-  const downloadResult = async (source: Generation): Promise<string> => {
-    if (!source.resultImageUrl) throw new Error('Rendu indisponible');
-    const target = `${FileSystem.cacheDirectory}vitrine-${source.id}.jpg`;
-    const download = await FileSystem.downloadAsync(source.resultImageUrl, target);
-    if (download.status !== 200) {
-      throw new Error(`Téléchargement du rendu impossible (${download.status})`);
-    }
-    return download.uri;
-  };
-
-  const shareResult = async (source: Generation) => {
-    setExporting(true);
-    try {
-      const uri = await downloadResult(source);
-      if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert('Partage indisponible', "Le partage n'est pas disponible sur cet appareil.");
-        return;
-      }
-      await Sharing.shareAsync(uri, {
-        mimeType: 'image/jpeg',
-        dialogTitle: 'Exporter le visuel',
-      });
-    } catch (err) {
-      Alert.alert(
-        'Export impossible',
-        err instanceof Error ? err.message : 'Réessayez dans un instant.',
-      );
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const saveResultToPhotos = async (source: Generation) => {
-    setExporting(true);
-    try {
-      const permission = await MediaLibrary.requestPermissionsAsync(true);
-      if (!permission.granted) {
-        Alert.alert(
-          'Accès refusé',
-          "Autorisez l'accès aux photos dans les réglages pour enregistrer vos visuels.",
-        );
-        return;
-      }
-      const uri = await downloadResult(source);
-      await MediaLibrary.saveToLibraryAsync(uri);
-      Alert.alert('Enregistré', 'Le visuel a été ajouté à votre photothèque.');
-    } catch (err) {
-      Alert.alert(
-        'Enregistrement impossible',
-        err instanceof Error ? err.message : 'Réessayez dans un instant.',
-      );
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  /** ↓ Exporter — partage ou enregistrement dans la photothèque. */
+  /** ↓ Exporter — partage ou enregistrement (filigrane selon settings.watermark). */
   const onExport = (source: Generation) => {
     Alert.alert('Exporter le visuel', 'Choisissez une destination.', [
-      { text: 'Partager…', onPress: () => void shareResult(source) },
-      { text: 'Enregistrer dans Photos', onPress: () => void saveResultToPhotos(source) },
+      { text: 'Partager…', onPress: () => void share(source) },
+      { text: 'Enregistrer dans Photos', onPress: () => void saveToPhotos(source) },
       { text: 'Annuler', style: 'cancel' },
     ]);
   };
 
   /**
-   * CTA « Ajouter à ma galerie » — stub optimiste.
-   * TODO(M5): POST /gallery { generationId, title } puis invalidation de la
-   * query ['gallery'] ; l'endpoint galerie est livré au jalon M5.
+   * CTA « Ajouter à ma galerie » — POST /gallery (titre par défaut dérivé
+   * côté API, idempotent), puis invalidation du cache galerie (écran 06).
    */
-  const addToGallery = () => {
-    setSavedToGallery(true);
-  };
+  const galleryMutation = useMutation({
+    mutationFn: () => api.gallery.add({ generationId: id! }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+    },
+    onError: (err) =>
+      Alert.alert(
+        'Ajout impossible',
+        err instanceof Error ? err.message : 'Réessayez dans un instant.',
+      ),
+  });
+  const savedToGallery = galleryMutation.isSuccess;
 
   const toggleVariant = (renderType: RenderType) => {
     setSelectedVariants((prev) =>
@@ -341,14 +288,23 @@ export default function ResultScreen() {
         </View>
       </ScrollView>
 
-      {/* CTA principal — stub M5 (voir addToGallery) */}
+      {/* CTA principal — POST /gallery (« Ajouté ✓ » une fois enregistré) */}
       <View className="border-t border-paper3 px-5 pb-4 pt-3">
         <Button
-          label={savedToGallery ? 'Enregistré ✓' : 'Ajouter à ma galerie'}
-          disabled={savedToGallery}
-          onPress={addToGallery}
+          label={
+            savedToGallery
+              ? 'Ajouté ✓'
+              : galleryMutation.isPending
+                ? 'Ajout…'
+                : 'Ajouter à ma galerie'
+          }
+          disabled={savedToGallery || galleryMutation.isPending}
+          onPress={() => galleryMutation.mutate()}
         />
       </View>
+
+      {/* Vue offscreen du filigrane (capturée par react-native-view-shot) */}
+      {watermarkOverlay}
 
       {/* Sélecteur de variantes (autres types de rendu) */}
       <Modal

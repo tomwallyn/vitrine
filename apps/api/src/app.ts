@@ -1,23 +1,14 @@
-import Fastify, {
-  type FastifyInstance,
-  type FastifyReply,
-  type FastifyRequest,
-} from 'fastify';
+import Fastify, { type FastifyInstance } from 'fastify';
 
 import { registerAuth } from './plugins/auth.js';
 import { registerBackgroundRoutes } from './routes/backgrounds.js';
 import { registerCreditRoutes } from './routes/credits.js';
+import { registerGalleryRoutes } from './routes/gallery.js';
 import { registerGenerationRoutes } from './routes/generations.js';
 import { registerMeRoutes } from './routes/me.js';
 import { registerRevenueCatWebhookRoutes } from './routes/revenuecat.js';
 import { registerUploadRoutes } from './routes/uploads.js';
 import { registerWebhookRoutes } from './routes/webhooks.js';
-
-/** Handler stub M0 : 501 + TODO explicite vers le jalon concerné. */
-function notImplemented(todo: string) {
-  return async (_req: FastifyRequest, reply: FastifyReply) =>
-    reply.code(501).send({ error: 'Not Implemented', todo });
-}
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({ logger: true });
@@ -39,11 +30,7 @@ export function buildApp(): FastifyInstance {
   registerGenerationRoutes(app);
 
   // ── Galerie (M5) ─────────────────────────────────────────────
-  app.get(
-    '/gallery',
-    notImplemented('TODO(M5): galerie filtrable ?filter=all|model|hanger — écran 06'),
-  );
-  app.post('/gallery', notImplemented('TODO(M5): « Ajouter à ma galerie » (titre + tags)'));
+  registerGalleryRoutes(app);
 
   // ── Profil (M1) ──────────────────────────────────────────────
   registerMeRoutes(app);

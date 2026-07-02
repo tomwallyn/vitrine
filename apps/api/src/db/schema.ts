@@ -5,6 +5,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -126,16 +127,23 @@ export const backgrounds = pgTable('backgrounds', {
 });
 
 /** « Mes créations » (écran 06) — titre + tags pour filtres. */
-export const galleryItems = pgTable('gallery_items', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  shopId: uuid('shop_id')
-    .notNull()
-    .references(() => shops.id),
-  generationId: uuid('generation_id')
-    .notNull()
-    .references(() => generations.id),
-  title: text('title').notNull(),
-  /** ex. ["model"] — filtres Tout / Sur modèle / Cintre. */
-  tags: jsonb('tags').$type<string[]>().notNull().default([]),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const galleryItems = pgTable(
+  'gallery_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopId: uuid('shop_id')
+      .notNull()
+      .references(() => shops.id),
+    generationId: uuid('generation_id')
+      .notNull()
+      .references(() => generations.id),
+    title: text('title').notNull(),
+    /** ex. ["model"] — filtres Tout / Sur modèle / Cintre. */
+    tags: jsonb('tags').$type<string[]>().notNull().default([]),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // Idempotence de « Ajouter à ma galerie » : 1 item max par génération.
+    unique('gallery_items_shop_generation_unique').on(t.shopId, t.generationId),
+  ],
+);

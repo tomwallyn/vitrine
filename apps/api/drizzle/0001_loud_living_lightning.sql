@@ -1,0 +1,1 @@
+ALTER TABLE "gallery_items" ADD CONSTRAINT "gallery_items_shop_generation_unique" UNIQUE("shop_id","generation_id");

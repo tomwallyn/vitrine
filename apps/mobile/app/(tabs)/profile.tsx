@@ -1,8 +1,9 @@
 import { useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter, type Href } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import type { ReactNode } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useApi } from '@/lib/api';
@@ -34,12 +35,43 @@ export default function ProfileScreen() {
 
   const shop = data?.shop;
   const memberSince = shop ? new Date(shop.createdAt).getFullYear() : null;
+  const watermark = shop?.settings.watermark ?? true;
+
+  /**
+   * Export & filigrane — toggle optimiste persisté via PATCH /me
+   * (settings.watermark), rollback si l'API échoue.
+   */
+  const watermarkMutation = useMutation({
+    mutationFn: (next: boolean) =>
+      api.patch<MeResponse>('/me', { settings: { watermark: next } }),
+    onMutate: async (next) => {
+      await queryClient.cancelQueries({ queryKey: ['me'] });
+      const previous = queryClient.getQueryData<MeResponse>(['me']);
+      if (previous) {
+        queryClient.setQueryData<MeResponse>(['me'], {
+          ...previous,
+          shop: {
+            ...previous.shop,
+            settings: { ...previous.shop.settings, watermark: next },
+          },
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _next, context) => {
+      if (context?.previous) queryClient.setQueryData(['me'], context.previous);
+    },
+    onSuccess: (me) => queryClient.setQueryData(['me'], me),
+  });
 
   const menu: {
     icon: keyof typeof Ionicons.glyphMap;
     label: string;
     hint?: string;
     href?: Href;
+    /** Accessoire à droite (défaut : chevron). */
+    right?: ReactNode;
+    onPress?: () => void;
   }[] = [
     {
       icon: 'storefront-outline',
@@ -55,7 +87,23 @@ export default function ProfileScreen() {
     {
       icon: 'water-outline',
       label: 'Export & filigrane',
-      hint: shop ? (shop.settings.watermark ? 'Filigrane activé' : 'Filigrane désactivé') : undefined,
+      hint: shop
+        ? watermark
+          ? 'Filigrane « VITRINE » activé'
+          : 'Filigrane désactivé'
+        : undefined,
+      onPress: shop ? () => watermarkMutation.mutate(!watermark) : undefined,
+      right: (
+        <Switch
+          accessibilityLabel="Filigrane à l'export"
+          value={watermark}
+          disabled={!shop}
+          onValueChange={(next) => watermarkMutation.mutate(next)}
+          trackColor={{ true: colors.ink, false: colors.paper3 }}
+          thumbColor={colors.white}
+          ios_backgroundColor={colors.paper3}
+        />
+      ),
     },
     { icon: 'card-outline', label: 'Facturation', hint: 'Aucun abonnement — packs de crédits' },
     { icon: 'help-circle-outline', label: 'Aide & support' },
@@ -126,7 +174,7 @@ export default function ProfileScreen() {
             <Pressable
               key={item.label}
               accessibilityRole="button"
-              onPress={item.href ? () => router.push(item.href!) : undefined}
+              onPress={item.onPress ?? (item.href ? () => router.push(item.href!) : undefined)}
               className={`flex-row items-center gap-3 px-5 py-4 active:bg-paper2 ${
                 i > 0 ? 'border-t border-paper2' : ''
               }`}
@@ -138,7 +186,7 @@ export default function ProfileScreen() {
                   <Text className="font-body text-xs text-gray">{item.hint}</Text>
                 ) : null}
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.gray} />
+              {item.right ?? <Ionicons name="chevron-forward" size={16} color={colors.gray} />}
             </Pressable>
           ))}
         </View>

@@ -2,6 +2,8 @@ import { useAuth } from '@clerk/clerk-expo';
 import { useMemo } from 'react';
 
 import type {
+  AddToGalleryRequest,
+  AddToGalleryResponse,
   BackgroundsResponse,
   CreateBackgroundRequest,
   CreateBackgroundResponse,
@@ -11,6 +13,9 @@ import type {
   CreateVariantsResponse,
   CreditPacksResponse,
   CreditsResponse,
+  GalleryFilter,
+  GalleryResponse,
+  GallerySort,
   GetGenerationResponse,
 } from '@vitrine/shared';
 
@@ -109,6 +114,26 @@ export function useApi() {
         get: () => request<CreditsResponse>('GET', '/credits'),
         /** GET /credit-packs — les 3 packs avec prix/visuel calculé. */
         packs: () => request<CreditPacksResponse>('GET', '/credit-packs'),
+      },
+
+      /** Galerie « Mes créations » (écran 06 + CTA écran 05). */
+      gallery: {
+        /** GET /gallery — items filtrés/triés/paginés, joints à leur génération. */
+        list: (params: {
+          filter: GalleryFilter;
+          sort?: GallerySort;
+          limit?: number;
+          offset?: number;
+        }) => {
+          const query = new URLSearchParams({ filter: params.filter });
+          if (params.sort) query.set('sort', params.sort);
+          if (params.limit !== undefined) query.set('limit', String(params.limit));
+          if (params.offset !== undefined) query.set('offset', String(params.offset));
+          return request<GalleryResponse>('GET', `/gallery?${query.toString()}`);
+        },
+        /** POST /gallery — « Ajouter à ma galerie » (idempotent, jamais de doublon). */
+        add: (payload: AddToGalleryRequest) =>
+          request<AddToGalleryResponse>('POST', '/gallery', payload),
       },
 
       /** Fonds personnalisés réutilisables (écran 03 — FOND). */

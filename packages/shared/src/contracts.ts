@@ -114,6 +114,71 @@ export const createVariantsResponseSchema = z.object({
 export type CreateVariantsResponse = z.infer<typeof createVariantsResponseSchema>;
 
 // ─────────────────────────────────────────────────────────────────
+// Gallery — GET /gallery · POST /gallery (écran 06 « Mes créations »)
+// ─────────────────────────────────────────────────────────────────
+
+/** Filtre de la galerie : Tout / Sur modèle / Cintre (chips écran 06). */
+export const galleryFilterSchema = z.enum(['all', 'model', 'hanger']);
+export type GalleryFilter = z.infer<typeof galleryFilterSchema>;
+export const GALLERY_FILTERS = galleryFilterSchema.options;
+
+/** Ordre de tri (bouton ⇅ de l'écran 06). */
+export const gallerySortSchema = z.enum(['recent', 'oldest']);
+export type GallerySort = z.infer<typeof gallerySortSchema>;
+
+/** Query de GET /gallery — filtre + tri + pagination offset. */
+export const galleryQuerySchema = z.object({
+  filter: galleryFilterSchema.default('all'),
+  sort: gallerySortSchema.default('recent'),
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+export type GalleryQuery = z.infer<typeof galleryQuerySchema>;
+
+/** Item de galerie joint à sa génération (vignette : rendu + type). */
+export const galleryItemSchema = z.object({
+  id: z.string().uuid(),
+  shopId: z.string().uuid(),
+  generationId: z.string().uuid(),
+  title: z.string(),
+  tags: z.array(z.string()),
+  renderType: renderTypeSchema,
+  resultImageUrl: z.string().url().nullable(),
+  createdAt: z.string(),
+});
+export type GalleryItem = z.infer<typeof galleryItemSchema>;
+
+/** Réponse de GET /gallery (items paginés + compteur « N visuels générés »). */
+export const galleryResponseSchema = z.object({
+  items: z.array(galleryItemSchema),
+  /** Nombre total d'items pour le filtre courant (compteur de l'écran 06). */
+  total: z.number().int().min(0),
+  /** true s'il reste des items au-delà de offset+limit. */
+  hasMore: z.boolean(),
+});
+export type GalleryResponse = z.infer<typeof galleryResponseSchema>;
+
+/** Body de POST /gallery — « Ajouter à ma galerie » (écran 05). */
+export const addToGalleryRequestSchema = z.object({
+  generationId: z.string().uuid(),
+  /** Titre de la vignette (« Veste coach ») — défaut dérivé côté API. */
+  title: z.string().trim().min(1).max(80).optional(),
+  tags: z.array(z.string().trim().min(1).max(32)).max(10).optional(),
+});
+export type AddToGalleryRequest = z.infer<typeof addToGalleryRequestSchema>;
+
+/**
+ * Réponse de POST /gallery — 201 si créé, 200 si la génération était déjà
+ * dans la galerie (idempotent sur (shop_id, generation_id)).
+ */
+export const addToGalleryResponseSchema = z.object({
+  item: galleryItemSchema,
+  /** false si l'item existait déjà (aucun doublon créé). */
+  created: z.boolean(),
+});
+export type AddToGalleryResponse = z.infer<typeof addToGalleryResponseSchema>;
+
+// ─────────────────────────────────────────────────────────────────
 // Credit packs — GET /credit-packs (miroir des offerings RevenueCat)
 // ─────────────────────────────────────────────────────────────────
 
