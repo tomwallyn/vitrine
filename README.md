@@ -34,26 +34,49 @@ pnpm lint               # eslint sur tous les packages
 ### API (apps/api)
 
 ```bash
-cp .env.example apps/api/.env       # puis remplir les clés
-pnpm --filter api dev               # dev local (tsx watch)
-pnpm --filter api db:generate       # génère les migrations SQL Drizzle
+cp apps/api/.env.example apps/api/.env   # puis remplir les clés (voir ci-dessous)
+pnpm --filter api dev                    # dev local (tsx watch)
+pnpm --filter api db:generate            # génère les migrations SQL Drizzle
+pnpm --filter api db:migrate             # applique les migrations sur DATABASE_URL
 ```
 
-`GET /health` répond `{ status: "ok" }` ; tous les autres endpoints sont des
-stubs `501` (M0) — voir `apps/api/src/app.ts`.
+`GET /health` répond `{ status: "ok" }`. `GET/PATCH /me` sont fonctionnels (M1,
+auth Clerk obligatoire) ; les autres endpoints sont des stubs `501` — voir
+`apps/api/src/app.ts`.
 
 ### Mobile (apps/mobile)
 
 ```bash
-pnpm --filter mobile exec expo start   # dev server Expo (device réel conseillé)
+cp apps/mobile/.env.example apps/mobile/.env   # clé Clerk + URL de l'API
+pnpm --filter mobile exec expo start           # dev server Expo (device réel conseillé)
 ```
 
-Les 8 écrans sont des shells statiques (M0) : onboarding, auth, capture,
-config rendu, génération, résultat, et les 4 tabs (Accueil · Galerie ·
-Crédits · Profil).
+## Variables d'environnement
+
+### `apps/api/.env`
+
+| Variable | Où l'obtenir |
+|---|---|
+| `DATABASE_URL` | [Neon](https://neon.tech) → créer un projet → *Connection string* (garder `?sslmode=require`). |
+| `CLERK_SECRET_KEY` | [Clerk](https://dashboard.clerk.com) → votre application → **API Keys** → *Secret key* (`sk_test_…` en dev). Sert à vérifier les JWT côté API. |
+| `FAL_KEY`, `GCS_*`, `REVENUECAT_WEBHOOK_SECRET` | Jalon M2+ — peuvent rester vides pour M1. |
+
+### `apps/mobile/.env`
+
+| Variable | Où l'obtenir |
+|---|---|
+| `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk → **API Keys** → *Publishable key* (`pk_test_…`). Même application Clerk que l'API. |
+| `EXPO_PUBLIC_API_URL` | URL de l'API Fastify. En local : `http://localhost:8080` (simulateur) ou `http://<IP LAN de votre machine>:8080` (device réel). |
+
+Côté Clerk, activer **Email + mot de passe** (avec code de vérification email)
+et, si souhaité, les connexions **Apple** / **Google** (OAuth) dans
+*User & Authentication → Email, Phone, Username / Social connections*.
 
 ## Jalons
 
-- **M0 — Fondations** (ce commit) : monorepo, design system, 8 écrans shells, API stub + schéma Drizzle, Dockerfile Cloud Run.
-- M1 — Auth + Profil (Clerk) · M2 — Capture + Upload GCS · M3 — Moteur IA (fal.ai) ·
+- **M0 — Fondations** : monorepo, design system, 8 écrans shells, API stub + schéma Drizzle, Dockerfile Cloud Run.
+- **M1 — Auth + Profil** (ce commit) : Clerk (mobile + vérification JWT API), garde d'auth
+  expo-router, création du shop au premier `GET /me`, profil branché (TanStack Query),
+  écran « Ma boutique » (`PATCH /me`), solde de crédits réel (SUM du ledger).
+- M2 — Capture + Upload GCS · M3 — Moteur IA (fal.ai) ·
   M4 — Crédits & IAP (RevenueCat) · M5 — Galerie & Export · M6 — Finitions & stores.

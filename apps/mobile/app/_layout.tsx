@@ -1,5 +1,7 @@
 import '../global.css';
 
+import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
+import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import {
   Manrope_400Regular,
   Manrope_500Medium,
@@ -11,6 +13,7 @@ import {
   SpaceGrotesk_600SemiBold,
   SpaceGrotesk_700Bold,
 } from '@expo-google-fonts/space-grotesk';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -26,6 +29,54 @@ cssInterop(SafeAreaView, { className: 'style' });
 
 SplashScreen.preventAutoHideAsync();
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 30_000, retry: 1 },
+  },
+});
+
+const clerkPublishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
+
+/**
+ * Garde d'auth : les non-authentifiés ne voient que (onboarding) + (auth),
+ * les authentifiés que (tabs) et les écrans du flux de création.
+ */
+function RootNavigator() {
+  const { isLoaded, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    if (isLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [isLoaded]);
+
+  if (!isLoaded) {
+    return null;
+  }
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.paper },
+      }}
+    >
+      <Stack.Protected guard={!isSignedIn}>
+        <Stack.Screen name="(onboarding)" />
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+      <Stack.Protected guard={!!isSignedIn}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="my-shop" />
+        <Stack.Screen name="capture" options={{ presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="render-config" />
+        <Stack.Screen name="generating/[id]" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="result/[id]" />
+      </Stack.Protected>
+    </Stack>
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_500Medium,
@@ -37,33 +88,16 @@ export default function RootLayout() {
     Manrope_700Bold,
   });
 
-  useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
-
   if (!fontsLoaded) {
     return null;
   }
 
   return (
-    <>
-      <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.paper },
-        }}
-      >
-        <Stack.Screen name="(onboarding)" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="capture" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Screen name="render-config" />
-        <Stack.Screen name="generating/[id]" options={{ gestureEnabled: false }} />
-        <Stack.Screen name="result/[id]" />
-      </Stack>
-    </>
+    <ClerkProvider tokenCache={tokenCache} publishableKey={clerkPublishableKey}>
+      <QueryClientProvider client={queryClient}>
+        <StatusBar style="dark" />
+        <RootNavigator />
+      </QueryClientProvider>
+    </ClerkProvider>
   );
 }

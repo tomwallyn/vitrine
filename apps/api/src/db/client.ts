@@ -12,4 +12,22 @@ export function createDb(databaseUrl: string) {
 }
 
 export type Db = ReturnType<typeof createDb>;
+
+let db: Db | null = null;
+
+/**
+ * Singleton paresseux : le client n'est créé qu'au premier appel, pour que
+ * l'app puisse se construire (typecheck/build) sans DATABASE_URL.
+ */
+export function getDb(): Db {
+  if (!db) {
+    const url = process.env.DATABASE_URL;
+    if (!url) {
+      throw new Error('DATABASE_URL manquant — copiez apps/api/.env.example vers .env');
+    }
+    db = createDb(url);
+  }
+  return db;
+}
+
 export { schema };

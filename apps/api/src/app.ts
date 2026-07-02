@@ -4,6 +4,9 @@ import Fastify, {
   type FastifyRequest,
 } from 'fastify';
 
+import { registerAuth } from './plugins/auth.js';
+import { registerMeRoutes } from './routes/me.js';
+
 /** Handler stub M0 : 501 + TODO explicite vers le jalon concerné. */
 function notImplemented(todo: string) {
   return async (_req: FastifyRequest, reply: FastifyReply) =>
@@ -12,6 +15,9 @@ function notImplemented(todo: string) {
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({ logger: true });
+
+  // ── Auth Clerk (toutes les routes sauf /health et /webhooks/*) ─
+  registerAuth(app);
 
   // ── Santé ────────────────────────────────────────────────────
   app.get('/health', async () => ({
@@ -54,8 +60,7 @@ export function buildApp(): FastifyInstance {
   app.post('/gallery', notImplemented('TODO(M5): « Ajouter à ma galerie » (titre + tags)'));
 
   // ── Profil (M1) ──────────────────────────────────────────────
-  app.get('/me', notImplemented('TODO(M1): profil boutique — auth Clerk, création shop au 1er appel'));
-  app.patch('/me', notImplemented('TODO(M1): mise à jour profil / settings / watermark'));
+  registerMeRoutes(app);
 
   // ── Crédits & packs (M4) ─────────────────────────────────────
   app.get('/credits', notImplemented('TODO(M4): solde (SUM ledger) + historique — écran 07'));
