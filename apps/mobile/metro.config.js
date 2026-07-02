@@ -8,7 +8,8 @@ const monorepoRoot = path.resolve(projectRoot, '../..');
 const config = getDefaultConfig(projectRoot);
 
 // Monorepo pnpm : suivre les packages du workspace (@vitrine/shared)
-config.watchFolders = [monorepoRoot];
+// en CONSERVANT les watchFolders par défaut d'Expo (append, pas remplacer).
+config.watchFolders = [...(config.watchFolders ?? []), monorepoRoot];
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(monorepoRoot, 'node_modules'),
