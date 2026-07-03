@@ -11,6 +11,7 @@ import {
   configureNotificationHandling,
   ensureNotificationPermission,
   notifyGenerationFinished,
+  registerPushTokenAsync,
 } from '@/lib/notifications';
 import type { GenerationStatus } from '@vitrine/shared';
 
@@ -50,13 +51,20 @@ export function GenerationTrackerHost() {
   // Garde anti-chevauchement : jamais deux passes de polling simultanées.
   const pollingRef = useRef(false);
 
-  // Handler de présentation + tap sur notification → écran résultat.
+  // Handler de présentation + tap sur notification (locale OU push distant,
+  // les deux portent data.generationId) → écran résultat.
   useEffect(() => {
     configureNotificationHandling();
     return addGenerationNotificationResponseListener((generationId) => {
       router.push(`/result/${generationId}`);
     });
   }, [router]);
+
+  // Enregistrement du token push Expo au boot (utilisateur connecté) :
+  // no-op propre sans projectId EAS / en Expo Go (cf. lib/notifications).
+  useEffect(() => {
+    void registerPushTokenAsync(api);
+  }, [api]);
 
   // Permission de notifier : demandée (une fois) dès qu'un suivi démarre.
   useEffect(() => {

@@ -19,6 +19,8 @@ import type {
   GalleryResponse,
   GallerySort,
   GetGenerationResponse,
+  RegisterPushTokenRequest,
+  RegisterPushTokenResponse,
 } from '@vitrine/shared';
 
 /** Base URL de l'API Fastify (device réel : IP LAN de la machine, pas localhost). */
@@ -90,6 +92,17 @@ export function useApi() {
       get: <T>(path: string) => request<T>('GET', path),
       post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
       patch: <T>(path: string, body: unknown) => request<T>('PATCH', path, body),
+
+      /** Compte / appareil courant. */
+      me: {
+        /**
+         * POST /me/push-token — enregistre le token push Expo de l'appareil
+         * (upsert idempotent côté serveur : ré-enregistrer est sans effet,
+         * un appareil qui change de compte est ré-attaché au shop courant).
+         */
+        registerPushToken: (payload: RegisterPushTokenRequest) =>
+          request<RegisterPushTokenResponse>('POST', '/me/push-token', payload),
+      },
 
       /** Pipeline de génération IA (écrans 03 → 04 → 05). */
       generations: {
