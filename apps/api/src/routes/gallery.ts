@@ -10,7 +10,7 @@ import {
 import { and, asc, count, desc, eq, type SQL } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { getDb } from '../db/client.js';
+import { getDb, getTxDb } from '../db/client.js';
 import { galleryItems, generations } from '../db/schema.js';
 import { findOwnedGeneration } from '../services/generations.js';
 import { upsertShopByAuthId } from '../services/shops.js';
@@ -66,7 +66,7 @@ export function registerGalleryRoutes(app: FastifyInstance): void {
     const { filter, sort, limit, offset } = parsed.data;
 
     const db = getDb();
-    const shop = await upsertShopByAuthId(db, req.authUserId);
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
 
     const conditions: SQL[] = [eq(galleryItems.shopId, shop.id)];
     if (filter !== 'all') conditions.push(eq(generations.renderType, filter));
@@ -119,7 +119,7 @@ export function registerGalleryRoutes(app: FastifyInstance): void {
     }
 
     const db = getDb();
-    const shop = await upsertShopByAuthId(db, req.authUserId);
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
 
     // La génération doit appartenir au shop courant…
     const generation = await findOwnedGeneration(db, shop.id, parsed.data.generationId);

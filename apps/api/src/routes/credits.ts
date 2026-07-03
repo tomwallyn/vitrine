@@ -8,7 +8,7 @@ import {
 import { desc, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { getDb } from '../db/client.js';
+import { getDb, getTxDb } from '../db/client.js';
 import { creditsLedger } from '../db/schema.js';
 import { getBalance } from '../services/credits.js';
 import { upsertShopByAuthId } from '../services/shops.js';
@@ -30,7 +30,7 @@ export function registerCreditRoutes(app: FastifyInstance): void {
     const { limit, offset } = query.data;
 
     const db = getDb();
-    const shop = await upsertShopByAuthId(db, req.authUserId);
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
     const balance = await getBalance(db, shop.id);
 
     // limit + 1 : la ligne excédentaire signale qu'il reste une page (hasMore).

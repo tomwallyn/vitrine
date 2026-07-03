@@ -23,6 +23,13 @@ export const CREDIT_PACKS: readonly CreditPack[] = [
 export const GENERATION_COST_CREDITS = 1;
 
 /**
+ * Crédits offerts à la création de la boutique (première connexion).
+ * Crédités UNE SEULE FOIS, à l'INSERT du shop (ledger `bonus`, cf.
+ * services/shops.ts côté API) — jamais rétroactif pour les shops existants.
+ */
+export const SIGNUP_BONUS_CREDITS = 10;
+
+/**
  * Minutes « gagnées » par visuel généré (vs shooting produit artisanal :
  * installation, prise de vue, retouche). Base de la stat « Temps gagné »
  * de l'écran 08 : timeSavedMinutes = visualsCount × 15.

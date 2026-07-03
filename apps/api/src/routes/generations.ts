@@ -9,7 +9,7 @@ import {
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { getDb } from '../db/client.js';
+import { getDb, getTxDb } from '../db/client.js';
 import { getBalance, InsufficientCreditsError } from '../services/credits.js';
 import {
   createGeneration,
@@ -55,7 +55,7 @@ export function registerGenerationRoutes(app: FastifyInstance): void {
     }
 
     const db = getDb();
-    const shop = await upsertShopByAuthId(db, req.authUserId);
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
 
     let row: GenerationRow;
     try {
@@ -79,7 +79,7 @@ export function registerGenerationRoutes(app: FastifyInstance): void {
     if (!params.success) return reply.code(404).send({ error: 'Not Found' });
 
     const db = getDb();
-    const shop = await upsertShopByAuthId(db, req.authUserId);
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
     const row = await findOwnedGeneration(db, shop.id, params.data.id);
     if (!row) return reply.code(404).send({ error: 'Not Found' });
 
@@ -95,7 +95,7 @@ export function registerGenerationRoutes(app: FastifyInstance): void {
     if (!params.success) return reply.code(404).send({ error: 'Not Found' });
 
     const db = getDb();
-    const shop = await upsertShopByAuthId(db, req.authUserId);
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
     const source = await findOwnedGeneration(db, shop.id, params.data.id);
     if (!source) return reply.code(404).send({ error: 'Not Found' });
 
@@ -127,7 +127,7 @@ export function registerGenerationRoutes(app: FastifyInstance): void {
     }
 
     const db = getDb();
-    const shop = await upsertShopByAuthId(db, req.authUserId);
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
     const source = await findOwnedGeneration(db, shop.id, params.data.id);
     if (!source) return reply.code(404).send({ error: 'Not Found' });
 

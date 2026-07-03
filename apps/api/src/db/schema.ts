@@ -74,7 +74,7 @@ export const creditsLedger = pgTable('credits_ledger', {
     .references(() => shops.id),
   delta: integer('delta').notNull(),
   reason: ledgerReasonEnum('reason').notNull(),
-  /** generation_id ou rc_transaction_id selon la raison. */
+  /** generation_id, rc_transaction_id ou 'signup' (bonus) selon la raison. */
   ref: text('ref'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

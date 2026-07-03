@@ -114,7 +114,7 @@ export function registerRevenueCatWebhookRoutes(app: FastifyInstance): void {
     const db = getDb();
     // app_user_id = Clerk uid : même upsert que les routes authentifiées
     // (le shop existe déjà en pratique — l'app a appelé /me avant d'acheter).
-    const shop = await upsertShopByAuthId(db, appUserId);
+    const shop = await upsertShopByAuthId(getTxDb(), appUserId);
 
     const { credited } = await applyPurchase(getTxDb(), {
       shopId: shop.id,

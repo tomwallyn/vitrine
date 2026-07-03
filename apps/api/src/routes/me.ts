@@ -8,7 +8,7 @@ import {
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { getDb, type Db } from '../db/client.js';
+import { getDb, getTxDb, type Db } from '../db/client.js';
 import { shops } from '../db/schema.js';
 import { getBalance } from '../services/credits.js';
 import { countDoneGenerations } from '../services/generations.js';
@@ -38,7 +38,8 @@ async function buildMeResponse(db: Db, shop: ShopRow): Promise<MeResponse> {
 export function registerMeRoutes(app: FastifyInstance): void {
   app.get('/me', async (req): Promise<MeResponse> => {
     const db = getDb();
-    const shop = await upsertShopByAuthId(db, req.authUserId);
+    // Upsert transactionnel (driver WebSocket) : bonus de bienvenue atomique à l'INSERT.
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
     return buildMeResponse(db, shop);
   });
 
@@ -51,7 +52,7 @@ export function registerMeRoutes(app: FastifyInstance): void {
     }
 
     const db = getDb();
-    const shop = await upsertShopByAuthId(db, req.authUserId);
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
 
     const data = parsed.data;
     const patch: Partial<typeof shops.$inferInsert> = {};

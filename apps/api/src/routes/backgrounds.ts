@@ -7,7 +7,7 @@ import {
 import { desc, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
-import { getDb } from '../db/client.js';
+import { getDb, getTxDb } from '../db/client.js';
 import { backgrounds } from '../db/schema.js';
 import { upsertShopByAuthId } from '../services/shops.js';
 
@@ -33,7 +33,7 @@ function serializeBackground(row: BackgroundRow): Background {
 export function registerBackgroundRoutes(app: FastifyInstance): void {
   app.get('/backgrounds', async (req) => {
     const db = getDb();
-    const shop = await upsertShopByAuthId(db, req.authUserId);
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
     const rows = await db
       .select()
       .from(backgrounds)
@@ -51,7 +51,7 @@ export function registerBackgroundRoutes(app: FastifyInstance): void {
     }
 
     const db = getDb();
-    const shop = await upsertShopByAuthId(db, req.authUserId);
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
     const [row] = await db
       .insert(backgrounds)
       .values({ shopId: shop.id, imageUrl: parsed.data.imageUrl, name: parsed.data.name })
