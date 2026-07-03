@@ -101,7 +101,11 @@ export const NANO_CUSTOM_BACKGROUND_LAST_SUFFIX =
  *                neutre/synthétique généré une fois pour toutes.
  */
 export const MANNEQUIN_IMAGES: Record<Exclude<MannequinOption, 'studio'>, string> = {
-  femme: 'https://v3.fal.media/files/penguin/aOzrM7vPOSLksKfxSovG6_model.png',
+  // Mannequin femme de référence (généré Gemini, spec FASHN : plein pied, face,
+  // bras écartés, base grise moulante, fond studio uni) — uploadé sur le CDN fal.
+  femme:
+    'https://v3b.fal.media/files/b/0aa0c667/rjKF8pXuGCxl1lQnhnSlA_ChatGPT%20Image%203%20juil.%202026%2C%2015_56_00.png',
+  // ⚠️ homme & silhouette : encore des placeholders — à remplacer comme femme.
   homme: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1080&q=80',
   silhouette: 'https://v3.fal.media/files/penguin/aOzrM7vPOSLksKfxSovG6_model.png',
 };

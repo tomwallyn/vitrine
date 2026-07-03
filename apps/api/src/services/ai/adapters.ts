@@ -77,7 +77,8 @@ const fashnAdapter: ProviderAdapter = {
       garment_image: params.sourceImageUrl,
       // Les photos sources VITRINE sont des vêtements sur cintre (≈ flat-lay).
       garment_photo_type: 'flat-lay',
-      mode: 'balanced',
+      // Meilleure qualité de rendu (plus lent, acceptable pour un visuel produit).
+      mode: 'quality',
       output_format: 'png',
     };
   },
