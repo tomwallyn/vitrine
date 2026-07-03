@@ -11,7 +11,26 @@ import { registerUploadRoutes } from './routes/uploads.js';
 import { registerWebhookRoutes } from './routes/webhooks.js';
 
 export function buildApp(): FastifyInstance {
-  const app = Fastify({ logger: true });
+  const app = Fastify({
+    logger:
+      process.env.NODE_ENV === 'production'
+        ? // Prod (Cloud Run) : JSON structuré parsé par Cloud Logging.
+          true
+        : // Dev : logs lisibles — couleur, heure courte, `MÉTHODE url → status (temps)`.
+          {
+            transport: {
+              target: 'pino-pretty',
+              options: {
+                colorize: true,
+                translateTime: 'HH:MM:ss',
+                ignore: 'pid,hostname,req,res,responseTime',
+                singleLine: true,
+                messageFormat:
+                  '{if req.method}{req.method} {req.url} — {end}{if res.statusCode}→ {res.statusCode} ({responseTime} ms) — {end}{msg}',
+              },
+            },
+          },
+  });
 
   // ── Auth Clerk (toutes les routes sauf /health et /webhooks/*) ─
   registerAuth(app);
