@@ -62,9 +62,11 @@ export default function GeneratingScreen() {
   const generation = data?.generation;
   const status = generation?.status;
   const failed = status === 'failed' || !!error;
-  // Bloque le retour arrière tant que l'écran est actif (y compris pendant
-  // l'attente des 13 s après un rendu terminé) — sauf en cas d'échec.
-  const inFlight = !failed;
+  // Bloque le retour arrière UNIQUEMENT pendant que le rendu tourne
+  // (queued/processing). Quand status === 'done', on doit laisser passer le
+  // router.replace('/result') — sinon le garde beforeRemove bloque sa propre
+  // navigation et l'écran reste coincé à 100 %.
+  const inFlight = !failed && status !== 'done';
 
   // Instant d'arrivée sur l'écran — référence de la durée minimale de 13 s.
   const startedAtRef = useRef(Date.now());
