@@ -35,6 +35,7 @@ import {
   type Generation,
   type GetGenerationResponse,
   type MeResponse,
+  type ProductInfo,
   type RenderType,
 } from '@vitrine/shared';
 
@@ -53,6 +54,54 @@ function configSummary(generation: Generation): string {
   }
   parts.push(generation.backgroundOption === 'custom' ? 'Fond personnalisé' : 'Fond studio');
   return parts.join(' · ');
+}
+
+/** Lignes clé-valeur de la fiche produit (seuls les champs lus sont affichés). */
+const PRODUCT_INFO_ROWS: { key: keyof Omit<ProductInfo, 'description'>; label: string }[] = [
+  { key: 'matiere', label: 'Matière' },
+  { key: 'taille', label: 'Taille' },
+  { key: 'couleur', label: 'Couleur' },
+  { key: 'composition', label: 'Composition' },
+  { key: 'entretien', label: 'Entretien' },
+];
+
+/** Fiche produit OCR (étiquette/détail) — carte sous l'avant/après. */
+function ProductInfoCard({ info }: { info: ProductInfo }) {
+  const rows = PRODUCT_INFO_ROWS.filter(({ key }) => !!info[key]);
+  return (
+    <View className="mt-6 rounded-3xl border border-paper3 bg-white p-5">
+      <View className="flex-row items-center gap-2">
+        <Ionicons name="pricetag-outline" size={14} color={colors.gray2} />
+        <Text className="font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
+          Fiche produit
+        </Text>
+      </View>
+
+      {rows.length > 0 ? (
+        <View className="mt-4 gap-2.5">
+          {rows.map(({ key, label }, index) => (
+            <View
+              key={key}
+              className={`flex-row items-start justify-between gap-4 ${
+                index > 0 ? 'border-t border-paper2 pt-2.5' : ''
+              }`}
+            >
+              <Text className="font-body text-xs text-gray2">{label}</Text>
+              <Text className="flex-1 text-right font-body-semibold text-xs text-ink">
+                {info[key]}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      <Text
+        className={`font-body text-sm leading-5 text-ink ${rows.length > 0 ? 'mt-4 border-t border-paper2 pt-3.5' : 'mt-3'}`}
+      >
+        {info.description}
+      </Text>
+    </View>
+  );
 }
 
 type ActionChipProps = {
@@ -316,6 +365,9 @@ export default function ResultScreen() {
             onPress={() => onExport(generation)}
           />
         </View>
+
+        {/* Fiche produit OCR — uniquement si l'extraction a produit quelque chose */}
+        {generation.productInfo ? <ProductInfoCard info={generation.productInfo} /> : null}
       </ScrollView>
 
       {/* CTA principal — POST /gallery (« Ajouté ✓ » une fois enregistré) ;

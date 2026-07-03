@@ -266,11 +266,11 @@ export default function GalleryScreen() {
         )}
       </View>
 
-      {/* FAB + — nouvelle capture */}
+      {/* FAB + — nouveau visuel → hub d'import (1 photo / angles / lot) */}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Nouveau visuel"
-        onPress={() => router.push('/capture')}
+        onPress={() => router.push('/import-hub')}
         className="absolute bottom-6 right-5 h-14 w-14 items-center justify-center rounded-full bg-ink shadow-lg active:opacity-90"
       >
         <Ionicons name="add" size={28} color={colors.offwhite} />

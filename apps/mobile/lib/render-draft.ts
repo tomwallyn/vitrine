@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import type {
   BackgroundOption,
   CreateGenerationRequest,
+  GenerationExtraImages,
   MannequinOption,
   RenderType,
 } from '@vitrine/shared';
@@ -18,6 +19,11 @@ type RenderDraftState = {
   sourceObjectPath: string | null;
   sourceUploadStatus: UploadStatus;
   sourceUploadError: string | null;
+  /**
+   * Vues additionnelles du MÊME vêtement (multi-détails, écran Angles) —
+   * URLs GCS déjà uploadées, jointes à POST /generations. null = flux 1 photo.
+   */
+  extraImages: GenerationExtraImages | null;
 
   renderType: RenderType;
   mannequinOption: MannequinOption;
@@ -39,6 +45,8 @@ type RenderDraftState = {
   setSourceUploading: () => void;
   setSourceUploaded: (publicUrl: string, objectPath: string) => void;
   setSourceUploadFailed: (message: string) => void;
+  /** Attache les vues additionnelles (multi-détails) au brouillon courant. */
+  setExtraImages: (extraImages: GenerationExtraImages | null) => void;
 
   setRenderType: (renderType: RenderType) => void;
   setMannequinOption: (mannequinOption: MannequinOption) => void;
@@ -64,6 +72,7 @@ const initialState = {
   sourceObjectPath: null,
   sourceUploadStatus: 'idle' as UploadStatus,
   sourceUploadError: null,
+  extraImages: null as GenerationExtraImages | null,
   renderType: 'model' as RenderType,
   mannequinOption: 'femme' as MannequinOption,
   backgroundOption: 'studio' as BackgroundOption,
@@ -95,6 +104,7 @@ export const useRenderDraft = create<RenderDraftState>((set) => ({
     }),
   setSourceUploadFailed: (message) =>
     set({ sourceUploadStatus: 'error', sourceUploadError: message }),
+  setExtraImages: (extraImages) => set({ extraImages }),
 
   setRenderType: (renderType) => set({ renderType }),
   setMannequinOption: (mannequinOption) => set({ mannequinOption }),

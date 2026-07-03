@@ -199,10 +199,19 @@ export default function RenderConfigScreen() {
       ...(draft.backgroundOption === 'custom' && draft.customBackgroundUrl
         ? { customBackgroundUrl: draft.customBackgroundUrl }
         : {}),
+      // Multi-détails (écran Angles) : vues additionnelles du même vêtement.
+      ...(draft.extraImages && Object.values(draft.extraImages).some(Boolean)
+        ? { extraImages: draft.extraImages }
+        : {}),
     });
     draft.setPendingGeneration(payload);
     generateMutation.mutate(payload);
   };
+
+  /** Nombre de vues additionnelles jointes (flux multi-détails). */
+  const extraCount = draft.extraImages
+    ? Object.values(draft.extraImages).filter(Boolean).length
+    : 0;
 
   const generateLabel = generateMutation.isPending
     ? 'Lancement du rendu…'
@@ -229,7 +238,11 @@ export default function RenderConfigScreen() {
               accessibilityLabel="Photo du vêtement"
             />
             <View className="flex-1">
-              <Text className="font-body-semibold text-sm text-ink">Photo importée</Text>
+              <Text className="font-body-semibold text-sm text-ink">
+                {extraCount > 0
+                  ? `Photo importée · +${extraCount} vue${extraCount > 1 ? 's' : ''}`
+                  : 'Photo importée'}
+              </Text>
               {draft.sourceUploadStatus === 'uploading' ? (
                 <View className="mt-1 flex-row items-center gap-2">
                   <ActivityIndicator size="small" color={colors.ink} />

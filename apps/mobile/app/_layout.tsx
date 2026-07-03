@@ -78,7 +78,16 @@ function RootNavigator() {
         />
         <Stack.Screen name="billing" options={{ presentation: 'modal', gestureEnabled: true }} />
         <Stack.Screen name="support" options={{ presentation: 'modal', gestureEnabled: true }} />
+        {/* Flux de création : hub d'import → capture / angles → config. */}
+        <Stack.Screen
+          name="import-hub"
+          options={{ presentation: 'modal', gestureEnabled: true }}
+        />
         <Stack.Screen name="capture" options={{ presentation: 'fullScreenModal' }} />
+        <Stack.Screen
+          name="detail-angles"
+          options={{ presentation: 'modal', gestureEnabled: true }}
+        />
         <Stack.Screen
           name="render-config"
           options={{ presentation: 'modal', gestureEnabled: true }}

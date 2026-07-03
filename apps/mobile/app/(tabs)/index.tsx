@@ -150,11 +150,11 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        {/* Hero CTA — nouveau visuel → écran capture */}
+        {/* Hero CTA — nouveau visuel → hub d'import (1 photo / angles / lot) */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Nouveau visuel"
-          onPress={() => router.push('/capture')}
+          onPress={() => router.push('/import-hub')}
           className="mt-6 overflow-hidden rounded-3xl bg-ink px-6 pb-7 pt-7 active:opacity-90"
         >
           <View className="flex-row items-center justify-between">
