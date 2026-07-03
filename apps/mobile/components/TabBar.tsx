@@ -3,6 +3,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useActiveGenerationCount } from '@/lib/generation-tracker';
 import { colors } from '@vitrine/shared';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -22,6 +23,8 @@ const TAB_ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> 
  */
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  // Pastille sur l'onglet Galerie quand des générations tournent en fond.
+  const activeGenerationCount = useActiveGenerationCount();
 
   return (
     <View
@@ -85,6 +88,10 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 size={21}
                 color={focused ? colors.ink : colors.gray}
               />
+              {/* Point « génération en cours » sur l'onglet Galerie */}
+              {route.name === 'gallery' && activeGenerationCount > 0 ? (
+                <View className="absolute right-3.5 top-0.5 h-2 w-2 rounded-full border border-white bg-ink" />
+              ) : null}
             </View>
             <Text
               className={`font-body-semibold text-[11px] ${focused ? 'text-ink' : 'text-gray'}`}

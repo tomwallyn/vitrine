@@ -20,6 +20,7 @@ import { MannequinSelector } from '@/components/MannequinSelector';
 import { RenderTypeSelector } from '@/components/RenderTypeSelector';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { isInsufficientCredits, useApi } from '@/lib/api';
+import { useGenerationTracker } from '@/lib/generation-tracker';
 import { useRenderDraft } from '@/lib/render-draft';
 import { uploadImageAsync } from '@/lib/upload';
 import {
@@ -89,6 +90,15 @@ export default function RenderConfigScreen() {
         generation,
       });
       queryClient.invalidateQueries({ queryKey: ['me'] });
+      // Suivi global : la génération continue même si l'écran 04 est quitté.
+      // Cas 502 (génération déjà `failed`, crédit remboursé) : rien à suivre.
+      if (generation.status !== 'failed') {
+        useGenerationTracker.getState().track({
+          id: generation.id,
+          renderType: generation.renderType,
+          sourceImageUrl: generation.sourceImageUrl,
+        });
+      }
       router.push(`/generating/${generation.id}`);
     },
     onError: (err) => {

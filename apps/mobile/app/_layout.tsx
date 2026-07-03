@@ -23,6 +23,8 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { GenerationToast } from '@/components/GenerationToast';
+import { GenerationTrackerHost } from '@/components/GenerationTrackerHost';
 import { colors } from '@vitrine/shared';
 
 // NativeWind v4 : les composants tiers doivent être enregistrés pour className.
@@ -81,10 +83,26 @@ function RootNavigator() {
           name="render-config"
           options={{ presentation: 'modal', gestureEnabled: true }}
         />
-        <Stack.Screen name="generating/[id]" options={{ gestureEnabled: false }} />
+        {/* Quittable : la génération continue en arrière-plan (tracker global). */}
+        <Stack.Screen name="generating/[id]" options={{ gestureEnabled: true }} />
         <Stack.Screen name="result/[id]" />
       </Stack.Protected>
     </Stack>
+  );
+}
+
+/**
+ * Suivi global des générations + banner de fin — montés uniquement pour un
+ * utilisateur connecté (le tracker consomme l'API authentifiée).
+ */
+function SignedInGenerationFeatures() {
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded || !isSignedIn) return null;
+  return (
+    <>
+      <GenerationTrackerHost />
+      <GenerationToast />
+    </>
   );
 }
 
@@ -109,6 +127,8 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <StatusBar style="dark" />
           <RootNavigator />
+          {/* Tracker headless + banner par-dessus la navigation (absolute). */}
+          <SignedInGenerationFeatures />
         </QueryClientProvider>
       </ClerkProvider>
     </GestureHandlerRootView>

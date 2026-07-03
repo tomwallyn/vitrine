@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { useApi } from '@/lib/api';
+import { useGenerationTracker } from '@/lib/generation-tracker';
 import { colors, type GenerationStatus } from '@vitrine/shared';
 
 /** Cadence du polling GET /generations/:id tant que le rendu est en cours. */
@@ -41,7 +42,6 @@ function progressCap(status: GenerationStatus | undefined): number {
 /** 04 — GÉNÉRATION : polling + RENDU IA + barre de progression + 3 étapes. */
 export default function GeneratingScreen() {
   const router = useRouter();
-  const navigation = useNavigation();
   const api = useApi();
   const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -62,14 +62,41 @@ export default function GeneratingScreen() {
   const generation = data?.generation;
   const status = generation?.status;
   const failed = status === 'failed' || !!error;
-  // Bloque le retour arrière UNIQUEMENT pendant que le rendu tourne
-  // (queued/processing). Quand status === 'done', on doit laisser passer le
-  // router.replace('/result') — sinon le garde beforeRemove bloque sa propre
-  // navigation et l'écran reste coincé à 100 %.
-  const inFlight = !failed && status !== 'done';
 
   // Instant d'arrivée sur l'écran — référence de la durée minimale de 13 s.
   const startedAtRef = useRef(Date.now());
+
+  // Signale au tracker global que cette génération est affichée ici : il ne
+  // doit pas la notifier (toast/notification), l'écran gère la transition.
+  useEffect(() => {
+    if (!id) return;
+    useGenerationTracker.getState().setWatched(id);
+    return () => useGenerationTracker.getState().setWatched(null);
+  }, [id]);
+
+  // Filet de sécurité : garantit le suivi global même si l'écran est atteint
+  // sans passer par render-config (deep link, reprise) — track est idempotent.
+  useEffect(() => {
+    if (!generation) return;
+    if (generation.status === 'queued' || generation.status === 'processing') {
+      useGenerationTracker.getState().track({
+        id: generation.id,
+        renderType: generation.renderType,
+        sourceImageUrl: generation.sourceImageUrl,
+      });
+    }
+  }, [generation]);
+
+  // Fin observée depuis l'écran : l'utilisateur voit le dénouement ici, le
+  // suivi global (tuile galerie + badge + notifs) n'a plus lieu d'être.
+  useEffect(() => {
+    if (!id) return;
+    if (status === 'done' || status === 'failed') {
+      const tracker = useGenerationTracker.getState();
+      tracker.setStatus(id, status);
+      tracker.remove(id);
+    }
+  }, [status, id]);
 
   // Progression animée : suit le temps écoulé (0 → 100 % sur ~13 s), bornée
   // par le plafond serveur (jamais 100 % tant que le rendu n'est pas fini).
@@ -100,15 +127,14 @@ export default function GeneratingScreen() {
     return () => clearTimeout(timeout);
   }, [status, id, router]);
 
-  // Empêche le retour arrière (geste déjà désactivé dans _layout, ici le
-  // bouton back Android) tant que la génération est en cours.
-  const inFlightRef = useRef(inFlight);
-  inFlightRef.current = inFlight;
-  useEffect(() => {
-    return navigation.addListener('beforeRemove', (e) => {
-      if (inFlightRef.current) e.preventDefault();
-    });
-  }, [navigation]);
+  /**
+   * « Continuer en arrière-plan » : quitter est désormais normal — la
+   * génération continue via le tracker global (tuile galerie + badge +
+   * notification de fin).
+   */
+  const continueInBackground = () => {
+    router.replace('/(tabs)/gallery');
+  };
 
   /** Échec → retour à l'écran 03 (le brouillon de rendu est conservé). */
   const retry = () => {
@@ -197,8 +223,16 @@ export default function GeneratingScreen() {
         </View>
       </View>
 
-      <View className="items-center pb-9">
-        <Text className="font-body-medium text-xs text-gray">Temps estimé · ~15 secondes</Text>
+      <View className="px-6 pb-6">
+        <Text className="mb-4 text-center font-body-medium text-xs text-gray">
+          Temps estimé · ~15 secondes
+        </Text>
+        {/* Quitter l'écran sans interrompre le rendu (suivi via le tracker). */}
+        <Button
+          label="Continuer en arrière-plan"
+          variant="secondary"
+          onPress={continueInBackground}
+        />
       </View>
     </SafeAreaView>
   );

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { useApi } from '@/lib/api';
+import { useActiveGenerations, type TrackedGeneration } from '@/lib/generation-tracker';
 import {
   colors,
   GALLERY_FILTERS,
@@ -25,6 +26,49 @@ const FILTER_LABELS: Record<GalleryFilter, string> = {
 /** « 38 visuels générés » (compteur sous le titre, maquette 06). */
 function counterLabel(total: number): string {
   return total > 1 ? `${total} visuels générés` : `${total} visuel généré`;
+}
+
+/**
+ * Tuile « en cours » : génération suivie par le tracker global, affichée en
+ * tête de grille (spinner + type de rendu). Disparaît une fois terminée.
+ */
+function ActiveGenerationTile({ gen }: { gen: TrackedGeneration }) {
+  const inFlight = gen.status === 'queued' || gen.status === 'processing';
+  return (
+    <View className="mb-4 w-[48%]">
+      <View className="aspect-[3/4] items-center justify-center overflow-hidden rounded-2xl border border-dashed border-paper3 bg-paper2">
+        {gen.sourceImageUrl ? (
+          <Image
+            source={{ uri: gen.sourceImageUrl }}
+            className="absolute h-full w-full opacity-15"
+            resizeMode="cover"
+            accessibilityLabel="Photo source du rendu en cours"
+          />
+        ) : null}
+        {inFlight ? (
+          <>
+            <ActivityIndicator size="small" color={colors.ink} />
+            <Text className="mt-2.5 font-body-semibold text-xs text-ink">En cours…</Text>
+          </>
+        ) : gen.status === 'done' ? (
+          <>
+            <View className="h-8 w-8 items-center justify-center rounded-full bg-ink">
+              <Ionicons name="checkmark" size={16} color={colors.offwhite} />
+            </View>
+            <Text className="mt-2.5 font-body-semibold text-xs text-ink">Terminé</Text>
+          </>
+        ) : (
+          <>
+            <Ionicons name="alert-circle-outline" size={24} color={colors.gray2} />
+            <Text className="mt-2.5 font-body-semibold text-xs text-gray2">Échec</Text>
+          </>
+        )}
+      </View>
+      <Text className="mt-1.5 font-body text-xs text-gray">
+        {RENDER_TYPE_LABELS[gen.renderType]}
+      </Text>
+    </View>
+  );
 }
 
 /** Vignette cliquable → écran Résultat (comparateur + re-téléchargement). */
@@ -68,6 +112,8 @@ export default function GalleryScreen() {
   const api = useApi();
   const [filter, setFilter] = useState<GalleryFilter>('all');
   const [sort, setSort] = useState<GallerySort>('recent');
+  // Générations en cours (tracker global) — tuiles en tête de grille.
+  const activeGenerations = useActiveGenerations();
 
   const {
     data,
@@ -180,6 +226,15 @@ export default function GalleryScreen() {
             onEndReached={() => {
               if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
             }}
+            ListHeaderComponent={
+              activeGenerations.length > 0 ? (
+                <View className="flex-row flex-wrap justify-between">
+                  {activeGenerations.map((gen) => (
+                    <ActiveGenerationTile key={gen.id} gen={gen} />
+                  ))}
+                </View>
+              ) : null
+            }
             ListFooterComponent={
               isFetchingNextPage ? (
                 <View className="items-center py-4">

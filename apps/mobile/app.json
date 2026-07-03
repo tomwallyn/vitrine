@@ -57,7 +57,8 @@
         }
       ],
       "./plugins/withRevenueCat.js",
-      "expo-font"
+      "expo-font",
+      "expo-notifications"
     ],
     "icon": "./assets/icon.png"
   }
