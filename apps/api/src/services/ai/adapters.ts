@@ -1,7 +1,9 @@
 import {
   DEFAULT_MANNEQUIN,
   MANNEQUIN_IMAGES,
+  NANO_CUSTOM_BACKGROUND_LAST_SUFFIX,
   NANO_CUSTOM_BACKGROUND_SUFFIX,
+  NANO_MULTI_VIEW_SUFFIX,
   NANO_PROMPTS,
   type BackgroundOption,
   type MannequinOption,
@@ -22,6 +24,20 @@ export interface GenerationParams {
   mannequinOption: MannequinOption;
   backgroundOption: BackgroundOption;
   customBackgroundUrl?: string | null;
+  /**
+   * Vues additionnelles du MÊME vêtement (URLs **signées GET**, comme la
+   * source) — utilisées par Nano Banana pour un rendu plus fidèle, ignorées
+   * par les try-on FASHN/Kling (1 seule image vêtement). L'étiquette (`label`)
+   * n'arrive jamais ici : stockée en base pour l'OCR, hors rendu.
+   */
+  extraImageUrls?: { back?: string; detail?: string } | null;
+}
+
+/** Vues additionnelles à passer au rendu, dans un ordre stable (arrière, détail). */
+function extraViewUrls(params: GenerationParams): string[] {
+  return [params.extraImageUrls?.back, params.extraImageUrls?.detail].filter(
+    (url): url is string => !!url,
+  );
 }
 
 export interface ProviderAdapter {
@@ -49,7 +65,11 @@ function mannequinImageUrl(option: MannequinOption): string {
   return option === 'studio' ? MANNEQUIN_IMAGES[DEFAULT_MANNEQUIN] : MANNEQUIN_IMAGES[option];
 }
 
-/** FASHN v1.6 : { model_image, garment_image } → images[0].url */
+/**
+ * FASHN v1.6 : { model_image, garment_image } → images[0].url
+ * Le try-on ne prend qu'UNE image vêtement : seule la vue avant (source) est
+ * utilisée, les `extraImageUrls` sont ignorées.
+ */
 const fashnAdapter: ProviderAdapter = {
   buildInput(params) {
     return {
@@ -69,7 +89,10 @@ const fashnAdapter: ProviderAdapter = {
   },
 };
 
-/** Kling Kolors : { human_image_url, garment_image_url } → image.url (objet unique) */
+/**
+ * Kling Kolors : { human_image_url, garment_image_url } → image.url (objet unique)
+ * Comme FASHN, une seule image vêtement : `extraImageUrls` ignorées.
+ */
 const klingAdapter: ProviderAdapter = {
   buildInput(params) {
     return {
@@ -88,23 +111,34 @@ const klingAdapter: ProviderAdapter = {
 /**
  * Prompt Nano Banana par type de rendu. `model` n'arrive ici que via le repli
  * mannequin=studio (ghost mannequin) → prompt `studio`.
+ *
+ * Multi-détails : si des vues additionnelles sont fournies, le prompt indique
+ * qu'il s'agit de plusieurs vues du MÊME vêtement à combiner ; le suffixe fond
+ * custom pointe alors vers la DERNIÈRE image (le fond n'est plus la 2ᵉ).
  */
 function nanoPrompt(params: GenerationParams): string {
   const base = params.renderType === 'model' ? NANO_PROMPTS.studio : NANO_PROMPTS[params.renderType];
+  const hasExtraViews = extraViewUrls(params).length > 0;
+  const prompt = hasExtraViews ? base + NANO_MULTI_VIEW_SUFFIX : base;
   const hasCustomBackground = params.backgroundOption === 'custom' && !!params.customBackgroundUrl;
-  return hasCustomBackground ? base + NANO_CUSTOM_BACKGROUND_SUFFIX : base;
+  if (!hasCustomBackground) return prompt;
+  return prompt + (hasExtraViews ? NANO_CUSTOM_BACKGROUND_LAST_SUFFIX : NANO_CUSTOM_BACKGROUND_SUFFIX);
 }
 
-/** Nano Banana Pro edit : { prompt, image_urls: [source, fond?] } → images[0].url */
+/**
+ * Nano Banana Pro edit :
+ * { prompt, image_urls: [source, arrière?, détail?, fond?] } → images[0].url
+ */
 const nanobananaAdapter: ProviderAdapter = {
   buildInput(params) {
+    const extraViews = extraViewUrls(params);
     const customBackground =
       params.backgroundOption === 'custom' && params.customBackgroundUrl
         ? [params.customBackgroundUrl]
         : [];
     return {
       prompt: nanoPrompt(params),
-      image_urls: [params.sourceImageUrl, ...customBackground],
+      image_urls: [params.sourceImageUrl, ...extraViews, ...customBackground],
       num_images: 1,
       output_format: 'png',
     };

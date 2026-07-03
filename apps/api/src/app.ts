@@ -4,7 +4,7 @@ import { registerAuth } from './plugins/auth.js';
 import { registerBackgroundRoutes } from './routes/backgrounds.js';
 import { registerCreditRoutes } from './routes/credits.js';
 import { registerGalleryRoutes } from './routes/gallery.js';
-import { registerGenerationRoutes } from './routes/generations.js';
+import { registerGenerationBatchRoutes, registerGenerationRoutes } from './routes/generations.js';
 import { registerMeRoutes } from './routes/me.js';
 import { registerRevenueCatWebhookRoutes } from './routes/revenuecat.js';
 import { registerUploadRoutes } from './routes/uploads.js';
@@ -47,6 +47,9 @@ export function buildApp(): FastifyInstance {
 
   // ── Générations (M3a) ────────────────────────────────────────
   registerGenerationRoutes(app);
+
+  // ── Générations en lot (M6b — style commun, 1 crédit/item) ───
+  registerGenerationBatchRoutes(app);
 
   // ── Galerie (M5) ─────────────────────────────────────────────
   registerGalleryRoutes(app);

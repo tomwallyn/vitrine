@@ -70,6 +70,25 @@ export const NANO_CUSTOM_BACKGROUND_SUFFIX =
   'en intégrant le vêtement dessus de façon naturelle (perspective et éclairage cohérents).';
 
 /**
+ * Suffixe ajouté au prompt Nano Banana quand plusieurs vues du même vêtement
+ * sont fournies (multi-détails : avant + arrière et/ou détail matière,
+ * passées après la source dans `image_urls`).
+ */
+export const NANO_MULTI_VIEW_SUFFIX =
+  " Plusieurs images du MÊME vêtement sont fournies (vue avant, puis vue arrière " +
+  "et/ou détail de la matière) : combine ces vues pour restituer fidèlement le " +
+  'vêtement (texture, motif, couleur, coupe) dans UN SEUL rendu final.';
+
+/**
+ * Variante de {@link NANO_CUSTOM_BACKGROUND_SUFFIX} quand des vues
+ * additionnelles précèdent le fond dans `image_urls` : le fond n'est alors
+ * plus la 2ᵉ image mais la DERNIÈRE.
+ */
+export const NANO_CUSTOM_BACKGROUND_LAST_SUFFIX =
+  " Utilise la DERNIÈRE image fournie comme fond/arrière-plan de la scène, " +
+  'en intégrant le vêtement dessus de façon naturelle (perspective et éclairage cohérents).';
+
+/**
  * Images de mannequins « de base » pour le try-on (FASHN & Kling exigent une photo
  * de personne : model_image / human_image_url).
  *

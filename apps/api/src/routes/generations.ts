@@ -1,10 +1,13 @@
 import {
+  createBatchRequestSchema,
+  createBatchResponseSchema,
   createGenerationRequestSchema,
   createGenerationResponseSchema,
   createVariantsRequestSchema,
   createVariantsResponseSchema,
   getGenerationResponseSchema,
   type CreateGenerationRequest,
+  type GenerationStatus,
 } from '@vitrine/shared';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
@@ -35,6 +38,8 @@ function paramsFromRow(row: GenerationRow, renderType = row.renderType): CreateG
     mannequinOption: row.modelOption,
     backgroundOption: row.backgroundOption,
     ...(row.customBackgroundUrl ? { customBackgroundUrl: row.customBackgroundUrl } : {}),
+    // Multi-détails : les vues additionnelles suivent la génération d'origine.
+    ...(row.extraImages ? { extraImages: row.extraImages } : {}),
   };
 }
 
@@ -158,6 +163,69 @@ export function registerGenerationRoutes(app: FastifyInstance): void {
       generations: await Promise.all(rows.map((r) => serializeGeneration(r))),
       creditsRemaining,
     });
+    return reply.code(201).send(payload);
+  });
+}
+
+/**
+ * POST /generations/batch — lot de générations (1..MAX_BATCH_ITEMS items) avec
+ * un **style commun** (rendu, mannequin, fond) appliqué à tous les items :
+ *
+ * - pré-check global du solde (≥ items.length) AVANT tout hold → 402 sinon
+ *   (le hold transactionnel par item reste l'unique garde-fou anti-course) ;
+ * - puis, item par item, {@link createGeneration} (hold 1 crédit + insert +
+ *   submit fal). Une soumission fal qui échoue ne concerne que SON item :
+ *   crédit remboursé, statut `failed` renvoyé, les items suivants continuent.
+ * - Réponse 201 : `{ generations: [{ id, status }, ...] }` — l'app polle
+ *   ensuite chaque id via GET /generations/:id.
+ */
+export function registerGenerationBatchRoutes(app: FastifyInstance): void {
+  app.post('/generations/batch', async (req, reply) => {
+    const parsed = createBatchRequestSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: 'Bad Request', details: parsed.error.flatten().fieldErrors });
+    }
+
+    const db = getDb();
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
+    const { items, renderType, mannequinOption, backgroundOption, customBackgroundUrl } =
+      parsed.data;
+
+    // Le lot entier doit être finançable AVANT le premier hold : pas de lot
+    // « à moitié lancé » pour cause de solde connu d'avance insuffisant.
+    const balance = await getBalance(db, shop.id);
+    if (balance < items.length) {
+      return reply.code(402).send({ error: 'Insufficient credits', balance });
+    }
+
+    const results: Array<{ id: string; status: GenerationStatus }> = [];
+    for (const item of items) {
+      try {
+        const row = await createGeneration(db, shop.id, {
+          sourceImageUrl: item.sourceImageUrl,
+          renderType,
+          mannequinOption,
+          backgroundOption,
+          ...(customBackgroundUrl ? { customBackgroundUrl } : {}),
+        });
+        results.push({ id: row.id, status: row.status });
+      } catch (err) {
+        // Course sur le solde malgré le pré-check (dépense concurrente) :
+        // on arrête le lot, les items déjà créés restent valides.
+        if (err instanceof InsufficientCreditsError) break;
+        throw err;
+      }
+    }
+
+    if (results.length === 0) {
+      return reply
+        .code(402)
+        .send({ error: 'Insufficient credits', balance: await getBalance(db, shop.id) });
+    }
+
+    const payload = createBatchResponseSchema.parse({ generations: results });
     return reply.code(201).send(payload);
   });
 }

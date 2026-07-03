@@ -67,9 +67,9 @@ function errorMessage(err: unknown): string {
  * /regenerate et /variants) :
  *
  *   1. résout la route IA (provider figé) et construit l'input fal — la photo
- *      source (et le fond custom) sont converties en **URLs signées GET**
- *      (bucket privé : fal doit pouvoir les télécharger) ; la base conserve
- *      les URLs canoniques publiques ;
+ *      source, le fond custom et les vues additionnelles (multi-détails) sont
+ *      convertis en **URLs signées GET** (bucket privé : fal doit pouvoir les
+ *      télécharger) ; la base conserve les URLs canoniques publiques ;
  *   2. **hold 1 crédit** (transaction + FOR UPDATE, cf. services/credits.ts)
  *      — lève InsufficientCreditsError (→ 402) si solde < 1 ;
  *   3. insère la ligne `generations` (status `queued`, params + fond) ;
@@ -88,11 +88,19 @@ export async function createGeneration(
   const route = resolveAiRoute(params.renderType, params.mannequinOption);
 
   // URLs signées pour l'appel fal uniquement (avant le hold : un échec de
-  // signature ne coûte aucun crédit).
-  const [signedSourceUrl, signedBackgroundUrl] = await Promise.all([
+  // signature ne coûte aucun crédit). Les vues additionnelles `back`/`detail`
+  // sont signées comme la source ; `label` (étiquette) n'est JAMAIS passée à
+  // fal (stockée en base pour l'OCR à venir) donc pas signée ici.
+  const [signedSourceUrl, signedBackgroundUrl, signedBackUrl, signedDetailUrl] = await Promise.all([
     signedReadUrl(params.sourceImageUrl, FAL_INPUT_TTL_SECONDS),
     params.customBackgroundUrl
       ? signedReadUrl(params.customBackgroundUrl, FAL_INPUT_TTL_SECONDS)
+      : Promise.resolve(null),
+    params.extraImages?.back
+      ? signedReadUrl(params.extraImages.back, FAL_INPUT_TTL_SECONDS)
+      : Promise.resolve(null),
+    params.extraImages?.detail
+      ? signedReadUrl(params.extraImages.detail, FAL_INPUT_TTL_SECONDS)
       : Promise.resolve(null),
   ]);
   const input = route.adapter.buildInput({
@@ -101,6 +109,13 @@ export async function createGeneration(
     mannequinOption: params.mannequinOption,
     backgroundOption: params.backgroundOption,
     customBackgroundUrl: signedBackgroundUrl,
+    extraImageUrls:
+      signedBackUrl || signedDetailUrl
+        ? {
+            ...(signedBackUrl ? { back: signedBackUrl } : {}),
+            ...(signedDetailUrl ? { detail: signedDetailUrl } : {}),
+          }
+        : null,
   });
 
   // 1 crédit réservé (= débité, cf. design du ledger). Throw → aucune ligne créée.
@@ -118,6 +133,8 @@ export async function createGeneration(
         modelOption: params.mannequinOption,
         backgroundOption: params.backgroundOption,
         customBackgroundUrl: params.customBackgroundUrl ?? null,
+        // URLs GCS canoniques (les URLs signées ne servent qu'à l'appel fal).
+        extraImages: params.extraImages ?? null,
         provider: route.provider,
         status: 'queued',
         holdLedgerId,

@@ -15,6 +15,13 @@
       "when": 1783019215898,
       "tag": "0001_loud_living_lightning",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783063553832,
+      "tag": "0002_charming_the_executioner",
+      "breakpoints": true
     }
   ]
 }

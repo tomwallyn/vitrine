@@ -105,6 +105,12 @@ export const generations = pgTable('generations', {
   modelOption: mannequinOptionEnum('model_option').notNull(),
   backgroundOption: backgroundOptionEnum('background_option').notNull().default('studio'),
   customBackgroundUrl: text('custom_background_url'),
+  /**
+   * Photos additionnelles du même vêtement (URLs GCS canoniques) —
+   * `back`/`detail` alimentent le rendu Nano Banana, `label` (étiquette)
+   * est stockée pour l'OCR à venir (jamais utilisée pour le rendu).
+   */
+  extraImages: jsonb('extra_images').$type<{ back?: string; detail?: string; label?: string }>(),
   provider: providerEnum('provider'),
   providerRequestId: text('provider_request_id'),
   status: generationStatusEnum('status').notNull().default('queued'),

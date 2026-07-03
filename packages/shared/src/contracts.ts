@@ -46,6 +46,23 @@ export type SignUploadResponse = z.infer<typeof signUploadResponseSchema>;
 // Generation — POST /generations · GET /generations/:id
 // ─────────────────────────────────────────────────────────────────
 
+/**
+ * Photos additionnelles du MÊME vêtement (multi-détails) — toutes optionnelles,
+ * URLs GCS canoniques (obtenues via POST /uploads/sign) :
+ * - `back` / `detail` alimentent le rendu Nano Banana (vues combinées pour
+ *   plus de fidélité) — ignorées par les try-on FASHN/Kling (1 image vêtement) ;
+ * - `label` (étiquette) est UNIQUEMENT stockée (OCR à venir), jamais rendue.
+ */
+export const generationExtraImagesSchema = z.object({
+  /** Vue arrière du vêtement. */
+  back: z.string().url().optional(),
+  /** Détail matière / texture. */
+  detail: z.string().url().optional(),
+  /** Photo de l'étiquette (composition/taille) — stockée pour l'OCR, hors rendu. */
+  label: z.string().url().optional(),
+});
+export type GenerationExtraImages = z.infer<typeof generationExtraImagesSchema>;
+
 export const createGenerationRequestSchema = z
   .object({
     /** URL GCS de la photo source (obtenue via POST /uploads/sign). */
@@ -55,6 +72,8 @@ export const createGenerationRequestSchema = z
     backgroundOption: backgroundOptionSchema.default('studio'),
     /** Requis si backgroundOption === 'custom' (fond uploadé réutilisable). */
     customBackgroundUrl: z.string().url().optional(),
+    /** Vues additionnelles du même vêtement (rétrocompat : absent = 1 photo). */
+    extraImages: generationExtraImagesSchema.optional(),
   })
   .superRefine((data, ctx) => {
     if (data.backgroundOption === 'custom' && !data.customBackgroundUrl) {
@@ -112,6 +131,58 @@ export const createVariantsResponseSchema = z.object({
   creditsRemaining: z.number().int(),
 });
 export type CreateVariantsResponse = z.infer<typeof createVariantsResponseSchema>;
+
+// ─────────────────────────────────────────────────────────────────
+// Batch — POST /generations/batch (lot avec un style commun)
+// ─────────────────────────────────────────────────────────────────
+
+/** Taille maximale d'un lot (1 crédit / item, pré-check du solde global). */
+export const MAX_BATCH_ITEMS = 30;
+
+/** Item d'un lot : une photo source par vêtement (pas d'extraImages en batch). */
+export const batchGenerationItemSchema = z.object({
+  /** URL GCS de la photo source (obtenue via POST /uploads/sign). */
+  sourceImageUrl: z.string().url(),
+});
+export type BatchGenerationItem = z.infer<typeof batchGenerationItemSchema>;
+
+/**
+ * Body de POST /generations/batch — un **style commun** (rendu, mannequin,
+ * fond) appliqué à tous les items du lot.
+ */
+export const createBatchRequestSchema = z
+  .object({
+    items: z.array(batchGenerationItemSchema).min(1).max(MAX_BATCH_ITEMS),
+    renderType: renderTypeSchema,
+    mannequinOption: mannequinOptionSchema,
+    backgroundOption: backgroundOptionSchema.default('studio'),
+    /** Requis si backgroundOption === 'custom' (fond uploadé réutilisable). */
+    customBackgroundUrl: z.string().url().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.backgroundOption === 'custom' && !data.customBackgroundUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['customBackgroundUrl'],
+        message: "customBackgroundUrl est requis quand backgroundOption vaut 'custom'",
+      });
+    }
+  });
+export type CreateBatchRequest = z.infer<typeof createBatchRequestSchema>;
+
+/**
+ * Réponse de POST /generations/batch : id + statut de chaque génération créée
+ * (`failed` si la soumission fal de CET item a échoué — crédit remboursé).
+ */
+export const createBatchResponseSchema = z.object({
+  generations: z.array(
+    z.object({
+      id: z.string().uuid(),
+      status: generationStatusSchema,
+    }),
+  ),
+});
+export type CreateBatchResponse = z.infer<typeof createBatchResponseSchema>;
 
 // ─────────────────────────────────────────────────────────────────
 // Gallery — GET /gallery · POST /gallery (écran 06 « Mes créations »)
