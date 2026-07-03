@@ -3,6 +3,8 @@ import {
   MANNEQUIN_IMAGES,
   NANO_CUSTOM_BACKGROUND_LAST_SUFFIX,
   NANO_CUSTOM_BACKGROUND_SUFFIX,
+  NANO_MODEL_BG_STUDIO,
+  NANO_MODEL_DRESS_PROMPT,
   NANO_MULTI_VIEW_SUFFIX,
   NANO_PROMPTS,
   type BackgroundOption,
@@ -66,6 +68,15 @@ function mannequinImageUrl(option: MannequinOption): string {
 }
 
 /**
+ * Rendu « sur modèle » avec un mannequin de référence (femme/homme/silhouette) :
+ * servi par Nano Banana (habillage), le mannequin devient la 1ʳᵉ image. Le cas
+ * mannequin=`studio` reste un packshot ghost (pas de personne).
+ */
+function isModelDress(params: GenerationParams): boolean {
+  return params.renderType === 'model' && params.mannequinOption !== 'studio';
+}
+
+/**
  * FASHN v1.6 : { model_image, garment_image } → images[0].url
  * Le try-on ne prend qu'UNE image vêtement : seule la vue avant (source) est
  * utilisée, les `extraImageUrls` sont ignorées.
@@ -110,18 +121,29 @@ const klingAdapter: ProviderAdapter = {
 };
 
 /**
- * Prompt Nano Banana par type de rendu. `model` n'arrive ici que via le repli
- * mannequin=studio (ghost mannequin) → prompt `studio`.
+ * Prompt Nano Banana par type de rendu :
+ * - `model` + mannequin femme/homme/silhouette → prompt d'habillage (le mannequin
+ *   est la 1ʳᵉ image, cf. {@link isModelDress}) ;
+ * - `model` + mannequin `studio` → packshot ghost (prompt `studio`, pas de personne) ;
+ * - `hanger`/`folded`/`studio` → prompt de fidélité par type.
  *
  * Multi-détails : si des vues additionnelles sont fournies, le prompt indique
  * qu'il s'agit de plusieurs vues du MÊME vêtement à combiner ; le suffixe fond
  * custom pointe alors vers la DERNIÈRE image (le fond n'est plus la 2ᵉ).
  */
 function nanoPrompt(params: GenerationParams): string {
-  const base = params.renderType === 'model' ? NANO_PROMPTS.studio : NANO_PROMPTS[params.renderType];
   const hasExtraViews = extraViewUrls(params).length > 0;
-  const prompt = hasExtraViews ? base + NANO_MULTI_VIEW_SUFFIX : base;
   const hasCustomBackground = params.backgroundOption === 'custom' && !!params.customBackgroundUrl;
+
+  // « Sur modèle » : on habille le mannequin (1ʳᵉ image) avec le vêtement.
+  if (isModelDress(params)) {
+    let prompt = NANO_MODEL_DRESS_PROMPT;
+    if (hasExtraViews) prompt += NANO_MULTI_VIEW_SUFFIX;
+    return prompt + (hasCustomBackground ? NANO_CUSTOM_BACKGROUND_LAST_SUFFIX : NANO_MODEL_BG_STUDIO);
+  }
+
+  const base = params.renderType === 'model' ? NANO_PROMPTS.studio : NANO_PROMPTS[params.renderType];
+  const prompt = hasExtraViews ? base + NANO_MULTI_VIEW_SUFFIX : base;
   if (!hasCustomBackground) return prompt;
   return prompt + (hasExtraViews ? NANO_CUSTOM_BACKGROUND_LAST_SUFFIX : NANO_CUSTOM_BACKGROUND_SUFFIX);
 }
@@ -137,9 +159,12 @@ const nanobananaAdapter: ProviderAdapter = {
       params.backgroundOption === 'custom' && params.customBackgroundUrl
         ? [params.customBackgroundUrl]
         : [];
+    // « Sur modèle » : le mannequin de référence est la 1ʳᵉ image (Nano l'habille),
+    // puis le vêtement (source + vues), et enfin le fond custom éventuel.
+    const mannequin = isModelDress(params) ? [mannequinImageUrl(params.mannequinOption)] : [];
     return {
       prompt: nanoPrompt(params),
-      image_urls: [params.sourceImageUrl, ...extraViews, ...customBackground],
+      image_urls: [...mannequin, params.sourceImageUrl, ...extraViews, ...customBackground],
       num_images: 1,
       output_format: 'png',
     };

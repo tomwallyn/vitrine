@@ -11,9 +11,10 @@ import { ADAPTERS, type ProviderAdapter } from './adapters.js';
 /**
  * Router IA — mapping type de rendu → { provider, endpoint fal, adapter }.
  *
- * - `model`  → try-on : FASHN v1.6 par défaut, **switchable vers Kling** via
- *              l'env `AI_ONMODEL_PROVIDER=fashn|kling` (décision benchmark M3.0,
- *              swap sans redéploiement de code).
+ * - `model`  → **Nano Banana par défaut** : on habille le mannequin de référence
+ *              (1ʳᵉ image) avec le vêtement (meilleure fidélité que le try-on FASHN
+ *              sur nos photos sur cintre, cf. R&D 2026-07). Switchable vers
+ *              `fashn`/`kling` via l'env `AI_ONMODEL_PROVIDER` (sans redéploiement).
  *              Cas particulier mannequin=`studio` (ghost mannequin, pas d'image
  *              de personne) → Nano Banana avec le prompt packshot `studio`.
  * - `hanger` / `folded` / `studio` → Nano Banana Pro edit, prompt de fidélité
@@ -24,12 +25,16 @@ import { ADAPTERS, type ProviderAdapter } from './adapters.js';
  * (TODO M3+ : détourage + compositing post-rendu) — le fond est ignoré.
  */
 
-const onModelProviderSchema = z.enum(['fashn', 'kling']);
+const onModelProviderSchema = z.enum(['nanobanana', 'fashn', 'kling']);
 
-/** Provider du rendu « sur modèle » : env AI_ONMODEL_PROVIDER, défaut FASHN. */
+/**
+ * Provider du rendu « sur modèle » : env AI_ONMODEL_PROVIDER, **défaut Nano Banana**
+ * (habillage du mannequin — meilleure fidélité que le try-on FASHN sur nos photos
+ * sur cintre, cf. R&D 2026-07). Bascule possible vers `fashn`/`kling` sans redéploiement.
+ */
 export function resolveOnModelProvider(): Provider {
   const parsed = onModelProviderSchema.safeParse(process.env.AI_ONMODEL_PROVIDER);
-  return parsed.success ? parsed.data : 'fashn';
+  return parsed.success ? parsed.data : 'nanobanana';
 }
 
 export interface AiRoute {

@@ -89,6 +89,25 @@ export const NANO_CUSTOM_BACKGROUND_LAST_SUFFIX =
   'en intégrant le vêtement dessus de façon naturelle (perspective et éclairage cohérents).';
 
 /**
+ * Rendu « sur modèle » servi par Nano Banana (au lieu du try-on FASHN) :
+ * la PREMIÈRE image passée est le mannequin de référence (cohérent d'un visuel
+ * à l'autre), la/les suivante(s) sont le vêtement (source + vues additionnelles).
+ * On habille le mannequin en gardant son identité et la fidélité du vêtement.
+ * Le fond est ajouté par un suffixe (studio par défaut, ou custom en dernière image).
+ */
+export const NANO_MODEL_DRESS_PROMPT =
+  'Photo e-commerce plein pied, photoréaliste : la personne de la PREMIÈRE image ' +
+  '(garde son visage, son corps, ses cheveux et sa pose EXACTEMENT identiques) porte le ' +
+  'vêtement présenté dans la ou les image(s) SUIVANTE(S). Retire tout cintre et habille-la ' +
+  'avec ce vêtement de façon naturelle et bien ajustée (drapé réaliste). Garde la texture, ' +
+  'le motif, la couleur, la forme et les détails du vêtement (col, boutons, coutures, zip, ' +
+  'logos) STRICTEMENT identiques. Conserve le bas du mannequin (legging gris).';
+
+/** Suffixe fond studio par défaut du rendu « sur modèle » Nano. */
+export const NANO_MODEL_BG_STUDIO =
+  ' Garde un fond studio gris clair uni, éclairage doux homogène.';
+
+/**
  * Images de mannequins « de base » pour le try-on (FASHN & Kling exigent une photo
  * de personne : model_image / human_image_url).
  *
