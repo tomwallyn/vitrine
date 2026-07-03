@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useApi } from '@/lib/api';
 import { useRenderDraft } from '@/lib/render-draft';
@@ -18,6 +18,9 @@ const FLASH_LABELS: Record<FlashMode, string> = { auto: 'Auto', on: 'On', off: '
 export default function CaptureScreen() {
   const router = useRouter();
   const api = useApi();
+  // fullScreenModal : on applique les insets à la main (SafeAreaView peut
+  // rapporter des insets nuls au premier rendu dans un modal plein écran).
+  const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
 
   const cameraRef = useRef<CameraView>(null);
@@ -86,20 +89,21 @@ export default function CaptureScreen() {
 
   if (!permission.granted) {
     return (
-      <SafeAreaView className="flex-1 bg-ink">
-        <View className="flex-row items-center justify-between px-5 py-4">
+      <View className="flex-1 bg-ink" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
+        <View className="flex-row items-center justify-between px-5 py-3">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Fermer"
             onPress={() => router.back()}
-            className="h-10 w-10 items-center justify-center rounded-full bg-gray3/40"
+            hitSlop={12}
+            className="h-11 w-11 items-center justify-center rounded-full bg-gray3/60 active:bg-gray3/80"
           >
-            <Ionicons name="close" size={20} color={colors.offwhite} />
+            <Ionicons name="close" size={24} color={colors.offwhite} />
           </Pressable>
           <Text className="font-heading text-sm uppercase tracking-[2px] text-offwhite">
             Photographier
           </Text>
-          <View className="w-10" />
+          <View className="w-11" />
         </View>
 
         <View className="flex-1 items-center justify-center px-8">
@@ -128,7 +132,7 @@ export default function CaptureScreen() {
             </Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -142,16 +146,17 @@ export default function CaptureScreen() {
         flash={flash}
       />
 
-      <SafeAreaView className="flex-1">
-        {/* Header : fermer · titre · flash ⚡ Auto */}
-        <View className="flex-row items-center justify-between px-5 py-4">
+      <View className="flex-1" style={{ paddingTop: insets.top }}>
+        {/* Header : fermer · titre · flash ⚡ Auto — sous l'encoche/Dynamic Island */}
+        <View className="flex-row items-center justify-between px-5 py-3">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Fermer"
             onPress={() => router.back()}
-            className="h-10 w-10 items-center justify-center rounded-full bg-ink/50"
+            hitSlop={12}
+            className="h-11 w-11 items-center justify-center rounded-full bg-ink/60 active:bg-ink/80"
           >
-            <Ionicons name="close" size={20} color={colors.offwhite} />
+            <Ionicons name="close" size={24} color={colors.offwhite} />
           </Pressable>
           <Text className="font-heading text-sm uppercase tracking-[2px] text-offwhite">
             Photographier
@@ -160,7 +165,8 @@ export default function CaptureScreen() {
             accessibilityRole="button"
             accessibilityLabel={`Flash : ${FLASH_LABELS[flash]}`}
             onPress={cycleFlash}
-            className="h-10 flex-row items-center justify-center rounded-full bg-ink/50 px-3"
+            hitSlop={8}
+            className="h-11 min-w-[44px] flex-row items-center justify-center rounded-full bg-ink/60 px-4 active:bg-ink/80"
           >
             <Text className="font-body-bold text-xs text-offwhite">⚡ {FLASH_LABELS[flash]}</Text>
           </Pressable>
@@ -176,8 +182,11 @@ export default function CaptureScreen() {
           </View>
         </View>
 
-        {/* Contrôles bas : galerie · obturateur · switch cam */}
-        <View className="flex-row items-center justify-around px-10 pb-8 pt-4">
+        {/* Contrôles bas : galerie · obturateur · switch cam — au-dessus de la home bar */}
+        <View
+          className="flex-row items-center justify-around px-10 pt-4"
+          style={{ paddingBottom: Math.max(insets.bottom, 16) + 16 }}
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Importer depuis la galerie"
@@ -210,7 +219,7 @@ export default function CaptureScreen() {
             <Ionicons name="camera-reverse-outline" size={20} color={colors.offwhite} />
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

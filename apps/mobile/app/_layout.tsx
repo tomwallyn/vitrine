@@ -20,6 +20,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { cssInterop } from 'nativewind';
 import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors } from '@vitrine/shared';
@@ -67,12 +68,19 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={!!isSignedIn}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="my-shop" />
-        <Stack.Screen name="render-presets" />
-        <Stack.Screen name="billing" />
-        <Stack.Screen name="support" />
+        {/* Écrans secondaires : présentés en modal, fermables au swipe. */}
+        <Stack.Screen name="my-shop" options={{ presentation: 'modal', gestureEnabled: true }} />
+        <Stack.Screen
+          name="render-presets"
+          options={{ presentation: 'modal', gestureEnabled: true }}
+        />
+        <Stack.Screen name="billing" options={{ presentation: 'modal', gestureEnabled: true }} />
+        <Stack.Screen name="support" options={{ presentation: 'modal', gestureEnabled: true }} />
         <Stack.Screen name="capture" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Screen name="render-config" />
+        <Stack.Screen
+          name="render-config"
+          options={{ presentation: 'modal', gestureEnabled: true }}
+        />
         <Stack.Screen name="generating/[id]" options={{ gestureEnabled: false }} />
         <Stack.Screen name="result/[id]" />
       </Stack.Protected>
@@ -96,11 +104,13 @@ export default function RootLayout() {
   }
 
   return (
-    <ClerkProvider tokenCache={tokenCache} publishableKey={clerkPublishableKey}>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="dark" />
-        <RootNavigator />
-      </QueryClientProvider>
-    </ClerkProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ClerkProvider tokenCache={tokenCache} publishableKey={clerkPublishableKey}>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style="dark" />
+          <RootNavigator />
+        </QueryClientProvider>
+      </ClerkProvider>
+    </GestureHandlerRootView>
   );
 }

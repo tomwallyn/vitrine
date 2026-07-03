@@ -12,7 +12,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -86,6 +93,30 @@ export default function ResultScreen() {
 
   const [variantsOpen, setVariantsOpen] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<RenderType[]>([]);
+
+  // Bottom-sheet « Variantes » : fermable au swipe vers le bas + tap overlay.
+  const insets = useSafeAreaInsets();
+  const sheetOffset = useSharedValue(0);
+  const closeVariants = () => setVariantsOpen(false);
+  const openVariants = () => {
+    sheetOffset.value = 0;
+    setVariantsOpen(true);
+  };
+  const sheetPan = Gesture.Pan()
+    .activeOffsetY(12)
+    .onChange((event) => {
+      sheetOffset.value = Math.max(0, event.translationY);
+    })
+    .onEnd((event) => {
+      if (event.translationY > 110 || event.velocityY > 900) {
+        runOnJS(closeVariants)();
+      } else {
+        sheetOffset.value = withSpring(0, { damping: 22, stiffness: 260 });
+      }
+    });
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: sheetOffset.value }],
+  }));
 
   const { data, isPending, error } = useQuery({
     queryKey: ['generation', id],
@@ -273,11 +304,7 @@ export default function ResultScreen() {
             busy={regenerateMutation.isPending}
             onPress={() => regenerateMutation.mutate()}
           />
-          <ActionChip
-            icon="albums-outline"
-            label="Variantes"
-            onPress={() => setVariantsOpen(true)}
-          />
+          <ActionChip icon="albums-outline" label="Variantes" onPress={openVariants} />
           <ActionChip
             icon="download-outline"
             label="Exporter"
@@ -311,66 +338,77 @@ export default function ResultScreen() {
         visible={variantsOpen}
         transparent
         animationType="slide"
-        onRequestClose={() => setVariantsOpen(false)}
+        onRequestClose={closeVariants}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Fermer"
-          className="flex-1 justify-end bg-ink/40"
-          onPress={() => setVariantsOpen(false)}
-        >
-          <Pressable className="rounded-t-3xl bg-paper px-5 pb-8 pt-5" onPress={() => {}}>
-            <View className="mb-4 h-1 w-10 self-center rounded-full bg-paper3" />
-            <Text className="font-heading-bold text-lg text-ink">Variantes</Text>
-            <Text className="mt-1 font-body text-xs text-gray2">
-              Générez le même vêtement sous d&apos;autres styles · {GENERATION_COST_CREDITS}{' '}
-              crédit par variante
-            </Text>
+        {/* GestureHandlerRootView requis dans un Modal natif (Android). */}
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Fermer"
+            className="flex-1 justify-end bg-ink/40"
+            onPress={closeVariants}
+          >
+            <GestureDetector gesture={sheetPan}>
+              <Animated.View style={sheetAnimatedStyle}>
+                <Pressable
+                  className="rounded-t-3xl bg-paper px-5 pt-5"
+                  style={{ paddingBottom: Math.max(insets.bottom, 24) + 8 }}
+                  onPress={() => {}}
+                >
+                  <View className="mb-4 h-1 w-10 self-center rounded-full bg-paper3" />
+                  <Text className="font-heading-bold text-lg text-ink">Variantes</Text>
+                  <Text className="mt-1 font-body text-xs text-gray2">
+                    Générez le même vêtement sous d&apos;autres styles · {GENERATION_COST_CREDITS}{' '}
+                    crédit par variante
+                  </Text>
 
-            <View className="mt-4 gap-2.5">
-              {otherRenderTypes.map((renderType) => {
-                const selected = selectedVariants.includes(renderType);
-                return (
-                  <Pressable
-                    key={renderType}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: selected }}
-                    onPress={() => toggleVariant(renderType)}
-                    className={`flex-row items-center justify-between rounded-2xl border px-4 py-3.5 ${
-                      selected ? 'border-ink bg-ink' : 'border-paper3 bg-white'
-                    }`}
-                  >
-                    <Text
-                      className={`font-body-semibold text-sm ${
-                        selected ? 'text-offwhite' : 'text-ink'
-                      }`}
-                    >
-                      {RENDER_TYPE_LABELS[renderType]}
-                    </Text>
-                    <Ionicons
-                      name={selected ? 'checkmark-circle' : 'ellipse-outline'}
-                      size={20}
-                      color={selected ? colors.offwhite : colors.gray}
-                    />
-                  </Pressable>
-                );
-              })}
-            </View>
+                  <View className="mt-4 gap-2.5">
+                    {otherRenderTypes.map((renderType) => {
+                      const selected = selectedVariants.includes(renderType);
+                      return (
+                        <Pressable
+                          key={renderType}
+                          accessibilityRole="checkbox"
+                          accessibilityState={{ checked: selected }}
+                          onPress={() => toggleVariant(renderType)}
+                          className={`flex-row items-center justify-between rounded-2xl border px-4 py-3.5 ${
+                            selected ? 'border-ink bg-ink' : 'border-paper3 bg-white'
+                          }`}
+                        >
+                          <Text
+                            className={`font-body-semibold text-sm ${
+                              selected ? 'text-offwhite' : 'text-ink'
+                            }`}
+                          >
+                            {RENDER_TYPE_LABELS[renderType]}
+                          </Text>
+                          <Ionicons
+                            name={selected ? 'checkmark-circle' : 'ellipse-outline'}
+                            size={20}
+                            color={selected ? colors.offwhite : colors.gray}
+                          />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
 
-            <Button
-              className="mt-5"
-              label={
-                variantsMutation.isPending
-                  ? 'Lancement des variantes…'
-                  : selectedVariants.length > 0
-                    ? `Générer ${selectedVariants.length} variante${selectedVariants.length > 1 ? 's' : ''} · ${variantsCost} crédit${variantsCost > 1 ? 's' : ''}`
-                    : 'Sélectionnez un style'
-              }
-              disabled={selectedVariants.length === 0 || variantsMutation.isPending}
-              onPress={() => variantsMutation.mutate(selectedVariants)}
-            />
+                  <Button
+                    className="mt-5"
+                    label={
+                      variantsMutation.isPending
+                        ? 'Lancement des variantes…'
+                        : selectedVariants.length > 0
+                          ? `Générer ${selectedVariants.length} variante${selectedVariants.length > 1 ? 's' : ''} · ${variantsCost} crédit${variantsCost > 1 ? 's' : ''}`
+                          : 'Sélectionnez un style'
+                    }
+                    disabled={selectedVariants.length === 0 || variantsMutation.isPending}
+                    onPress={() => variantsMutation.mutate(selectedVariants)}
+                  />
+                </Pressable>
+              </Animated.View>
+            </GestureDetector>
           </Pressable>
-        </Pressable>
+        </GestureHandlerRootView>
       </Modal>
     </SafeAreaView>
   );
