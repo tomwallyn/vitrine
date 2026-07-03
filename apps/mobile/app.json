@@ -14,18 +14,25 @@
     },
     "android": {
       "package": "app.vitrine.mobile",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0d0d0d"
+      }
     },
     "web": {
       "bundler": "metro",
-      "output": "static"
+      "output": "static",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#f5f3ec"
+          "backgroundColor": "#f5f3ec",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160
         }
       ],
       "expo-secure-store",
@@ -51,6 +58,7 @@
       ],
       "./plugins/withRevenueCat.js",
       "expo-font"
-    ]
+    ],
+    "icon": "./assets/icon.png"
   }
 }
