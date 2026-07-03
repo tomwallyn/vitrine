@@ -1,5 +1,7 @@
 import {
   meResponseSchema,
+  registerPushTokenRequestSchema,
+  registerPushTokenResponseSchema,
   shopSettingsSchema,
   timeSavedMinutes,
   updateMeRequestSchema,
@@ -9,7 +11,7 @@ import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import { getDb, getTxDb, type Db } from '../db/client.js';
-import { shops } from '../db/schema.js';
+import { pushTokens, shops } from '../db/schema.js';
 import { getBalance } from '../services/credits.js';
 import { countDoneGenerations } from '../services/generations.js';
 import { serializeShop, upsertShopByAuthId, type ShopRow } from '../services/shops.js';
@@ -34,6 +36,8 @@ async function buildMeResponse(db: Db, shop: ShopRow): Promise<MeResponse> {
  * Profil / boutique (écran 08) :
  * - GET  /me : shop courant (créé à la première connexion) + solde + stats.
  * - PATCH /me : met à jour name / city / avatarUrl / settings (merge partiel).
+ * - POST /me/push-token : enregistre le token push Expo de l'appareil courant
+ *   (notifications de fin de génération, cf. services/push.ts).
  */
 export function registerMeRoutes(app: FastifyInstance): void {
   app.get('/me', async (req): Promise<MeResponse> => {
@@ -71,5 +75,30 @@ export function registerMeRoutes(app: FastifyInstance): void {
     }
 
     return buildMeResponse(db, updated);
+  });
+
+  app.post('/me/push-token', async (req, reply) => {
+    const parsed = registerPushTokenRequestSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: 'Bad Request', details: parsed.error.flatten().fieldErrors });
+    }
+
+    const db = getDb();
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
+
+    // Upsert par token : ré-enregistrer est idempotent, et un appareil qui
+    // change de compte est ré-attaché au shop courant (jamais de doublon).
+    const { token, platform } = parsed.data;
+    await db
+      .insert(pushTokens)
+      .values({ shopId: shop.id, token, platform })
+      .onConflictDoUpdate({
+        target: pushTokens.token,
+        set: { shopId: shop.id, platform },
+      });
+
+    return registerPushTokenResponseSchema.parse({ ok: true });
   });
 }

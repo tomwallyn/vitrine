@@ -29,6 +29,13 @@
       "when": 1783064266330,
       "tag": "0003_lowly_steel_serpent",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783065922836,
+      "tag": "0004_loving_thaddeus_ross",
+      "breakpoints": true
     }
   ]
 }

@@ -147,6 +147,23 @@ export const backgrounds = pgTable('backgrounds', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Tokens push Expo (`ExponentPushToken[...]`) — un shop peut avoir plusieurs
+ * appareils (1 ligne par appareil). `token` unique : un appareil qui change de
+ * compte est ré-attaché au dernier shop connecté (upsert ON CONFLICT (token)).
+ * Les tokens invalides (DeviceNotRegistered) sont purgés à l'envoi.
+ */
+export const pushTokens = pgTable('push_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  shopId: uuid('shop_id')
+    .notNull()
+    .references(() => shops.id),
+  token: text('token').notNull().unique(),
+  /** 'ios' | 'android' (miroir de pushPlatformSchema de @vitrine/shared). */
+  platform: text('platform').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** « Mes créations » (écran 06) — titre + tags pour filtres. */
 export const galleryItems = pgTable(
   'gallery_items',

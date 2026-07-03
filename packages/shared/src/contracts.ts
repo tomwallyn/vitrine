@@ -376,6 +376,31 @@ export const updateMeRequestSchema = z.object({
 export type UpdateMeRequest = z.infer<typeof updateMeRequestSchema>;
 
 // ─────────────────────────────────────────────────────────────────
+// Push — POST /me/push-token (notifications Expo de fin de génération)
+// ─────────────────────────────────────────────────────────────────
+
+/** Plateforme de l'appareil enregistrant le token Expo. */
+export const pushPlatformSchema = z.enum(['ios', 'android']);
+export type PushPlatform = z.infer<typeof pushPlatformSchema>;
+
+/**
+ * Body de POST /me/push-token — enregistre le token push Expo de l'appareil
+ * courant (`ExponentPushToken[...]`). Upsert : un token qui change de compte
+ * suit le dernier shop connecté sur l'appareil.
+ */
+export const registerPushTokenRequestSchema = z.object({
+  /** Token push Expo de l'appareil (Notifications.getExpoPushTokenAsync). */
+  token: z.string().trim().min(1).max(200),
+  platform: pushPlatformSchema,
+});
+export type RegisterPushTokenRequest = z.infer<typeof registerPushTokenRequestSchema>;
+
+export const registerPushTokenResponseSchema = z.object({
+  ok: z.literal(true),
+});
+export type RegisterPushTokenResponse = z.infer<typeof registerPushTokenResponseSchema>;
+
+// ─────────────────────────────────────────────────────────────────
 // Backgrounds — GET /backgrounds · POST /backgrounds (fonds réutilisables)
 // ─────────────────────────────────────────────────────────────────
 

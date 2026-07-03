@@ -11,6 +11,7 @@ import { getFalQueueResult, getFalQueueStatus, submitToFal } from './ai/client.j
 import { endpointForProvider, resolveAiRoute } from './ai/config.js';
 import { extractProductInfo } from './ai/product-ocr.js';
 import { holdCredit, refundCredit } from './credits.js';
+import { sendPushToShop } from './push.js';
 import { signedReadUrl, trySignedReadUrl, uploadResultImage } from './storage.js';
 
 export type GenerationRow = typeof generations.$inferSelect;
@@ -189,6 +190,19 @@ export async function finalizeGenerationFailure(
     .where(eq(generations.id, row.id))
     .returning();
   log.info({ generationId: row.id, error }, 'Génération fal échouée — crédit remboursé');
+
+  // Push Expo fire-and-forget (jamais de throw ni de blocage, cf. push.ts) —
+  // envoyé même app au premier plan (le handler de notifs côté client filtre).
+  void sendPushToShop(
+    db,
+    row.shopId,
+    {
+      title: 'La génération a échoué',
+      body: 'Crédit remboursé — tu peux relancer quand tu veux.',
+      data: { generationId: row.id },
+    },
+    log,
+  );
   return failed ?? { ...row, status: 'failed' as const, error };
 }
 
@@ -239,6 +253,19 @@ export async function finalizeGenerationSuccess(
     .returning();
   log.info({ generationId: row.id, resultImageUrl }, 'Génération terminée (done)');
   const doneRow = done ?? { ...row, status: 'done' as const, resultImageUrl, error: null };
+
+  // Push Expo fire-and-forget (jamais de throw ni de blocage, cf. push.ts) —
+  // envoyé même app au premier plan (le handler de notifs côté client filtre).
+  void sendPushToShop(
+    db,
+    row.shopId,
+    {
+      title: 'Ton visuel VITRINE est prêt',
+      body: 'Ouvre l’app pour le découvrir.',
+      data: { generationId: row.id },
+    },
+    log,
+  );
 
   // OCR étiquette → fiche produit : fire-and-forget APRÈS le passage en done.
   // Ne bloque ni ne fait échouer la finalisation (la promesse ne rejette
