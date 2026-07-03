@@ -407,7 +407,10 @@ export type RegisterPushTokenResponse = z.infer<typeof registerPushTokenResponse
 export const backgroundSchema = z.object({
   id: z.string().uuid(),
   shopId: z.string().uuid(),
+  /** URL GCS canonique (privée) — sert au choix/à l'envoi de la génération. */
   imageUrl: z.string().url(),
+  /** URL signée GET (courte durée) — pour afficher la vignette dans l'app. */
+  displayUrl: z.string().url(),
   name: z.string(),
   createdAt: z.string(),
 });

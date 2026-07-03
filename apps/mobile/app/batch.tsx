@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +11,7 @@ import { CreditBadge } from '@/components/CreditBadge';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { isInsufficientCredits, useApi } from '@/lib/api';
 import { useBatchDraft, type BatchItem } from '@/lib/batch-draft';
+import { useCaptureResult } from '@/lib/capture-result';
 import { useGenerationTracker } from '@/lib/generation-tracker';
 import { uploadImageAsync } from '@/lib/upload';
 import {
@@ -61,26 +63,28 @@ export default function BatchScreen() {
     created.forEach(uploadItem);
   };
 
-  /** Prise d'une photo via l'appareil (confirmation native) → ajout au lot. */
-  const addFromCamera = async () => {
+  /** Appareil photo : ouvre l'écran caméra custom de l'app (identité + confirmation). */
+  const addFromCamera = () => {
     const remaining = MAX_BATCH_ITEMS - useBatchDraft.getState().items.length;
     if (remaining <= 0) {
       Alert.alert('Lot complet', `Un lot contient au maximum ${MAX_BATCH_ITEMS} pièces.`);
       return;
     }
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert(
-        'Accès caméra refusé',
-        'Autorisez la caméra dans les réglages pour prendre une photo.',
-      );
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
-    if (result.canceled || result.assets.length === 0) return;
-    const created = useBatchDraft.getState().addItems(result.assets.map((a) => a.uri));
-    created.forEach(uploadItem);
+    useCaptureResult.getState().request('batch');
+    router.push('/capture?mode=return');
   };
+
+  // Retour de l'écran caméra custom → ajout de la photo au lot + upload.
+  const captureUri = useCaptureResult((s) => s.uri);
+  useEffect(() => {
+    if (!captureUri) return;
+    const res = useCaptureResult.getState().takeFor('batch');
+    if (res) {
+      const created = useBatchDraft.getState().addItems([res.uri]);
+      created.forEach(uploadItem);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [captureUri]);
 
   /** Choix de la source pour ajouter des pièces : appareil photo ou galerie. */
   const addPhotos = () => {

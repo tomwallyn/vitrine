@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +10,7 @@ import { Button } from '@/components/Button';
 import { CreditBadge } from '@/components/CreditBadge';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
+import { useCaptureResult } from '@/lib/capture-result';
 import { useRenderDraft, type UploadStatus } from '@/lib/render-draft';
 import { uploadImageAsync } from '@/lib/upload';
 import {
@@ -80,19 +81,20 @@ export default function DetailAnglesScreen() {
       );
   };
 
-  const pickFromCamera = async (id: SlotId) => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert(
-        'Accès caméra requis',
-        'Autorisez la caméra dans les réglages pour photographier vos vêtements.',
-      );
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
-    const asset = result.assets?.[0];
-    if (!result.canceled && asset) uploadSlot(id, asset.uri);
+  /** Appareil photo : ouvre l'écran caméra custom de l'app (identité + confirmation). */
+  const pickFromCamera = (id: SlotId) => {
+    useCaptureResult.getState().request(`slot:${id}`);
+    router.push('/capture?mode=return');
   };
+
+  // Retour de l'écran caméra custom → upload de la photo dans le bon slot.
+  const captureUri = useCaptureResult((s) => s.uri);
+  useEffect(() => {
+    if (!captureUri) return;
+    const res = useCaptureResult.getState().takeFor('slot:');
+    if (res) uploadSlot(res.target.slice('slot:'.length) as SlotId, res.uri);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [captureUri]);
 
   const pickFromGallery = async (id: SlotId) => {
     const result = await ImagePicker.launchImageLibraryAsync({

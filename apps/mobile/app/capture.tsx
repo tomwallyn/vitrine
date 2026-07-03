@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions, type CameraType, type FlashMode } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useApi } from '@/lib/api';
+import { useCaptureResult } from '@/lib/capture-result';
 import { useRenderDraft } from '@/lib/render-draft';
 import { uploadImageAsync } from '@/lib/upload';
 import { colors } from '@vitrine/shared';
@@ -18,6 +19,8 @@ const FLASH_LABELS: Record<FlashMode, string> = { auto: 'Auto', on: 'On', off: '
 export default function CaptureScreen() {
   const router = useRouter();
   const api = useApi();
+  // mode 'return' : caméra réutilisée par multi-détails / lot → rend la photo.
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
   // fullScreenModal : on applique les insets à la main (SafeAreaView peut
   // rapporter des insets nuls au premier rendu dans un modal plein écran).
   const insets = useSafeAreaInsets();
@@ -70,12 +73,26 @@ export default function CaptureScreen() {
     }
   };
 
-  /** « Valider » : confirme la photo prévisualisée → brouillon + upload + écran 03. */
+  /**
+   * Photo prête (validée après confirmation, ou choisie en galerie) :
+   * - mode 'return' (multi-détails / lot) → rend l'URI à l'écran appelant ;
+   * - sinon (flux « une photo ») → brouillon + upload + écran 03.
+   */
+  const onPhotoReady = (uri: string) => {
+    if (mode === 'return') {
+      useCaptureResult.getState().deliver(uri);
+      router.back();
+      return;
+    }
+    startDraftAndUpload(uri);
+  };
+
+  /** « Valider » : confirme la photo prévisualisée. */
   const validatePhoto = () => {
     if (!preview) return;
     const uri = preview;
     setPreview(null);
-    startDraftAndUpload(uri);
+    onPhotoReady(uri);
   };
 
   const pickFromGallery = async () => {
@@ -87,7 +104,7 @@ export default function CaptureScreen() {
         quality: 0.9,
       });
       const asset = result.assets?.[0];
-      if (!result.canceled && asset) startDraftAndUpload(asset.uri);
+      if (!result.canceled && asset) onPhotoReady(asset.uri);
     } finally {
       setBusy(false);
     }

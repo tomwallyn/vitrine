@@ -212,7 +212,7 @@ export default function BatchStyleScreen() {
                     }`}
                   >
                     <Image
-                      source={{ uri: bg.imageUrl }}
+                      source={{ uri: bg.displayUrl }}
                       className="h-16 w-16 bg-paper3"
                       resizeMode="cover"
                     />

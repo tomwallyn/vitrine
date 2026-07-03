@@ -10,15 +10,21 @@ import type { FastifyInstance } from 'fastify';
 import { getDb, getTxDb } from '../db/client.js';
 import { backgrounds } from '../db/schema.js';
 import { upsertShopByAuthId } from '../services/shops.js';
+import { trySignedReadUrl } from '../services/storage.js';
 
 type BackgroundRow = typeof backgrounds.$inferSelect;
 
-/** Ligne Drizzle → contrat `Background` de @vitrine/shared. */
-function serializeBackground(row: BackgroundRow): Background {
+/**
+ * Ligne Drizzle → contrat `Background`. `imageUrl` reste l'URL canonique
+ * (privée, pour le choix/l'envoi), `displayUrl` est une URL signée GET pour
+ * afficher la vignette dans l'app (le bucket est privé).
+ */
+async function serializeBackground(row: BackgroundRow): Promise<Background> {
   return {
     id: row.id,
     shopId: row.shopId,
     imageUrl: row.imageUrl,
+    displayUrl: await trySignedReadUrl(row.imageUrl),
     name: row.name,
     createdAt: row.createdAt.toISOString(),
   };
@@ -39,7 +45,9 @@ export function registerBackgroundRoutes(app: FastifyInstance): void {
       .from(backgrounds)
       .where(eq(backgrounds.shopId, shop.id))
       .orderBy(desc(backgrounds.createdAt));
-    return backgroundsResponseSchema.parse({ backgrounds: rows.map(serializeBackground) });
+    return backgroundsResponseSchema.parse({
+      backgrounds: await Promise.all(rows.map(serializeBackground)),
+    });
   });
 
   app.post('/backgrounds', async (req, reply) => {
@@ -60,6 +68,6 @@ export function registerBackgroundRoutes(app: FastifyInstance): void {
 
     return reply
       .code(201)
-      .send(createBackgroundResponseSchema.parse({ background: serializeBackground(row) }));
+      .send(createBackgroundResponseSchema.parse({ background: await serializeBackground(row) }));
   });
 }
