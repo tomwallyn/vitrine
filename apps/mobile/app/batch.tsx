@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -62,14 +61,35 @@ export default function BatchScreen() {
     created.forEach(uploadItem);
   };
 
-  // Au montage, lot vide → ouvre directement la multi-sélection galerie.
-  const autoPickedRef = useRef(false);
-  useEffect(() => {
-    if (autoPickedRef.current) return;
-    autoPickedRef.current = true;
-    if (useBatchDraft.getState().items.length === 0) void pickImages();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /** Prise d'une photo via l'appareil (confirmation native) → ajout au lot. */
+  const addFromCamera = async () => {
+    const remaining = MAX_BATCH_ITEMS - useBatchDraft.getState().items.length;
+    if (remaining <= 0) {
+      Alert.alert('Lot complet', `Un lot contient au maximum ${MAX_BATCH_ITEMS} pièces.`);
+      return;
+    }
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        'Accès caméra refusé',
+        'Autorisez la caméra dans les réglages pour prendre une photo.',
+      );
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
+    if (result.canceled || result.assets.length === 0) return;
+    const created = useBatchDraft.getState().addItems(result.assets.map((a) => a.uri));
+    created.forEach(uploadItem);
+  };
+
+  /** Choix de la source pour ajouter des pièces : appareil photo ou galerie. */
+  const addPhotos = () => {
+    Alert.alert('Ajouter des vêtements', 'Comment voulez-vous ajouter vos photos ?', [
+      { text: 'Appareil photo', onPress: () => void addFromCamera() },
+      { text: 'Galerie', onPress: () => void pickImages() },
+      { text: 'Annuler', style: 'cancel' },
+    ]);
+  };
 
   /** Réessaie l'upload d'un item en échec (même fichier). */
   const retryItem = (item: BatchItem) => {
@@ -181,15 +201,13 @@ export default function BatchScreen() {
           /* Lot vide (sélection annulée) : relance la multi-sélection */
           <Pressable
             accessibilityRole="button"
-            onPress={() => void pickImages()}
+            onPress={addPhotos}
             className="mt-5 h-44 items-center justify-center rounded-3xl border border-dashed border-paper3 bg-paper2 active:bg-paper3"
           >
-            <Ionicons name="images-outline" size={28} color={colors.gray2} />
-            <Text className="mt-2 font-body-semibold text-sm text-ink">
-              Choisir des photos
-            </Text>
+            <Ionicons name="camera-outline" size={28} color={colors.gray2} />
+            <Text className="mt-2 font-body-semibold text-sm text-ink">Ajouter des vêtements</Text>
             <Text className="mt-1 font-body text-xs text-gray">
-              Jusqu&apos;à {MAX_BATCH_ITEMS} vêtements d&apos;un coup
+              Appareil photo ou galerie · jusqu&apos;à {MAX_BATCH_ITEMS} pièces
             </Text>
           </Pressable>
         ) : (
@@ -252,13 +270,11 @@ export default function BatchScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Ajouter des photos au lot"
-                onPress={() => void pickImages()}
-                className="aspect-[3/4] w-[30%] items-center justify-center rounded-2xl border border-dashed border-paper3 bg-paper2 active:bg-paper3"
+                onPress={addPhotos}
+                className="aspect-[3/4] w-[30%] items-center justify-center gap-1.5 rounded-2xl border border-dashed border-paper3 bg-paper2 active:bg-paper3"
               >
-                <View className="h-9 w-9 items-center justify-center rounded-full bg-white">
-                  <Ionicons name="add" size={18} color={colors.ink} />
-                </View>
-                <Text className="mt-2 font-body-semibold text-xs text-ink">Ajouter</Text>
+                <Ionicons name="add" size={26} color={colors.ink} />
+                <Text className="font-body-semibold text-xs text-ink">Ajouter</Text>
               </Pressable>
             ) : null}
           </View>

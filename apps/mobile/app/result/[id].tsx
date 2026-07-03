@@ -248,6 +248,8 @@ export default function ResultScreen() {
     mutationFn: () => api.gallery.add({ generationId: id! }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      // Retour sur la galerie : la nouvelle création y apparaît (fin du flux).
+      router.replace('/(tabs)/gallery');
     },
     onError: (err) =>
       Alert.alert(

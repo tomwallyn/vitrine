@@ -3,7 +3,7 @@ import { CameraView, useCameraPermissions, type CameraType, type FlashMode } fro
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useApi } from '@/lib/api';
@@ -27,6 +27,8 @@ export default function CaptureScreen() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<FlashMode>('auto');
   const [busy, setBusy] = useState(false);
+  // Photo prise en attente de confirmation (affichée en grand : Valider/Reprendre).
+  const [preview, setPreview] = useState<string | null>(null);
 
   const cycleFlash = () => {
     setFlash((current) => {
@@ -61,10 +63,19 @@ export default function CaptureScreen() {
     setBusy(true);
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.9 });
-      if (photo?.uri) startDraftAndUpload(photo.uri);
+      // On ne continue pas tout de suite : on affiche la photo pour vérification.
+      if (photo?.uri) setPreview(photo.uri);
     } finally {
       setBusy(false);
     }
+  };
+
+  /** « Valider » : confirme la photo prévisualisée → brouillon + upload + écran 03. */
+  const validatePhoto = () => {
+    if (!preview) return;
+    const uri = preview;
+    setPreview(null);
+    startDraftAndUpload(uri);
   };
 
   const pickFromGallery = async () => {
@@ -220,6 +231,54 @@ export default function CaptureScreen() {
           </Pressable>
         </View>
       </View>
+
+      {/* Confirmation : la photo prise s'affiche en grand → Reprendre / Valider */}
+      {preview ? (
+        <View style={StyleSheet.absoluteFill} className="bg-ink">
+          <Image source={{ uri: preview }} style={StyleSheet.absoluteFill} resizeMode="contain" />
+          <View className="flex-1" style={{ paddingTop: insets.top }}>
+            <View className="flex-row items-center justify-between px-5 py-3">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Reprendre la photo"
+                onPress={() => setPreview(null)}
+                hitSlop={12}
+                className="h-11 w-11 items-center justify-center rounded-full bg-ink/60 active:bg-ink/80"
+              >
+                <Ionicons name="close" size={24} color={colors.offwhite} />
+              </Pressable>
+              <Text className="font-heading text-sm uppercase tracking-[2px] text-offwhite">
+                Vérifier la photo
+              </Text>
+              <View className="w-11" />
+            </View>
+
+            <View className="flex-1" />
+
+            <View
+              className="flex-row gap-3 px-5 pt-4"
+              style={{ paddingBottom: Math.max(insets.bottom, 16) + 16 }}
+            >
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setPreview(null)}
+                className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-full border border-offwhite/70 active:opacity-80"
+              >
+                <Ionicons name="camera-reverse-outline" size={18} color={colors.offwhite} />
+                <Text className="font-heading text-base tracking-wide text-offwhite">Reprendre</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={validatePhoto}
+                className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-full bg-offwhite active:opacity-80"
+              >
+                <Ionicons name="checkmark" size={18} color={colors.ink} />
+                <Text className="font-heading text-base tracking-wide text-ink">Valider</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
