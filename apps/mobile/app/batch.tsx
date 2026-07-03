@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -85,6 +85,16 @@ export default function BatchScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [captureUri]);
+
+  // À l'ouverture d'un lot vide, on propose d'abord le choix du style commun :
+  // l'utilisateur sait ainsi ce qui sera généré (au lieu d'un défaut caché).
+  const styleOpenedRef = useRef(false);
+  useEffect(() => {
+    if (styleOpenedRef.current) return;
+    styleOpenedRef.current = true;
+    if (useBatchDraft.getState().items.length === 0) router.push('/batch-style');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Choix de la source pour ajouter des pièces : appareil photo ou galerie. */
   const addPhotos = () => {
@@ -216,7 +226,7 @@ export default function BatchScreen() {
           </Pressable>
         ) : (
           /* Grille des pièces du lot — 3 colonnes */
-          <View className="mt-5 flex-row flex-wrap gap-3">
+          <View className="mt-5 flex-row flex-wrap gap-2">
             {items.map((item) => (
               <Pressable
                 key={item.id}
@@ -229,7 +239,7 @@ export default function BatchScreen() {
                 onPress={() => {
                   if (item.status === 'error') retryItem(item);
                 }}
-                className="aspect-[3/4] w-[30%] overflow-hidden rounded-2xl border border-paper3 bg-paper2"
+                className="aspect-square w-[31%] overflow-hidden rounded-2xl border border-paper3 bg-paper2"
               >
                 <Image
                   source={{ uri: item.localUri }}
@@ -275,7 +285,7 @@ export default function BatchScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Ajouter des photos au lot"
                 onPress={addPhotos}
-                className="aspect-[3/4] w-[30%] items-center justify-center gap-1.5 rounded-2xl border border-dashed border-paper3 bg-paper2 active:bg-paper3"
+                className="aspect-square w-[31%] items-center justify-center gap-1.5 rounded-2xl border border-dashed border-paper3 bg-paper2 active:bg-paper3"
               >
                 <Ionicons name="add" size={26} color={colors.ink} />
                 <Text className="font-body-semibold text-xs text-ink">Ajouter</Text>
