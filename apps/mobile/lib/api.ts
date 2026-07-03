@@ -7,6 +7,8 @@ import type {
   BackgroundsResponse,
   CreateBackgroundRequest,
   CreateBackgroundResponse,
+  CreateBatchRequest,
+  CreateBatchResponse,
   CreateGenerationRequest,
   CreateGenerationResponse,
   CreateVariantsRequest,
@@ -96,6 +98,14 @@ export function useApi() {
           request<CreateGenerationResponse>('POST', '/generations', payload, {
             allowStatuses: [502],
           }),
+        /**
+         * POST /generations/batch — lot avec style commun (1 crédit / item,
+         * pré-check global du solde → 402 si insuffisant). Un item dont la
+         * soumission fal échoue revient `failed` (crédit remboursé), sans
+         * bloquer le reste du lot.
+         */
+        createBatch: (payload: CreateBatchRequest) =>
+          request<CreateBatchResponse>('POST', '/generations/batch', payload),
         /** GET /generations/:id — polling écran 04. */
         get: (id: string) => request<GetGenerationResponse>('GET', `/generations/${id}`),
         /** POST /generations/:id/regenerate — mêmes params, 1 crédit. */

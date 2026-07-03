@@ -92,6 +92,14 @@ function RootNavigator() {
           name="render-config"
           options={{ presentation: 'modal', gestureEnabled: true }}
         />
+        {/* Lot de vêtements : import multiple → style commun → progression. */}
+        <Stack.Screen name="batch" options={{ presentation: 'modal', gestureEnabled: true }} />
+        <Stack.Screen
+          name="batch-style"
+          options={{ presentation: 'modal', gestureEnabled: true }}
+        />
+        {/* Quittable : le lot continue en arrière-plan (tracker global). */}
+        <Stack.Screen name="batch-progress" options={{ gestureEnabled: true }} />
         {/* Quittable : la génération continue en arrière-plan (tracker global). */}
         <Stack.Screen name="generating/[id]" options={{ gestureEnabled: true }} />
         <Stack.Screen name="result/[id]" />
