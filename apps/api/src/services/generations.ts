@@ -9,6 +9,7 @@ import { generations, shops } from '../db/schema.js';
 import { ADAPTERS } from './ai/adapters.js';
 import { getFalQueueResult, getFalQueueStatus, submitToFal } from './ai/client.js';
 import { endpointForProvider, resolveAiRoute } from './ai/config.js';
+import { extractProductInfo } from './ai/product-ocr.js';
 import { holdCredit, refundCredit } from './credits.js';
 import { signedReadUrl, trySignedReadUrl, uploadResultImage } from './storage.js';
 
@@ -53,6 +54,8 @@ export async function serializeGeneration(row: GenerationRow): Promise<Generatio
     status: row.status,
     resultImageUrl,
     error: row.error,
+    // Fiche produit OCR telle quelle (données texte, aucune URL à signer).
+    productInfo: row.productInfo ?? null,
     createdAt: row.createdAt.toISOString(),
     completedAt: row.completedAt?.toISOString() ?? null,
   };
@@ -235,7 +238,52 @@ export async function finalizeGenerationSuccess(
     .where(eq(generations.id, row.id))
     .returning();
   log.info({ generationId: row.id, resultImageUrl }, 'Génération terminée (done)');
-  return done ?? { ...row, status: 'done' as const, resultImageUrl, error: null };
+  const doneRow = done ?? { ...row, status: 'done' as const, resultImageUrl, error: null };
+
+  // OCR étiquette → fiche produit : fire-and-forget APRÈS le passage en done.
+  // Ne bloque ni ne fait échouer la finalisation (la promesse ne rejette
+  // jamais, cf. extractAndStoreProductInfo) — la fiche apparaît au poll suivant.
+  void extractAndStoreProductInfo(db, doneRow, log);
+  return doneRow;
+}
+
+/**
+ * OCR de la fiche produit (best-effort, non bloquant) : si la génération a une
+ * photo d'étiquette et/ou de détail matière (`extra_images.label` / `.detail`)
+ * et pas encore de `product_info`, lit ces images avec le modèle vision fal
+ * ({@link extractProductInfo}) et stocke la fiche extraite.
+ *
+ * Ne throw JAMAIS : un échec (signature GCS, fal, DB) est loggé en warn et
+ * laisse `product_info` à null — le rendu reste `done` dans tous les cas.
+ * Lancée en fire-and-forget depuis {@link finalizeGenerationSuccess}.
+ */
+export async function extractAndStoreProductInfo(
+  db: Db,
+  row: GenerationRow,
+  log: GenerationLogger,
+): Promise<void> {
+  try {
+    if (row.productInfo) return; // déjà extraite (webhook rejoué / reconcile)
+    const label = row.extraImages?.label;
+    const detail = row.extraImages?.detail;
+    if (!label && !detail) return;
+
+    // URLs signées GET (bucket privé) : étiquette en priorité, détail en complément.
+    const [labelUrl, detailUrl] = await Promise.all([
+      label ? signedReadUrl(label, FAL_INPUT_TTL_SECONDS) : Promise.resolve(null),
+      detail ? signedReadUrl(detail, FAL_INPUT_TTL_SECONDS) : Promise.resolve(null),
+    ]);
+    const info = await extractProductInfo(labelUrl, detailUrl, log);
+    if (!info) return; // échec déjà loggé côté OCR — le rendu reste done sans fiche.
+
+    await db.update(generations).set({ productInfo: info }).where(eq(generations.id, row.id));
+    log.info({ generationId: row.id, productInfo: info }, 'Fiche produit OCR extraite et stockée');
+  } catch (err) {
+    log.warn(
+      { generationId: row.id, error: errorMessage(err) },
+      "OCR de l'étiquette échoué — product_info laissé null",
+    );
+  }
 }
 
 /** Message le plus utile possible depuis un ApiError fal (result d'une requête échouée). */

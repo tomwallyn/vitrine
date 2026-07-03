@@ -111,6 +111,20 @@ export const generations = pgTable('generations', {
    * est stockée pour l'OCR à venir (jamais utilisée pour le rendu).
    */
   extraImages: jsonb('extra_images').$type<{ back?: string; detail?: string; label?: string }>(),
+  /**
+   * Fiche produit extraite par OCR de l'étiquette/détail via un modèle vision
+   * fal (openrouter/router/vision) — miroir de `productInfoSchema` de
+   * @vitrine/shared. Null tant que rien n'a été extrait : l'OCR est
+   * best-effort, un rendu peut être `done` avec product_info null.
+   */
+  productInfo: jsonb('product_info').$type<{
+    matiere?: string;
+    taille?: string;
+    couleur?: string;
+    composition?: string;
+    entretien?: string;
+    description: string;
+  }>(),
   provider: providerEnum('provider'),
   providerRequestId: text('provider_request_id'),
   status: generationStatusEnum('status').notNull().default('queued'),

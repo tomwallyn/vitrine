@@ -63,6 +63,28 @@ export const generationExtraImagesSchema = z.object({
 });
 export type GenerationExtraImages = z.infer<typeof generationExtraImagesSchema>;
 
+/**
+ * Fiche produit extraite par OCR (modèle vision sur fal) depuis la photo
+ * d'étiquette (`extraImages.label`) et/ou de détail matière (`extraImages.detail`).
+ * Tous les champs sont optionnels sauf `description` : le modèle ne remplit
+ * que ce qu'il lit réellement sur les images (rien n'est inventé).
+ */
+export const productInfoSchema = z.object({
+  /** Matière principale (ex. « coton », « laine mérinos »). */
+  matiere: z.string().optional(),
+  /** Taille lisible sur l'étiquette (ex. « M », « 42 »). */
+  taille: z.string().optional(),
+  /** Couleur dominante du vêtement. */
+  couleur: z.string().optional(),
+  /** Composition détaillée (ex. « 80 % coton, 20 % polyester »). */
+  composition: z.string().optional(),
+  /** Consignes d'entretien (ex. « lavage 30 °C, pas de sèche-linge »). */
+  entretien: z.string().optional(),
+  /** Courte description produit en français (1-2 phrases, ton e-commerce). */
+  description: z.string(),
+});
+export type ProductInfo = z.infer<typeof productInfoSchema>;
+
 export const createGenerationRequestSchema = z
   .object({
     /** URL GCS de la photo source (obtenue via POST /uploads/sign). */
@@ -98,6 +120,8 @@ export const generationSchema = z.object({
   status: generationStatusSchema,
   resultImageUrl: z.string().url().nullable(),
   error: z.string().nullable(),
+  /** Fiche produit OCR (étiquette/détail) — absente/null tant que non extraite. */
+  productInfo: productInfoSchema.nullable().optional(),
   createdAt: z.string(),
   completedAt: z.string().nullable(),
 });
