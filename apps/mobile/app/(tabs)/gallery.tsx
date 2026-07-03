@@ -27,10 +27,15 @@ function counterLabel(total: number): string {
   return total > 1 ? `${total} visuels générés` : `${total} visuel généré`;
 }
 
-/** Vignette : rendu + titre en surimpression + type de rendu. */
-function GalleryTile({ item }: { item: GalleryItem }) {
+/** Vignette cliquable → écran Résultat (comparateur + re-téléchargement). */
+function GalleryTile({ item, onPress }: { item: GalleryItem; onPress: () => void }) {
   return (
-    <View className="mb-4 w-[48%]">
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${item.title} — voir le visuel`}
+      onPress={onPress}
+      className="mb-4 w-[48%] active:opacity-80"
+    >
       <View className="aspect-[3/4] overflow-hidden rounded-2xl border border-paper3 bg-paper2">
         {item.resultImageUrl ? (
           <Image
@@ -53,7 +58,7 @@ function GalleryTile({ item }: { item: GalleryItem }) {
       <Text className="mt-1.5 font-body text-xs text-gray">
         {RENDER_TYPE_LABELS[item.renderType]}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -159,7 +164,12 @@ export default function GalleryScreen() {
           <FlatList
             data={items}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <GalleryTile item={item} />}
+            renderItem={({ item }) => (
+              <GalleryTile
+                item={item}
+                onPress={() => router.push(`/result/${item.generationId}?fromGallery=1`)}
+              />
+            )}
             numColumns={2}
             className="mt-4 flex-1"
             columnWrapperStyle={{ justifyContent: 'space-between' }}

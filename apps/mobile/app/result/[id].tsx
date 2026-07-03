@@ -89,7 +89,10 @@ export default function ResultScreen() {
   const router = useRouter();
   const api = useApi();
   const queryClient = useQueryClient();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, fromGallery } = useLocalSearchParams<{ id: string; fromGallery?: string }>();
+  // Ouvert depuis la galerie (écran 06 / accueil) : l'item y est déjà,
+  // le CTA « Ajouter à ma galerie » est donc remplacé par un état passif.
+  const alreadyInGallery = fromGallery === '1';
 
   const [variantsOpen, setVariantsOpen] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<RenderType[]>([]);
@@ -315,19 +318,27 @@ export default function ResultScreen() {
         </View>
       </ScrollView>
 
-      {/* CTA principal — POST /gallery (« Ajouté ✓ » une fois enregistré) */}
+      {/* CTA principal — POST /gallery (« Ajouté ✓ » une fois enregistré) ;
+          depuis la galerie : simple rappel « Déjà dans la galerie ». */}
       <View className="border-t border-paper3 px-5 pb-4 pt-3">
-        <Button
-          label={
-            savedToGallery
-              ? 'Ajouté ✓'
-              : galleryMutation.isPending
-                ? 'Ajout…'
-                : 'Ajouter à ma galerie'
-          }
-          disabled={savedToGallery || galleryMutation.isPending}
-          onPress={() => galleryMutation.mutate()}
-        />
+        {alreadyInGallery ? (
+          <View className="h-14 flex-row items-center justify-center gap-2">
+            <Ionicons name="checkmark-circle" size={18} color={colors.gray2} />
+            <Text className="font-body-semibold text-sm text-gray2">Déjà dans la galerie</Text>
+          </View>
+        ) : (
+          <Button
+            label={
+              savedToGallery
+                ? 'Ajouté ✓'
+                : galleryMutation.isPending
+                  ? 'Ajout…'
+                  : 'Ajouter à ma galerie'
+            }
+            disabled={savedToGallery || galleryMutation.isPending}
+            onPress={() => galleryMutation.mutate()}
+          />
+        )}
       </View>
 
       {/* Vue offscreen du filigrane (capturée par react-native-view-shot) */}

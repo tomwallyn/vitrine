@@ -12,17 +12,30 @@ import { colors, type GenerationStatus } from '@vitrine/shared';
 /** Cadence du polling GET /generations/:id tant que le rendu est en cours. */
 const POLL_INTERVAL_MS = 1500;
 
+/**
+ * Durée minimale d'affichage de l'écran : même si le rendu finit avant,
+ * on laisse l'animation (barre + 3 étapes) se dérouler ~13 s avant le résultat.
+ */
+const MIN_DISPLAY_MS = 13_000;
+
+/** Cadence de rafraîchissement de la barre de progression. */
+const PROGRESS_TICK_MS = 150;
+
 const STEP_LABELS = [
   'Analyse du vêtement',
   'Mise en scène du modèle',
   'Rendu final & lumière',
 ] as const;
 
-/** Progression simulée (le backend n'expose que queued/processing/done/failed). */
+/**
+ * Plafond de progression dicté par le status serveur (le backend n'expose
+ * que queued/processing/done/failed) : on ne montre jamais 100 % tant que
+ * le rendu n'est pas réellement terminé.
+ */
 function progressCap(status: GenerationStatus | undefined): number {
   if (status === 'done') return 100;
   if (status === 'processing') return 92;
-  return 30; // queued / premier fetch en cours
+  return 45; // queued / premier fetch en cours
 }
 
 /** 04 — GÉNÉRATION : polling + RENDU IA + barre de progression + 3 étapes. */
@@ -49,27 +62,39 @@ export default function GeneratingScreen() {
   const generation = data?.generation;
   const status = generation?.status;
   const failed = status === 'failed' || !!error;
-  const inFlight = !failed && status !== 'done';
+  // Bloque le retour arrière tant que l'écran est actif (y compris pendant
+  // l'attente des 13 s après un rendu terminé) — sauf en cas d'échec.
+  const inFlight = !failed;
 
-  // Progression animée : grimpe vers le plafond dicté par le status serveur.
-  const [progress, setProgress] = useState(4);
+  // Instant d'arrivée sur l'écran — référence de la durée minimale de 13 s.
+  const startedAtRef = useRef(Date.now());
+
+  // Progression animée : suit le temps écoulé (0 → 100 % sur ~13 s), bornée
+  // par le plafond serveur (jamais 100 % tant que le rendu n'est pas fini).
+  const [progress, setProgress] = useState(2);
   useEffect(() => {
     if (failed) return;
     const interval = setInterval(() => {
       setProgress((prev) => {
-        const cap = progressCap(status);
-        if (prev >= cap) return prev;
-        const step = status === 'done' ? 10 : prev < 60 ? 3 : 1;
-        return Math.min(cap, prev + step);
+        const elapsed = Date.now() - startedAtRef.current;
+        const timeTarget = (elapsed / MIN_DISPLAY_MS) * 100;
+        const target = Math.min(timeTarget, progressCap(status));
+        if (prev >= target) return prev;
+        // Rattrapage borné (ex. 92 → 100 quand le rendu finit après 13 s)
+        // pour éviter tout saut brutal de la barre.
+        return Math.min(target, prev + 4);
       });
-    }, 220);
+    }, PROGRESS_TICK_MS);
     return () => clearInterval(interval);
   }, [status, failed]);
 
-  // status=done → écran 05 (léger délai pour laisser la barre atteindre 100 %).
+  // status=done → écran 05, mais jamais avant MIN_DISPLAY_MS : on attend le
+  // delta restant pour laisser l'animation se terminer proprement.
   useEffect(() => {
     if (status !== 'done' || !id) return;
-    const timeout = setTimeout(() => router.replace(`/result/${id}`), 650);
+    const elapsed = Date.now() - startedAtRef.current;
+    const delay = Math.max(MIN_DISPLAY_MS - elapsed, 700);
+    const timeout = setTimeout(() => router.replace(`/result/${id}`), delay);
     return () => clearTimeout(timeout);
   }, [status, id, router]);
 
@@ -116,7 +141,8 @@ export default function GeneratingScreen() {
     );
   }
 
-  const activeIndex = status === 'done' ? STEP_LABELS.length : progress < 33 ? 0 : progress < 72 ? 1 : 2;
+  // Étapes calées sur la barre (~13 s) : tout coché seulement en fin de course.
+  const activeIndex = progress >= 99.5 ? STEP_LABELS.length : progress < 33 ? 0 : progress < 72 ? 1 : 2;
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
@@ -170,7 +196,7 @@ export default function GeneratingScreen() {
       </View>
 
       <View className="items-center pb-9">
-        <Text className="font-body-medium text-xs text-gray">Temps estimé · ~8 secondes</Text>
+        <Text className="font-body-medium text-xs text-gray">Temps estimé · ~15 secondes</Text>
       </View>
     </SafeAreaView>
   );
