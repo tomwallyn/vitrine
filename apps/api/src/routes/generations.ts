@@ -40,6 +40,9 @@ function paramsFromRow(row: GenerationRow, renderType = row.renderType): CreateG
     ...(row.customBackgroundUrl ? { customBackgroundUrl: row.customBackgroundUrl } : {}),
     // Multi-détails : les vues additionnelles suivent la génération d'origine.
     ...(row.extraImages ? { extraImages: row.extraImages } : {}),
+    // « Sur modèle » : le type de pièce + la tenue complétée suivent aussi.
+    ...(row.garmentType ? { garmentType: row.garmentType } : {}),
+    ...(row.outfit ? { outfit: row.outfit } : {}),
   };
 }
 
@@ -190,7 +193,7 @@ export function registerGenerationBatchRoutes(app: FastifyInstance): void {
 
     const db = getDb();
     const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
-    const { items, renderType, mannequinOption, backgroundOption, customBackgroundUrl } =
+    const { items, renderType, mannequinOption, backgroundOption, customBackgroundUrl, garmentType, outfit } =
       parsed.data;
 
     // Le lot entier doit être finançable AVANT le premier hold : pas de lot
@@ -209,6 +212,9 @@ export function registerGenerationBatchRoutes(app: FastifyInstance): void {
           mannequinOption,
           backgroundOption,
           ...(customBackgroundUrl ? { customBackgroundUrl } : {}),
+          // Tenue commune au lot (« sur modèle » uniquement).
+          ...(garmentType ? { garmentType } : {}),
+          ...(outfit ? { outfit } : {}),
         });
         results.push({ id: row.id, status: row.status });
       } catch (err) {

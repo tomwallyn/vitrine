@@ -19,6 +19,8 @@ export const mannequinOptionEnum = pgEnum('mannequin_option', [
   'studio',
 ]);
 export const backgroundOptionEnum = pgEnum('background_option', ['studio', 'custom']);
+export const garmentTypeEnum = pgEnum('garment_type', ['haut', 'bas', 'robe']);
+export const garmentSlotEnum = pgEnum('garment_slot', ['haut', 'bas', 'chaussures']);
 export const generationStatusEnum = pgEnum('generation_status', [
   'queued',
   'processing',
@@ -112,6 +114,13 @@ export const generations = pgTable('generations', {
    */
   extraImages: jsonb('extra_images').$type<{ back?: string; detail?: string; label?: string }>(),
   /**
+   * « Compléter la tenue » (rendu « sur modèle ») — type générique de la pièce
+   * importée et pièces de complétion (URLs canoniques GCS/CDN) portées EN PLUS
+   * du vêtement source. Null hors rendu model / sans complétion.
+   */
+  garmentType: garmentTypeEnum('garment_type'),
+  outfit: jsonb('outfit').$type<{ top?: string; bottom?: string; shoes?: string }>(),
+  /**
    * Fiche produit extraite par OCR de l'étiquette/détail via un modèle vision
    * fal (openrouter/router/vision) — miroir de `productInfoSchema` de
    * @vitrine/shared. Null tant que rien n'a été extrait : l'OCR est
@@ -142,6 +151,21 @@ export const backgrounds = pgTable('backgrounds', {
   shopId: uuid('shop_id')
     .notNull()
     .references(() => shops.id),
+  imageUrl: text('image_url').notNull(),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Garde-robe : pièces de vêtement custom uploadées, réutilisables pour
+ * « Compléter la tenue » (rendu « sur modèle »). `slot` = bas/haut/chaussures.
+ */
+export const garmentItems = pgTable('garment_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  shopId: uuid('shop_id')
+    .notNull()
+    .references(() => shops.id),
+  slot: garmentSlotEnum('slot').notNull(),
   imageUrl: text('image_url').notNull(),
   name: text('name').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

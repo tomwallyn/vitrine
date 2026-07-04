@@ -15,6 +15,20 @@ export const backgroundOptionSchema = z.enum(['studio', 'custom']);
 export type BackgroundOption = z.infer<typeof backgroundOptionSchema>;
 export const BACKGROUND_OPTIONS = backgroundOptionSchema.options;
 
+/**
+ * Type générique de la pièce importée pour le rendu « sur modèle » (1 clic) :
+ * détermine les slots à compléter (haut→bas+chaussures, bas→haut+chaussures,
+ * robe→chaussures). Cf. feature « Compléter la tenue ».
+ */
+export const garmentTypeSchema = z.enum(['haut', 'bas', 'robe']);
+export type GarmentType = z.infer<typeof garmentTypeSchema>;
+export const GARMENT_TYPES = garmentTypeSchema.options;
+
+/** Slot d'une pièce de garde-robe (suggestions par défaut + pièces custom sauvegardées). */
+export const garmentSlotSchema = z.enum(['haut', 'bas', 'chaussures']);
+export type GarmentSlot = z.infer<typeof garmentSlotSchema>;
+export const GARMENT_SLOTS = garmentSlotSchema.options;
+
 /** Statut du pipeline de génération asynchrone (écran 04 — polling). */
 export const generationStatusSchema = z.enum(['queued', 'processing', 'done', 'failed']);
 export type GenerationStatus = z.infer<typeof generationStatusSchema>;

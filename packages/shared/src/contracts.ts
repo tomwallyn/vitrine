@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import {
   backgroundOptionSchema,
+  garmentSlotSchema,
+  garmentTypeSchema,
   generationStatusSchema,
   ledgerReasonSchema,
   mannequinOptionSchema,
@@ -12,8 +14,8 @@ import {
 // Uploads — POST /uploads/sign (URL signée GCS, PUT v4 ~10 min)
 // ─────────────────────────────────────────────────────────────────
 
-/** Destination de l'upload : photo source du vêtement ou fond personnalisé. */
-export const uploadKindSchema = z.enum(['source', 'background']);
+/** Destination de l'upload : photo source, fond personnalisé, ou pièce de tenue. */
+export const uploadKindSchema = z.enum(['source', 'background', 'garment']);
 export type UploadKind = z.infer<typeof uploadKindSchema>;
 export const UPLOAD_KINDS = uploadKindSchema.options;
 
@@ -35,7 +37,7 @@ export type SignUploadRequest = z.infer<typeof signUploadRequestSchema>;
 export const signUploadResponseSchema = z.object({
   /** URL signée (PUT v4, ~10 min) vers laquelle envoyer le binaire. */
   uploadUrl: z.string().url(),
-  /** Chemin de l'objet dans le bucket : {sources|backgrounds}/{authUserId}/{uuid}. */
+  /** Chemin de l'objet dans le bucket : {sources|backgrounds|garments}/{authUserId}/{uuid}. */
   objectPath: z.string().min(1),
   /** URL publique de lecture (https://storage.googleapis.com/...). */
   publicUrl: z.string().url(),
@@ -62,6 +64,22 @@ export const generationExtraImagesSchema = z.object({
   label: z.string().url().optional(),
 });
 export type GenerationExtraImages = z.infer<typeof generationExtraImagesSchema>;
+
+/**
+ * Pièces complétant la tenue du mannequin (rendu « sur modèle ») — toutes
+ * optionnelles, URLs canoniques (GCS pour les pièces custom, CDN pour les
+ * suggestions par défaut). Le mannequin les porte EN PLUS du vêtement source ;
+ * ignorées hors `renderType === 'model'` et par les try-on FASHN/Kling.
+ */
+export const generationOutfitSchema = z.object({
+  /** Haut à faire porter (quand la pièce importée est un bas). */
+  top: z.string().url().optional(),
+  /** Bas à faire porter (quand la pièce importée est un haut). */
+  bottom: z.string().url().optional(),
+  /** Chaussures (optionnel dans tous les cas). */
+  shoes: z.string().url().optional(),
+});
+export type GenerationOutfit = z.infer<typeof generationOutfitSchema>;
 
 /**
  * Fiche produit extraite par OCR (modèle vision sur fal) depuis la photo
@@ -96,6 +114,10 @@ export const createGenerationRequestSchema = z
     customBackgroundUrl: z.string().url().optional(),
     /** Vues additionnelles du même vêtement (rétrocompat : absent = 1 photo). */
     extraImages: generationExtraImagesSchema.optional(),
+    /** Type générique de la pièce importée (« sur modèle » uniquement). */
+    garmentType: garmentTypeSchema.optional(),
+    /** Pièces complétant la tenue du mannequin (« sur modèle » uniquement). */
+    outfit: generationOutfitSchema.optional(),
   })
   .superRefine((data, ctx) => {
     if (data.backgroundOption === 'custom' && !data.customBackgroundUrl) {
@@ -103,6 +125,14 @@ export const createGenerationRequestSchema = z
         code: z.ZodIssueCode.custom,
         path: ['customBackgroundUrl'],
         message: "customBackgroundUrl est requis quand backgroundOption vaut 'custom'",
+      });
+    }
+    const hasOutfit = data.outfit && Object.values(data.outfit).some(Boolean);
+    if ((hasOutfit || data.garmentType) && data.renderType !== 'model') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['outfit'],
+        message: "garmentType/outfit ne s'appliquent qu'au rendu 'model'",
       });
     }
   });
@@ -182,6 +212,10 @@ export const createBatchRequestSchema = z
     backgroundOption: backgroundOptionSchema.default('studio'),
     /** Requis si backgroundOption === 'custom' (fond uploadé réutilisable). */
     customBackgroundUrl: z.string().url().optional(),
+    /** Type générique des pièces du lot (« sur modèle » uniquement, commun au lot). */
+    garmentType: garmentTypeSchema.optional(),
+    /** Tenue commune appliquée à tout le lot (« sur modèle » uniquement). */
+    outfit: generationOutfitSchema.optional(),
   })
   .superRefine((data, ctx) => {
     if (data.backgroundOption === 'custom' && !data.customBackgroundUrl) {
@@ -189,6 +223,14 @@ export const createBatchRequestSchema = z
         code: z.ZodIssueCode.custom,
         path: ['customBackgroundUrl'],
         message: "customBackgroundUrl est requis quand backgroundOption vaut 'custom'",
+      });
+    }
+    const hasOutfit = data.outfit && Object.values(data.outfit).some(Boolean);
+    if ((hasOutfit || data.garmentType) && data.renderType !== 'model') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['outfit'],
+        message: "garmentType/outfit ne s'appliquent qu'au rendu 'model'",
       });
     }
   });
@@ -432,3 +474,46 @@ export const createBackgroundResponseSchema = z.object({
   background: backgroundSchema,
 });
 export type CreateBackgroundResponse = z.infer<typeof createBackgroundResponseSchema>;
+
+// ─────────────────────────────────────────────────────────────────
+// Garde-robe — GET /garments · POST /garments (pièces custom réutilisables)
+// ─────────────────────────────────────────────────────────────────
+
+/** Pièce de garde-robe enregistrée par la boutique (bas/haut/chaussures custom). */
+export const garmentItemSchema = z.object({
+  id: z.string().uuid(),
+  shopId: z.string().uuid(),
+  /** Slot de la pièce (filtre les suggestions de l'écran « Choisir une pièce »). */
+  slot: garmentSlotSchema,
+  /** URL GCS canonique (privée) — sert au choix/à l'envoi de la génération. */
+  imageUrl: z.string().url(),
+  /** URL signée GET (courte durée) — pour afficher la vignette dans l'app. */
+  displayUrl: z.string().url(),
+  name: z.string(),
+  createdAt: z.string(),
+});
+export type GarmentItem = z.infer<typeof garmentItemSchema>;
+
+export const createGarmentRequestSchema = z.object({
+  imageUrl: z.string().url(),
+  slot: garmentSlotSchema,
+  name: z.string().min(1),
+});
+export type CreateGarmentRequest = z.infer<typeof createGarmentRequestSchema>;
+
+/** Query de GET /garments — filtre optionnel par slot. */
+export const garmentsQuerySchema = z.object({
+  slot: garmentSlotSchema.optional(),
+});
+export type GarmentsQuery = z.infer<typeof garmentsQuerySchema>;
+
+export const garmentsResponseSchema = z.object({
+  garments: z.array(garmentItemSchema),
+});
+export type GarmentsResponse = z.infer<typeof garmentsResponseSchema>;
+
+/** Réponse de POST /garments (pièce enregistrée, réutilisable). */
+export const createGarmentResponseSchema = z.object({
+  garment: garmentItemSchema,
+});
+export type CreateGarmentResponse = z.infer<typeof createGarmentResponseSchema>;

@@ -5,9 +5,12 @@ import {
   NANO_CUSTOM_BACKGROUND_SUFFIX,
   NANO_MODEL_BG_STUDIO,
   NANO_MODEL_DRESS_PROMPT,
+  NANO_MODEL_KEEP_BASE_SUFFIX,
   NANO_MULTI_VIEW_SUFFIX,
   NANO_PROMPTS,
+  nanoOutfitSuffix,
   type BackgroundOption,
+  type GarmentType,
   type MannequinOption,
   type Provider,
   type RenderType,
@@ -33,6 +36,14 @@ export interface GenerationParams {
    * n'arrive jamais ici : stockée en base pour l'OCR, hors rendu.
    */
   extraImageUrls?: { back?: string; detail?: string } | null;
+  /**
+   * « Compléter la tenue » (rendu « sur modèle ») — type générique de la pièce
+   * importée et pièces de complétion (URLs **signées GET** pour les pièces
+   * custom, ou URLs CDN pour les suggestions par défaut). Nano les fait porter
+   * au mannequin en plus du vêtement source ; ignorées par FASHN/Kling.
+   */
+  garmentType?: GarmentType | null;
+  outfitImages?: { top?: string; bottom?: string; shoes?: string } | null;
 }
 
 /** Vues additionnelles à passer au rendu, dans un ordre stable (arrière, détail). */
@@ -40,6 +51,15 @@ function extraViewUrls(params: GenerationParams): string[] {
   return [params.extraImageUrls?.back, params.extraImageUrls?.detail].filter(
     (url): url is string => !!url,
   );
+}
+
+/** Pièces de complétion de la tenue, ordre stable (haut, bas, chaussures). */
+function outfitUrls(params: GenerationParams): string[] {
+  return [
+    params.outfitImages?.top,
+    params.outfitImages?.bottom,
+    params.outfitImages?.shoes,
+  ].filter((url): url is string => !!url);
 }
 
 export interface ProviderAdapter {
@@ -139,6 +159,14 @@ function nanoPrompt(params: GenerationParams): string {
   if (isModelDress(params)) {
     let prompt = NANO_MODEL_DRESS_PROMPT;
     if (hasExtraViews) prompt += NANO_MULTI_VIEW_SUFFIX;
+    // Compléter la tenue : pièces additionnelles → on remplace le bas de base ;
+    // sinon on garde le legging gris neutre du mannequin.
+    const outfit = params.outfitImages;
+    if (outfit && outfitUrls(params).length > 0) {
+      prompt += nanoOutfitSuffix({ top: !!outfit.top, bottom: !!outfit.bottom, shoes: !!outfit.shoes });
+    } else {
+      prompt += NANO_MODEL_KEEP_BASE_SUFFIX;
+    }
     return prompt + (hasCustomBackground ? NANO_CUSTOM_BACKGROUND_LAST_SUFFIX : NANO_MODEL_BG_STUDIO);
   }
 
@@ -160,11 +188,19 @@ const nanobananaAdapter: ProviderAdapter = {
         ? [params.customBackgroundUrl]
         : [];
     // « Sur modèle » : le mannequin de référence est la 1ʳᵉ image (Nano l'habille),
-    // puis le vêtement (source + vues), et enfin le fond custom éventuel.
+    // puis le vêtement (source + vues), les pièces de complétion, et enfin le
+    // fond custom éventuel (qui DOIT rester en dernier — cf. suffixe « LAST »).
     const mannequin = isModelDress(params) ? [mannequinImageUrl(params.mannequinOption)] : [];
+    const outfit = isModelDress(params) ? outfitUrls(params) : [];
     return {
       prompt: nanoPrompt(params),
-      image_urls: [...mannequin, params.sourceImageUrl, ...extraViews, ...customBackground],
+      image_urls: [
+        ...mannequin,
+        params.sourceImageUrl,
+        ...extraViews,
+        ...outfit,
+        ...customBackground,
+      ],
       num_images: 1,
       output_format: 'png',
     };

@@ -27,6 +27,7 @@ const EXTENSION_BY_CONTENT_TYPE: Record<UploadContentType, string> = {
 const FOLDER_BY_KIND: Record<UploadKind, string> = {
   source: 'sources',
   background: 'backgrounds',
+  garment: 'garments',
 };
 
 type Gcs = { storage: Storage; bucket: string };

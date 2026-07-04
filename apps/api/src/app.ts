@@ -4,6 +4,7 @@ import { registerAuth } from './plugins/auth.js';
 import { registerBackgroundRoutes } from './routes/backgrounds.js';
 import { registerCreditRoutes } from './routes/credits.js';
 import { registerGalleryRoutes } from './routes/gallery.js';
+import { registerGarmentRoutes } from './routes/garments.js';
 import { registerGenerationBatchRoutes, registerGenerationRoutes } from './routes/generations.js';
 import { registerMeRoutes } from './routes/me.js';
 import { registerRevenueCatWebhookRoutes } from './routes/revenuecat.js';
@@ -62,6 +63,9 @@ export function buildApp(): FastifyInstance {
 
   // ── Fonds personnalisés (M3a) ────────────────────────────────
   registerBackgroundRoutes(app);
+
+  // ── Garde-robe : pièces de tenue (« Compléter la tenue ») ────
+  registerGarmentRoutes(app);
 
   // ── Webhooks (M3a / M4) ──────────────────────────────────────
   registerWebhookRoutes(app);

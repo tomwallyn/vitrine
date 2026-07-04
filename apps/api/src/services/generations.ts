@@ -95,7 +95,17 @@ export async function createGeneration(
   // signature ne coûte aucun crédit). Les vues additionnelles `back`/`detail`
   // sont signées comme la source ; `label` (étiquette) n'est JAMAIS passée à
   // fal (stockée en base pour l'OCR à venir) donc pas signée ici.
-  const [signedSourceUrl, signedBackgroundUrl, signedBackUrl, signedDetailUrl] = await Promise.all([
+  // Pièces de tenue (« sur modèle ») signées comme la source. Les suggestions
+  // par défaut (URLs CDN hors bucket) traversent signedReadUrl telles quelles.
+  const [
+    signedSourceUrl,
+    signedBackgroundUrl,
+    signedBackUrl,
+    signedDetailUrl,
+    signedTopUrl,
+    signedBottomUrl,
+    signedShoesUrl,
+  ] = await Promise.all([
     signedReadUrl(params.sourceImageUrl, FAL_INPUT_TTL_SECONDS),
     params.customBackgroundUrl
       ? signedReadUrl(params.customBackgroundUrl, FAL_INPUT_TTL_SECONDS)
@@ -105,6 +115,15 @@ export async function createGeneration(
       : Promise.resolve(null),
     params.extraImages?.detail
       ? signedReadUrl(params.extraImages.detail, FAL_INPUT_TTL_SECONDS)
+      : Promise.resolve(null),
+    params.outfit?.top
+      ? signedReadUrl(params.outfit.top, FAL_INPUT_TTL_SECONDS)
+      : Promise.resolve(null),
+    params.outfit?.bottom
+      ? signedReadUrl(params.outfit.bottom, FAL_INPUT_TTL_SECONDS)
+      : Promise.resolve(null),
+    params.outfit?.shoes
+      ? signedReadUrl(params.outfit.shoes, FAL_INPUT_TTL_SECONDS)
       : Promise.resolve(null),
   ]);
   const input = route.adapter.buildInput({
@@ -118,6 +137,15 @@ export async function createGeneration(
         ? {
             ...(signedBackUrl ? { back: signedBackUrl } : {}),
             ...(signedDetailUrl ? { detail: signedDetailUrl } : {}),
+          }
+        : null,
+    garmentType: params.garmentType ?? null,
+    outfitImages:
+      signedTopUrl || signedBottomUrl || signedShoesUrl
+        ? {
+            ...(signedTopUrl ? { top: signedTopUrl } : {}),
+            ...(signedBottomUrl ? { bottom: signedBottomUrl } : {}),
+            ...(signedShoesUrl ? { shoes: signedShoesUrl } : {}),
           }
         : null,
   });
@@ -139,6 +167,8 @@ export async function createGeneration(
         customBackgroundUrl: params.customBackgroundUrl ?? null,
         // URLs GCS canoniques (les URLs signées ne servent qu'à l'appel fal).
         extraImages: params.extraImages ?? null,
+        garmentType: params.garmentType ?? null,
+        outfit: params.outfit ?? null,
         provider: route.provider,
         status: 'queued',
         holdLedgerId,

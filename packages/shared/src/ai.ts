@@ -1,4 +1,4 @@
-import type { MannequinOption, Provider, RenderType } from './enums.js';
+import type { GarmentSlot, MannequinOption, Provider, RenderType } from './enums.js';
 
 /**
  * Configuration IA partagée (benchmark M3.0 + pipeline API M3a).
@@ -101,7 +101,37 @@ export const NANO_MODEL_DRESS_PROMPT =
   'vêtement présenté dans la ou les image(s) SUIVANTE(S). Retire tout cintre et habille-la ' +
   'avec ce vêtement de façon naturelle et bien ajustée (drapé réaliste). Garde la texture, ' +
   'le motif, la couleur, la forme et les détails du vêtement (col, boutons, coutures, zip, ' +
-  'logos) STRICTEMENT identiques. Conserve le bas du mannequin (legging gris).';
+  'logos) STRICTEMENT identiques.';
+
+/**
+ * Suffixe « aucune tenue complétée » : on garde le bas de base neutre du mannequin.
+ * Utilisé quand aucune pièce de complétion (bas/haut/chaussures) n'est fournie.
+ */
+export const NANO_MODEL_KEEP_BASE_SUFFIX =
+  ' Conserve le bas de base du mannequin (legging gris neutre).';
+
+/**
+ * Suffixe « compléter la tenue » : décrit les pièces additionnelles (fournies
+ * après le vêtement principal dans image_urls) à faire porter AUSSI au mannequin,
+ * en remplaçant entièrement ses vêtements de base. `present` liste les slots réellement fournis.
+ */
+export function nanoOutfitSuffix(present: {
+  top?: boolean;
+  bottom?: boolean;
+  shoes?: boolean;
+}): string {
+  const pieces: string[] = [];
+  if (present.top) pieces.push('un haut');
+  if (present.bottom) pieces.push('un bas');
+  if (present.shoes) pieces.push('des chaussures');
+  const list = pieces.join(', ');
+  return (
+    ` En plus du vêtement principal, fais porter au mannequin ${list} — ` +
+    'chaque pièce est fournie dans une image suivante — de façon cohérente et naturelle, ' +
+    'en REMPLAÇANT entièrement ses vêtements de base (aucun legging gris ne doit rester). ' +
+    'Garde chaque pièce STRICTEMENT fidèle (texture, couleur, coupe, détails).'
+  );
+}
 
 /** Suffixe fond studio par défaut du rendu « sur modèle » Nano. */
 export const NANO_MODEL_BG_STUDIO =
@@ -131,3 +161,25 @@ export const MANNEQUIN_IMAGES: Record<Exclude<MannequinOption, 'studio'>, string
 
 /** Mannequin de repli (benchmark + garde-fou du router). */
 export const DEFAULT_MANNEQUIN: Exclude<MannequinOption, 'studio'> = 'femme';
+
+/** Une suggestion de vêtement par défaut (packshot hébergé sur CDN). */
+export interface DefaultGarment {
+  /** Clé stable (ex. 'jean-brut'). */
+  key: string;
+  /** Libellé affiché (ex. « Jean brut »). */
+  name: string;
+  /** URL publique de l'image packshot (ghost mannequin, fond blanc). */
+  url: string;
+}
+
+/**
+ * Suggestions de vêtements par défaut, par slot, pour « Compléter la tenue »
+ * (même rôle que {@link MANNEQUIN_IMAGES} : des images hébergées passées telles
+ * quelles à Nano). À REMPLIR une fois les packshots générés (cf. prompts du plan)
+ * et hébergés sur le CDN fal.
+ */
+export const DEFAULT_GARMENT_IMAGES: Record<GarmentSlot, DefaultGarment[]> = {
+  bas: [],
+  haut: [],
+  chaussures: [],
+};
