@@ -10,6 +10,7 @@ import { ADAPTERS } from './ai/adapters.js';
 import { getFalQueueResult, getFalQueueStatus, submitToFal } from './ai/client.js';
 import { endpointForProvider, resolveAiRoute } from './ai/config.js';
 import { extractProductInfo } from './ai/product-ocr.js';
+import { upscaleResultUrl } from './ai/upscale.js';
 import { holdCredit, refundCredit } from './credits.js';
 import { sendPushToShop } from './push.js';
 import { signedReadUrl, trySignedReadUrl, uploadResultImage } from './storage.js';
@@ -266,7 +267,9 @@ export async function finalizeGenerationSuccess(
   const [shop] = await db.select().from(shops).where(eq(shops.id, row.shopId));
   if (!shop) throw new Error(`Shop ${row.shopId} introuvable (génération ${row.id})`);
 
-  const res = await fetch(falImageUrl);
+  // Upscale ×2 fidèle avant stockage (best-effort → repli sur le rendu original).
+  const finalUrl = await upscaleResultUrl(falImageUrl, log);
+  const res = await fetch(finalUrl);
   if (!res.ok) throw new Error(`Téléchargement du rendu impossible (${res.status})`);
   const data = Buffer.from(await res.arrayBuffer());
   const resultImageUrl = await uploadResultImage(

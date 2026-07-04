@@ -517,3 +517,10 @@ export const createGarmentResponseSchema = z.object({
   garment: garmentItemSchema,
 });
 export type CreateGarmentResponse = z.infer<typeof createGarmentResponseSchema>;
+
+/** POST /garments/classify — devine le type d'une pièce importée (vision). */
+export const classifyGarmentRequestSchema = z.object({ imageUrl: z.string().url() });
+export type ClassifyGarmentRequest = z.infer<typeof classifyGarmentRequestSchema>;
+
+export const classifyGarmentResponseSchema = z.object({ garmentType: garmentTypeSchema });
+export type ClassifyGarmentResponse = z.infer<typeof classifyGarmentResponseSchema>;

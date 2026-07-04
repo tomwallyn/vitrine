@@ -45,6 +45,8 @@ type RenderDraftState = {
    */
   garmentType: GarmentType;
   outfit: OutfitState;
+  /** Vrai dès que l'utilisateur choisit le type à la main → bloque l'auto-détection. */
+  garmentTypeTouched: boolean;
 
   /** Garde anti-écrasement : les préréglages boutique ne s'appliquent qu'une fois. */
   settingsApplied: boolean;
@@ -68,8 +70,10 @@ type RenderDraftState = {
   /** Sélectionne un fond réutilisable déjà uploadé (GET /backgrounds). */
   selectExistingBackground: (imageUrl: string) => void;
 
-  /** Type de pièce importée — change de type réinitialise la tenue en cours. */
+  /** Type de pièce importée (choix MANUEL) — réinitialise la tenue + verrouille l'auto. */
   setGarmentType: (garmentType: GarmentType) => void;
+  /** Type deviné par l'IA — appliqué seulement si l'utilisateur n'a pas choisi à la main. */
+  setGarmentTypeAuto: (garmentType: GarmentType) => void;
   /** Choisit/remplace la pièce d'un slot de la tenue. */
   setOutfitPiece: (slot: GarmentSlot, piece: OutfitPiece) => void;
   /** Retire la pièce d'un slot. */
@@ -100,6 +104,7 @@ const initialState = {
   customBackgroundUploadError: null,
   garmentType: 'haut' as GarmentType,
   outfit: {} as OutfitState,
+  garmentTypeTouched: false,
   settingsApplied: false,
   pendingGeneration: null,
 };
@@ -152,7 +157,9 @@ export const useRenderDraft = create<RenderDraftState>((set) => ({
       customBackgroundUploadError: null,
     }),
 
-  setGarmentType: (garmentType) => set({ garmentType, outfit: {} }),
+  setGarmentType: (garmentType) => set({ garmentType, outfit: {}, garmentTypeTouched: true }),
+  setGarmentTypeAuto: (garmentType) =>
+    set((s) => (s.garmentTypeTouched ? s : { garmentType, outfit: {} })),
   setOutfitPiece: (slot, piece) => set((s) => ({ outfit: { ...s.outfit, [slot]: piece } })),
   clearOutfitPiece: (slot) =>
     set((s) => {

@@ -13,6 +13,7 @@ import type {
   CreateGenerationResponse,
   CreateVariantsRequest,
   CreateVariantsResponse,
+  ClassifyGarmentResponse,
   CreateGarmentRequest,
   CreateGarmentResponse,
   CreditPacksResponse,
@@ -182,6 +183,9 @@ export function useApi() {
           request<GarmentsResponse>('GET', slot ? `/garments?slot=${slot}` : '/garments'),
         create: (payload: CreateGarmentRequest) =>
           request<CreateGarmentResponse>('POST', '/garments', payload),
+        /** Devine le type de la pièce importée (« Compléter la tenue »). */
+        classify: (imageUrl: string) =>
+          request<ClassifyGarmentResponse>('POST', '/garments/classify', { imageUrl }),
       },
     };
   }, [getToken]);

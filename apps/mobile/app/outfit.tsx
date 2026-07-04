@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { useApi } from '@/lib/api';
 import {
   completionSlots,
   GARMENT_TYPE_LABEL,
@@ -12,6 +14,7 @@ import {
   requiredSlotFilled,
   SLOT_LABEL,
 } from '@/lib/outfit';
+import { useRenderDraft } from '@/lib/render-draft';
 import { useOutfitTarget, type OutfitTarget } from '@/lib/use-outfit-target';
 import { colors, GARMENT_TYPES, type GarmentSlot } from '@vitrine/shared';
 
@@ -26,6 +29,24 @@ export default function OutfitScreen() {
   const router = useRouter();
   const { target = 'single' } = useLocalSearchParams<{ target?: OutfitTarget }>();
   const ctrl = useOutfitTarget(target);
+  const api = useApi();
+
+  // Auto-détection du type de la pièce importée (photo unique), sauf choix manuel.
+  const [detecting, setDetecting] = useState(false);
+  const classifiedRef = useRef(false);
+  useEffect(() => {
+    if (target !== 'single' || classifiedRef.current) return;
+    const draft = useRenderDraft.getState();
+    if (draft.garmentTypeTouched || !draft.sourceUrl) return;
+    classifiedRef.current = true;
+    setDetecting(true);
+    api.garments
+      .classify(draft.sourceUrl)
+      .then((res) => useRenderDraft.getState().setGarmentTypeAuto(res.garmentType))
+      .catch(() => {})
+      .finally(() => setDetecting(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const slots = completionSlots(ctrl.garmentType);
   const requiredSlot = slots.find((s) => s.required)?.slot;
@@ -47,10 +68,18 @@ export default function OutfitScreen() {
           Votre pièce sera portée sur un modèle. Complétez le reste de la tenue pour un rendu naturel.
         </Text>
 
-        {/* Type générique de la pièce importée — 1 clic */}
-        <Text className="mb-2 mt-6 font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
-          Votre pièce
-        </Text>
+        {/* Type générique de la pièce importée — deviné (auto), corrigeable en 1 clic */}
+        <View className="mb-2 mt-6 flex-row items-center gap-2">
+          <Text className="font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
+            Votre pièce
+          </Text>
+          {detecting ? (
+            <>
+              <ActivityIndicator size="small" color={colors.gray} />
+              <Text className="font-body text-[10px] text-gray">détection…</Text>
+            </>
+          ) : null}
+        </View>
         <View className="flex-row gap-2">
           {GARMENT_TYPES.map((type) => {
             const selected = ctrl.garmentType === type;

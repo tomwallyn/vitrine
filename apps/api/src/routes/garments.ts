@@ -1,4 +1,6 @@
 import {
+  classifyGarmentRequestSchema,
+  classifyGarmentResponseSchema,
   createGarmentRequestSchema,
   createGarmentResponseSchema,
   garmentsQuerySchema,
@@ -10,6 +12,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { getDb, getTxDb } from '../db/client.js';
 import { garmentItems } from '../db/schema.js';
+import { classifyGarmentType } from '../services/ai/classify-garment.js';
 import { upsertShopByAuthId } from '../services/shops.js';
 import { trySignedReadUrl } from '../services/storage.js';
 
@@ -82,5 +85,19 @@ export function registerGarmentRoutes(app: FastifyInstance): void {
     return reply
       .code(201)
       .send(createGarmentResponseSchema.parse({ garment: await serializeGarment(row) }));
+  });
+
+  // Devine le type de la pièce importée (« sur modèle ») — best-effort (défaut 'haut').
+  app.post('/garments/classify', async (req, reply) => {
+    const parsed = classifyGarmentRequestSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: 'Bad Request', details: parsed.error.flatten().fieldErrors });
+    }
+    // Bucket privé : on signe l'URL pour que le modèle vision puisse la lire.
+    const signed = await trySignedReadUrl(parsed.data.imageUrl);
+    const garmentType = await classifyGarmentType(signed, req.log);
+    return classifyGarmentResponseSchema.parse({ garmentType });
   });
 }
