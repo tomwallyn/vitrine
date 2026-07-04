@@ -203,6 +203,9 @@ const nanobananaAdapter: ProviderAdapter = {
       ],
       num_images: 1,
       output_format: 'png',
+      // 2K natif (~2048 px) : vraie qualité, sans dénaturer, au MÊME prix que le 1K
+      // (0,15 $) — remplace tout post-upscale. Le 4K coûterait le double (inutile).
+      resolution: '2K',
     };
   },
   parseOutput(falResult) {

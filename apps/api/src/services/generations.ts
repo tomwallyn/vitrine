@@ -10,7 +10,6 @@ import { ADAPTERS } from './ai/adapters.js';
 import { getFalQueueResult, getFalQueueStatus, submitToFal } from './ai/client.js';
 import { endpointForProvider, resolveAiRoute } from './ai/config.js';
 import { extractProductInfo } from './ai/product-ocr.js';
-import { upscaleResultBuffer } from './ai/upscale.js';
 import { holdCredit, refundCredit } from './credits.js';
 import { sendPushToShop } from './push.js';
 import { signedReadUrl, trySignedReadUrl, uploadResultImage } from './storage.js';
@@ -267,16 +266,15 @@ export async function finalizeGenerationSuccess(
   const [shop] = await db.select().from(shops).where(eq(shops.id, row.shopId));
   if (!shop) throw new Error(`Shop ${row.shopId} introuvable (génération ${row.id})`);
 
+  // Nano génère déjà en 2K natif (cf. adapters) → pas de post-upscale nécessaire.
   const res = await fetch(falImageUrl);
   if (!res.ok) throw new Error(`Téléchargement du rendu impossible (${res.status})`);
-  const original = Buffer.from(await res.arrayBuffer());
-  // Upscale ×2 Lanczos fidèle avant stockage (best-effort → repli sur l'original).
-  const upscaled = await upscaleResultBuffer(original, res.headers.get('content-type'), log);
+  const data = Buffer.from(await res.arrayBuffer());
   const resultImageUrl = await uploadResultImage(
     shop.authId,
     row.id,
-    upscaled.data,
-    upscaled.contentType,
+    data,
+    res.headers.get('content-type'),
   );
 
   const [done] = await db
