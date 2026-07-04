@@ -179,7 +179,21 @@ export interface DefaultGarment {
  * et hébergés sur le CDN fal.
  */
 export const DEFAULT_GARMENT_IMAGES: Record<GarmentSlot, DefaultGarment[]> = {
-  bas: [],
-  haut: [],
-  chaussures: [],
+  bas: [
+    { key: 'jean-brut', name: 'Jean brut', url: 'https://v3b.fal.media/files/b/0aa0e33e/oamZFAgMKE0FHBqqzWbJz_jean-brut.png' },
+    { key: 'pantalon-noir', name: 'Pantalon noir', url: 'https://v3b.fal.media/files/b/0aa0e33f/v7AcxUBIMGbAfAzZEFwyo_pantalon-noir.png' },
+    { key: 'chino-beige', name: 'Chino beige', url: 'https://v3b.fal.media/files/b/0aa0e340/wVkFO-F9S4gA28RSmsi8u_chino-beige.png' },
+    { key: 'jupe-midi', name: 'Jupe midi', url: 'https://v3b.fal.media/files/b/0aa0e341/8IfNP8BeTFrg3z32Db1_O_jupe-midi.png' },
+    { key: 'short', name: 'Short', url: 'https://v3b.fal.media/files/b/0aa0e342/mpjRbMmgtDBikS-0Xkp9G_short.png' },
+  ],
+  haut: [
+    { key: 'tshirt-blanc', name: 'T-shirt blanc', url: 'https://v3b.fal.media/files/b/0aa0e34d/hEYB6pH5d1_SHx9SRSPXv_tshirt-blanc.png' },
+    { key: 'chemise-blanche', name: 'Chemise blanche', url: 'https://v3b.fal.media/files/b/0aa0e34e/uGSoMFLG71yNGqUoSDiVm_chemise-blanche.png' },
+    { key: 'pull-noir', name: 'Pull noir', url: 'https://v3b.fal.media/files/b/0aa0e345/F0x1NfAlp9Ei2_cKvhi60_pull-noir.png' },
+  ],
+  chaussures: [
+    { key: 'baskets-blanches', name: 'Baskets blanches', url: 'https://v3b.fal.media/files/b/0aa0e346/AB1OfjE0bmw2-mpjkePLg_baskets-blanches.png' },
+    { key: 'bottines-noires', name: 'Bottines noires', url: 'https://v3b.fal.media/files/b/0aa0e347/1cdMLQldgv4n7zoCRsg2X_bottines-noires.png' },
+    { key: 'mocassins-camel', name: 'Mocassins camel', url: 'https://v3b.fal.media/files/b/0aa0e352/DI-ugNPU-1t3IgnVBVSsg_mocassins-camel.png' },
+  ],
 };
