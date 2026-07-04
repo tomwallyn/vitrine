@@ -42,7 +42,14 @@ export function registerAuth(app: FastifyInstance): void {
       const payload = await verifyToken(authorization.slice('Bearer '.length), { secretKey });
       req.authUserId = payload.sub;
     } catch (err) {
-      req.log.info({ err }, 'JWT Clerk invalide');
+      // Token expiré = cas normal (app en cache → l'app rafraîchit et rejoue) :
+      // log concis sans stack. Autres cas (malformé, signature) → détail complet.
+      const reason = (err as { reason?: string } | null)?.reason;
+      if (reason === 'token-expired') {
+        req.log.info('JWT Clerk expiré → 401 (rafraîchissement client attendu)');
+      } else {
+        req.log.warn({ err }, 'JWT Clerk invalide');
+      }
       return reply.code(401).send({ error: 'Unauthorized' });
     }
   });
