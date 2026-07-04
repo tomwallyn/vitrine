@@ -86,7 +86,7 @@ async function downloadTo(url: string, destAbsPath: string): Promise<void> {
 
 /** Les 5 appels d'un vêtement : FASHN + Kling (sur modèle) + Nano ×3 (cintre/plié/studio). */
 function buildTasks(garment: string, garmentUrl: string, mannequinUrl: string): CallTask[] {
-  const nano = (renderType: Exclude<RenderType, 'model'>): CallTask => ({
+  const nano = (renderType: 'hanger' | 'folded' | 'studio'): CallTask => ({
     garment,
     model: 'nanobanana',
     renderType,
