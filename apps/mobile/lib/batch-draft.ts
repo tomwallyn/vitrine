@@ -1,7 +1,15 @@
 import { create } from 'zustand';
 
-import type { BackgroundOption, MannequinOption, RenderType } from '@vitrine/shared';
+import type {
+  BackgroundOption,
+  GarmentSlot,
+  GarmentType,
+  MannequinOption,
+  RenderType,
+} from '@vitrine/shared';
 import { MAX_BATCH_ITEMS } from '@vitrine/shared';
+
+import type { OutfitPiece, OutfitState } from './outfit';
 
 /** État d'un item du lot : upload GCS en cours / prêt / en échec. */
 export type BatchItemStatus = 'uploading' | 'ready' | 'error';
@@ -27,6 +35,12 @@ export type BatchStyle = {
 type BatchDraftState = {
   items: BatchItem[];
   style: BatchStyle;
+  /**
+   * « Compléter la tenue » — tenue COMMUNE au lot (« sur modèle » uniquement).
+   * Même forme que le brouillon photo unique pour un sous-flux partagé.
+   */
+  garmentType: GarmentType;
+  outfit: OutfitState;
 
   /**
    * Ajoute des photos locales au lot (statut `uploading`), plafonné à
@@ -40,6 +54,9 @@ type BatchDraftState = {
   setUploaded: (id: string, uploadedUrl: string) => void;
   setUploadFailed: (id: string) => void;
   setStyle: (patch: Partial<BatchStyle>) => void;
+  setGarmentType: (garmentType: GarmentType) => void;
+  setOutfitPiece: (slot: GarmentSlot, piece: OutfitPiece) => void;
+  clearOutfitPiece: (slot: GarmentSlot) => void;
   reset: () => void;
 };
 
@@ -64,6 +81,8 @@ function makeItemId(): string {
 export const useBatchDraft = create<BatchDraftState>((set) => ({
   items: [],
   style: defaultStyle,
+  garmentType: 'haut',
+  outfit: {},
 
   addItems: (localUris) => {
     const created: BatchItem[] = [];
@@ -98,6 +117,14 @@ export const useBatchDraft = create<BatchDraftState>((set) => ({
     })),
 
   setStyle: (patch) => set((state) => ({ style: { ...state.style, ...patch } })),
+  setGarmentType: (garmentType) => set({ garmentType, outfit: {} }),
+  setOutfitPiece: (slot, piece) => set((state) => ({ outfit: { ...state.outfit, [slot]: piece } })),
+  clearOutfitPiece: (slot) =>
+    set((state) => {
+      const next = { ...state.outfit };
+      delete next[slot];
+      return { outfit: next };
+    }),
 
-  reset: () => set({ items: [], style: defaultStyle }),
+  reset: () => set({ items: [], style: defaultStyle, garmentType: 'haut', outfit: {} }),
 }));

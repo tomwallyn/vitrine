@@ -12,8 +12,9 @@ import { RenderTypeSelector } from '@/components/RenderTypeSelector';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
 import { useBatchDraft } from '@/lib/batch-draft';
+import { completionSlots, SLOT_LABEL } from '@/lib/outfit';
 import { uploadImageAsync } from '@/lib/upload';
-import { colors } from '@vitrine/shared';
+import { colors, type GarmentSlot } from '@vitrine/shared';
 
 function SectionTitle({ children }: { children: string }) {
   return (
@@ -36,6 +37,8 @@ export default function BatchStyleScreen() {
   const queryClient = useQueryClient();
   const style = useBatchDraft((state) => state.style);
   const setStyle = useBatchDraft((state) => state.setStyle);
+  const garmentType = useBatchDraft((state) => state.garmentType);
+  const outfit = useBatchDraft((state) => state.outfit);
 
   const [customUpload, setCustomUpload] = useState<CustomBackgroundUpload>({
     localUri: null,
@@ -86,6 +89,17 @@ export default function BatchStyleScreen() {
 
   const customSelected = style.backgroundOption === 'custom';
 
+  // Résumé de la tenue commune pour la carte d'entrée.
+  const outfitFilled = (Object.entries(outfit) as [GarmentSlot, { url: string | null }][])
+    .filter(([, piece]) => piece?.url)
+    .map(([slot]) => slot);
+  const outfitSubtitle =
+    outfitFilled.length > 0
+      ? outfitFilled.map((slot) => SLOT_LABEL[slot]).join(' · ')
+      : completionSlots(garmentType)
+          .map((s) => `${SLOT_LABEL[s.slot]}${s.required ? ' requis' : ' en option'}`)
+          .join(' · ');
+
   return (
     <SafeAreaView className="flex-1 bg-paper">
       <ScreenHeader title="Style commun" subtitle="Appliqué à tout le lot" />
@@ -108,6 +122,27 @@ export default function BatchStyleScreen() {
               onChange={(mannequinOption) => setStyle({ mannequinOption })}
               className="mb-6"
             />
+
+            {/* COMPLÉTER LA TENUE — tenue commune au lot */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Compléter la tenue"
+              onPress={() => router.push('/outfit?target=batch')}
+              className="mb-6 flex-row items-center gap-3 rounded-2xl border border-paper3 bg-white p-3 active:bg-paper2"
+            >
+              <View className="h-10 w-10 items-center justify-center rounded-xl bg-paper2">
+                <Ionicons name="shirt-outline" size={20} color={colors.ink} />
+              </View>
+              <View className="flex-1">
+                <Text className="font-body-bold text-[13px] text-ink">Compléter la tenue</Text>
+                <Text className="mt-0.5 font-body text-xs text-gray">{outfitSubtitle}</Text>
+              </View>
+              <View className="rounded-full bg-ink px-3 py-1.5">
+                <Text className="font-body-bold text-[11px] text-offwhite">
+                  {outfitFilled.length > 0 ? 'Modifier' : 'Configurer'}
+                </Text>
+              </View>
+            </Pressable>
           </>
         ) : null}
 

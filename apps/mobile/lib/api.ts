@@ -13,11 +13,15 @@ import type {
   CreateGenerationResponse,
   CreateVariantsRequest,
   CreateVariantsResponse,
+  CreateGarmentRequest,
+  CreateGarmentResponse,
   CreditPacksResponse,
   CreditsResponse,
   GalleryFilter,
   GalleryResponse,
   GallerySort,
+  GarmentSlot,
+  GarmentsResponse,
   GetGenerationResponse,
   RegisterPushTokenRequest,
   RegisterPushTokenResponse,
@@ -170,6 +174,14 @@ export function useApi() {
         list: () => request<BackgroundsResponse>('GET', '/backgrounds'),
         create: (payload: CreateBackgroundRequest) =>
           request<CreateBackgroundResponse>('POST', '/backgrounds', payload),
+      },
+
+      /** Garde-robe : pièces custom réutilisables (« Compléter la tenue »). */
+      garments: {
+        list: (slot?: GarmentSlot) =>
+          request<GarmentsResponse>('GET', slot ? `/garments?slot=${slot}` : '/garments'),
+        create: (payload: CreateGarmentRequest) =>
+          request<CreateGarmentResponse>('POST', '/garments', payload),
       },
     };
   }, [getToken]);

@@ -92,6 +92,16 @@ function RootNavigator() {
           name="render-config"
           options={{ presentation: 'modal', gestureEnabled: true }}
         />
+        {/* « Compléter la tenue » (sur modèle) : tenue → choix pièce → ajout. */}
+        <Stack.Screen name="outfit" options={{ presentation: 'modal', gestureEnabled: true }} />
+        <Stack.Screen
+          name="outfit-picker"
+          options={{ presentation: 'modal', gestureEnabled: true }}
+        />
+        <Stack.Screen
+          name="outfit-add"
+          options={{ presentation: 'transparentModal', animation: 'fade' }}
+        />
         {/* Lot de vêtements : import multiple → style commun → progression. */}
         <Stack.Screen name="batch" options={{ presentation: 'modal', gestureEnabled: true }} />
         <Stack.Screen

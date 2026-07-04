@@ -3,10 +3,14 @@ import { create } from 'zustand';
 import type {
   BackgroundOption,
   CreateGenerationRequest,
+  GarmentSlot,
+  GarmentType,
   GenerationExtraImages,
   MannequinOption,
   RenderType,
 } from '@vitrine/shared';
+
+import type { OutfitPiece, OutfitState } from './outfit';
 
 /** État d'un upload GCS (photo source ou fond personnalisé). */
 export type UploadStatus = 'idle' | 'uploading' | 'done' | 'error';
@@ -35,6 +39,13 @@ type RenderDraftState = {
   customBackgroundUploadStatus: UploadStatus;
   customBackgroundUploadError: string | null;
 
+  /**
+   * « Compléter la tenue » (rendu « sur modèle ») — type générique de la pièce
+   * importée (Haut/Bas/Robe) et pièces de complétion choisies par slot.
+   */
+  garmentType: GarmentType;
+  outfit: OutfitState;
+
   /** Garde anti-écrasement : les préréglages boutique ne s'appliquent qu'une fois. */
   settingsApplied: boolean;
   /** Payload validé au moment de « Générer » — consommé par POST /generations (M3). */
@@ -56,6 +67,13 @@ type RenderDraftState = {
   setCustomBackgroundUploadFailed: (message: string) => void;
   /** Sélectionne un fond réutilisable déjà uploadé (GET /backgrounds). */
   selectExistingBackground: (imageUrl: string) => void;
+
+  /** Type de pièce importée — change de type réinitialise la tenue en cours. */
+  setGarmentType: (garmentType: GarmentType) => void;
+  /** Choisit/remplace la pièce d'un slot de la tenue. */
+  setOutfitPiece: (slot: GarmentSlot, piece: OutfitPiece) => void;
+  /** Retire la pièce d'un slot. */
+  clearOutfitPiece: (slot: GarmentSlot) => void;
 
   applyShopDefaults: (defaults: {
     defaultRenderType?: RenderType;
@@ -80,6 +98,8 @@ const initialState = {
   customBackgroundUrl: null,
   customBackgroundUploadStatus: 'idle' as UploadStatus,
   customBackgroundUploadError: null,
+  garmentType: 'haut' as GarmentType,
+  outfit: {} as OutfitState,
   settingsApplied: false,
   pendingGeneration: null,
 };
@@ -130,6 +150,15 @@ export const useRenderDraft = create<RenderDraftState>((set) => ({
       customBackgroundUrl: imageUrl,
       customBackgroundUploadStatus: 'done',
       customBackgroundUploadError: null,
+    }),
+
+  setGarmentType: (garmentType) => set({ garmentType, outfit: {} }),
+  setOutfitPiece: (slot, piece) => set((s) => ({ outfit: { ...s.outfit, [slot]: piece } })),
+  clearOutfitPiece: (slot) =>
+    set((s) => {
+      const next = { ...s.outfit };
+      delete next[slot];
+      return { outfit: next };
     }),
 
   applyShopDefaults: (defaults) =>

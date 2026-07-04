@@ -21,6 +21,12 @@ import { RenderTypeSelector } from '@/components/RenderTypeSelector';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { isInsufficientCredits, useApi } from '@/lib/api';
 import { useGenerationTracker } from '@/lib/generation-tracker';
+import {
+  completionSlots,
+  outfitToPayload,
+  outfitUploading,
+  SLOT_LABEL,
+} from '@/lib/outfit';
 import { useRenderDraft } from '@/lib/render-draft';
 import { uploadImageAsync } from '@/lib/upload';
 import {
@@ -28,6 +34,7 @@ import {
   createGenerationRequestSchema,
   GENERATION_COST_CREDITS,
   type CreateGenerationRequest,
+  type GarmentSlot,
   type GetGenerationResponse,
   type MeResponse,
 } from '@vitrine/shared';
@@ -182,10 +189,13 @@ export default function RenderConfigScreen() {
   const customBackgroundReady =
     draft.backgroundOption !== 'custom' ||
     (!!draft.customBackgroundUrl && draft.customBackgroundUploadStatus === 'done');
+  // La tenue ne bloque la génération que si une pièce est encore en cours d'upload.
+  const outfitReady = draft.renderType !== 'model' || !outfitUploading(draft.outfit);
   const canGenerate =
     !!draft.sourceUrl &&
     draft.sourceUploadStatus === 'done' &&
     customBackgroundReady &&
+    outfitReady &&
     !generateMutation.isPending;
 
   /** Valide le payload (contrat zod partagé) puis lance POST /generations. */
@@ -203,10 +213,26 @@ export default function RenderConfigScreen() {
       ...(draft.extraImages && Object.values(draft.extraImages).some(Boolean)
         ? { extraImages: draft.extraImages }
         : {}),
+      // « Compléter la tenue » (sur modèle) : type importé + pièces de complétion.
+      ...(draft.renderType === 'model' ? { garmentType: draft.garmentType } : {}),
+      ...(draft.renderType === 'model' && outfitToPayload(draft.outfit)
+        ? { outfit: outfitToPayload(draft.outfit) }
+        : {}),
     });
     draft.setPendingGeneration(payload);
     generateMutation.mutate(payload);
   };
+
+  // Résumé de la tenue pour la carte d'entrée (pièces choisies ou consigne).
+  const outfitFilled = (Object.entries(draft.outfit) as [GarmentSlot, { url: string | null }][])
+    .filter(([, piece]) => piece?.url)
+    .map(([slot]) => slot);
+  const outfitSubtitle =
+    outfitFilled.length > 0
+      ? outfitFilled.map((slot) => SLOT_LABEL[slot]).join(' · ')
+      : completionSlots(draft.garmentType)
+          .map((s) => `${SLOT_LABEL[s.slot]}${s.required ? ' requis' : ' en option'}`)
+          .join(' · ');
 
   /** Nombre de vues additionnelles jointes (flux multi-détails). */
   const extraCount = draft.extraImages
@@ -305,6 +331,27 @@ export default function RenderConfigScreen() {
               onChange={draft.setMannequinOption}
               className="mb-6"
             />
+
+            {/* COMPLÉTER LA TENUE — entrée du sous-flux d'habillage */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Compléter la tenue"
+              onPress={() => router.push('/outfit?target=single')}
+              className="mb-6 flex-row items-center gap-3 rounded-2xl border border-paper3 bg-white p-3 active:bg-paper2"
+            >
+              <View className="h-10 w-10 items-center justify-center rounded-xl bg-paper2">
+                <Ionicons name="shirt-outline" size={20} color={colors.ink} />
+              </View>
+              <View className="flex-1">
+                <Text className="font-body-bold text-[13px] text-ink">Compléter la tenue</Text>
+                <Text className="mt-0.5 font-body text-xs text-gray">{outfitSubtitle}</Text>
+              </View>
+              <View className="rounded-full bg-ink px-3 py-1.5">
+                <Text className="font-body-bold text-[11px] text-offwhite">
+                  {outfitFilled.length > 0 ? 'Modifier' : 'Configurer'}
+                </Text>
+              </View>
+            </Pressable>
           </>
         ) : null}
 

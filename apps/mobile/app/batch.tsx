@@ -13,6 +13,7 @@ import { isInsufficientCredits, useApi } from '@/lib/api';
 import { useBatchDraft, type BatchItem } from '@/lib/batch-draft';
 import { useCaptureResult } from '@/lib/capture-result';
 import { useGenerationTracker } from '@/lib/generation-tracker';
+import { outfitToPayload, outfitUploading } from '@/lib/outfit';
 import { uploadImageAsync } from '@/lib/upload';
 import {
   colors,
@@ -30,6 +31,8 @@ export default function BatchScreen() {
   const queryClient = useQueryClient();
   const items = useBatchDraft((state) => state.items);
   const style = useBatchDraft((state) => state.style);
+  const garmentType = useBatchDraft((state) => state.garmentType);
+  const outfit = useBatchDraft((state) => state.outfit);
 
   // Solde de crédits (header).
   const { data: me } = useQuery({
@@ -159,8 +162,13 @@ export default function BatchScreen() {
   const readyCount = readyItems.length;
   const customBackgroundReady =
     style.backgroundOption !== 'custom' || !!style.customBackgroundUrl;
+  const outfitReady = style.renderType !== 'model' || !outfitUploading(outfit);
   const canGenerate =
-    readyCount >= 1 && !anyUploading && customBackgroundReady && !batchMutation.isPending;
+    readyCount >= 1 &&
+    !anyUploading &&
+    customBackgroundReady &&
+    outfitReady &&
+    !batchMutation.isPending;
 
   /** Valide le payload (contrat zod partagé) puis lance POST /generations/batch. */
   const onGenerate = () => {
@@ -173,6 +181,11 @@ export default function BatchScreen() {
       backgroundOption: style.backgroundOption,
       ...(style.backgroundOption === 'custom' && style.customBackgroundUrl
         ? { customBackgroundUrl: style.customBackgroundUrl }
+        : {}),
+      // « Compléter la tenue » (sur modèle) : tenue commune au lot.
+      ...(style.renderType === 'model' ? { garmentType } : {}),
+      ...(style.renderType === 'model' && outfitToPayload(outfit)
+        ? { outfit: outfitToPayload(outfit) }
         : {}),
     });
     batchMutation.mutate({ payload, sources });
