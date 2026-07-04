@@ -1,0 +1,101 @@
+name: Deploy backend
+
+# develop → Cloud Run DEV · main → Cloud Run PROD.
+# Auth GitHub → GCP via Workload Identity Federation (aucune clé JSON).
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'apps/api/**'
+      - 'packages/shared/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch: {} # déclenchement manuel possible
+
+concurrency:
+  group: deploy-backend-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # requis pour l'auth WIF
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # L'environnement prod peut exiger une validation manuelle (GitHub → Environments).
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Résout l'environnement cible depuis la branche.
+      - name: Résoudre l'environnement
+        id: env
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "name=prod" >>"$GITHUB_OUTPUT"
+            echo "service=vitrine-api-prod" >>"$GITHUB_OUTPUT"
+            echo "bucket=${{ vars.GCS_BUCKET_PROD }}" >>"$GITHUB_OUTPUT"
+            echo "db_secret=vitrine-database-url-prod" >>"$GITHUB_OUTPUT"
+            echo "clerk_secret=vitrine-clerk-secret-prod" >>"$GITHUB_OUTPUT"
+          else
+            echo "name=dev" >>"$GITHUB_OUTPUT"
+            echo "service=vitrine-api-dev" >>"$GITHUB_OUTPUT"
+            echo "bucket=${{ vars.GCS_BUCKET_DEV }}" >>"$GITHUB_OUTPUT"
+            echo "db_secret=vitrine-database-url-dev" >>"$GITHUB_OUTPUT"
+            echo "clerk_secret=vitrine-clerk-secret-dev" >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: Auth GCP (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build & push image
+        env:
+          IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_AR_REPO }}/vitrine-api:${{ github.sha }}
+        run: |
+          gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
+          docker build -f apps/api/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >>"$GITHUB_ENV"
+
+      # Migrations Neon AVANT le déploiement (migrations additives → sûres pour la
+      # révision en cours pendant le court chevauchement). DATABASE_URL lu depuis
+      # Secret Manager, jamais exposé en clair dans les logs.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Migrations DB
+        run: |
+          pnpm install --frozen-lockfile
+          DB_URL="$(gcloud secrets versions access latest --secret='${{ steps.env.outputs.db_secret }}')"
+          DATABASE_URL="$DB_URL" pnpm --filter api db:migrate
+
+      - name: Deploy Cloud Run (${{ steps.env.outputs.name }})
+        run: |
+          gcloud run deploy "${{ steps.env.outputs.service }}" \
+            --image="$IMAGE" \
+            --region="${{ vars.GCP_REGION }}" \
+            --service-account="${{ secrets.GCP_RUNTIME_SA }}" \
+            --allow-unauthenticated \
+            --min-instances=0 --max-instances=3 --concurrency=80 \
+            --memory=512Mi --cpu=1 --timeout=300 \
+            --set-env-vars="NODE_ENV=production,GCS_PROJECT_ID=${{ vars.GCP_PROJECT_ID }},GCS_BUCKET=${{ steps.env.outputs.bucket }}" \
+            --set-secrets="DATABASE_URL=${{ steps.env.outputs.db_secret }}:latest,CLERK_SECRET_KEY=${{ steps.env.outputs.clerk_secret }}:latest,FAL_KEY=vitrine-fal-key:latest,FAL_WEBHOOK_SECRET=vitrine-fal-webhook-secret:latest,REVENUECAT_WEBHOOK_SECRET=vitrine-revenuecat-webhook-secret:latest"
+
+      # API_PUBLIC_URL = l'URL publique du service (webhooks fal/RevenueCat).
+      - name: Fixer API_PUBLIC_URL
+        run: |
+          URL="$(gcloud run services describe '${{ steps.env.outputs.service }}' --region='${{ vars.GCP_REGION }}' --format='value(status.url)')"
+          gcloud run services update '${{ steps.env.outputs.service }}' \
+            --region='${{ vars.GCP_REGION }}' \
+            --update-env-vars="API_PUBLIC_URL=$URL"
+          echo "Déployé : $URL"

@@ -1,0 +1,77 @@
+name: Build mobile
+
+# develop → profil preview (APK Android + iOS simulateur)
+# main    → profil production (APK Android signé + iOS simulateur pour l'instant)
+# Les binaires sont buildés par EAS (cloud) puis déposés dans les ARTEFACTS GitHub.
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/shared/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/build-mobile.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: build-mobile-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Profil selon la branche
+        id: p
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "profile=production" >>"$GITHUB_OUTPUT"
+          else
+            echo "profile=preview" >>"$GITHUB_OUTPUT"
+          fi
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: pnpm install --frozen-lockfile
+
+      # Build cloud EAS des 2 plateformes, on attend la fin et on récupère le JSON.
+      - name: EAS build (${{ steps.p.outputs.profile }})
+        working-directory: apps/mobile
+        run: |
+          eas build --platform all --profile "${{ steps.p.outputs.profile }}" \
+            --non-interactive --wait --json > builds.json
+          echo "Builds terminés :"
+          jq -r '.[] | "  \(.platform): \(.artifacts.applicationArchiveUrl)"' builds.json
+
+      - name: Télécharger les binaires
+        working-directory: apps/mobile
+        run: |
+          mkdir -p artifacts
+          A_URL="$(jq -r '.[] | select(.platform=="ANDROID") | .artifacts.applicationArchiveUrl // empty' builds.json)"
+          I_URL="$(jq -r '.[] | select(.platform=="IOS") | .artifacts.applicationArchiveUrl // empty' builds.json)"
+          if [ -n "$A_URL" ]; then
+            curl -fL "$A_URL" -o "artifacts/vitrine-${{ steps.p.outputs.profile }}-android.apk"
+          fi
+          if [ -n "$I_URL" ]; then
+            curl -fL "$I_URL" -o "artifacts/vitrine-${{ steps.p.outputs.profile }}-ios-simulator.tar.gz"
+          fi
+          ls -la artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vitrine-mobile-${{ steps.p.outputs.profile }}-${{ github.sha }}
+          path: apps/mobile/artifacts/*
+          retention-days: 30
+          if-no-files-found: error
