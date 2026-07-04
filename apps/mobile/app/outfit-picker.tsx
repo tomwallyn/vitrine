@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -20,6 +20,51 @@ const SLOT_ARTICLE: Record<GarmentSlot, string> = {
 };
 
 type Choice = { key: string; name: string; thumbUrl: string; url: string };
+
+/**
+ * Tuile de suggestion — définie au niveau module (et mémoïsée) : sinon, la
+ * redéfinir dans le rendu de l'écran remonterait toutes les tuiles à chaque
+ * sélection → les vignettes se rechargeraient (flicker au clic).
+ */
+const PickerTile = memo(function PickerTile({
+  choice,
+  selected,
+  onSelect,
+}: {
+  choice: Choice;
+  selected: boolean;
+  onSelect: (choice: Choice) => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={choice.name}
+      accessibilityState={{ selected }}
+      onPress={() => onSelect(choice)}
+      className="w-[31%]"
+    >
+      <View
+        className={`overflow-hidden rounded-2xl border bg-white ${
+          selected ? 'border-2 border-ink' : 'border-paper3'
+        }`}
+      >
+        <Image
+          source={{ uri: choice.thumbUrl }}
+          className="aspect-square w-full bg-paper2"
+          resizeMode="cover"
+        />
+        {selected ? (
+          <View className="absolute right-1.5 top-1.5 h-5 w-5 items-center justify-center rounded-full bg-ink">
+            <Ionicons name="checkmark" size={12} color={colors.offwhite} />
+          </View>
+        ) : null}
+      </View>
+      <Text numberOfLines={1} className="mt-1 text-center font-body-semibold text-[9.5px] text-ink">
+        {choice.name}
+      </Text>
+    </Pressable>
+  );
+});
 
 /** MODÈLE·2 — « Choisir une pièce » : suggestions par défaut + garde-robe. */
 export default function OutfitPickerScreen() {
@@ -59,35 +104,6 @@ export default function OutfitPickerScreen() {
     router.back();
   };
 
-  const Tile = ({ choice }: { choice: Choice }) => {
-    const isSel = selected?.url === choice.url;
-    return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={choice.name}
-        accessibilityState={{ selected: isSel }}
-        onPress={() => setSelected(choice)}
-        className="w-[31%]"
-      >
-        <View
-          className={`overflow-hidden rounded-2xl border bg-white ${
-            isSel ? 'border-2 border-ink' : 'border-paper3'
-          }`}
-        >
-          <Image source={{ uri: choice.thumbUrl }} className="aspect-square w-full bg-paper2" resizeMode="cover" />
-          {isSel ? (
-            <View className="absolute right-1.5 top-1.5 h-5 w-5 items-center justify-center rounded-full bg-ink">
-              <Ionicons name="checkmark" size={12} color={colors.offwhite} />
-            </View>
-          ) : null}
-        </View>
-        <Text numberOfLines={1} className="mt-1 text-center font-body-semibold text-[9.5px] text-ink">
-          {choice.name}
-        </Text>
-      </Pressable>
-    );
-  };
-
   return (
     <SafeAreaView className="flex-1 bg-paper">
       <ScreenHeader title={`Choisir ${SLOT_ARTICLE[slot]}`} />
@@ -99,7 +115,12 @@ export default function OutfitPickerScreen() {
         </Text>
         <View className="flex-row flex-wrap gap-x-[3.5%] gap-y-3">
           {suggestions.map((choice) => (
-            <Tile key={choice.key} choice={choice} />
+            <PickerTile
+              key={choice.key}
+              choice={choice}
+              selected={selected?.url === choice.url}
+              onSelect={setSelected}
+            />
           ))}
           {/* Ajouter une pièce custom */}
           <Pressable
@@ -123,7 +144,12 @@ export default function OutfitPickerScreen() {
             </Text>
             <View className="flex-row flex-wrap gap-x-[3.5%] gap-y-3">
               {saved.map((choice) => (
-                <Tile key={choice.key} choice={choice} />
+                <PickerTile
+              key={choice.key}
+              choice={choice}
+              selected={selected?.url === choice.url}
+              onSelect={setSelected}
+            />
               ))}
             </View>
           </>
