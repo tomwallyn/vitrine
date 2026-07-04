@@ -167,20 +167,16 @@ export interface Mannequin {
  */
 export const MANNEQUINS: Record<Exclude<MannequinOption, 'studio'>, Mannequin[]> = {
   femme: [
-    {
-      id: 'femme-1',
-      name: 'Femme 1',
-      url: 'https://v3b.fal.media/files/b/0aa0c667/rjKF8pXuGCxl1lQnhnSlA_ChatGPT%20Image%203%20juil.%202026%2C%2015_56_00.png',
-    },
+    { id: 'femme-1', name: 'Femme 1', url: 'https://v3b.fal.media/files/b/0aa0e663/NVBj5HD29eCmi-5bxy-W7_femme-1.png' },
+    { id: 'femme-2', name: 'Femme 2', url: 'https://v3b.fal.media/files/b/0aa0e663/kr3cU_iEF-fSz6udco0Cl_femme-2.png' },
+    { id: 'femme-3', name: 'Femme 3', url: 'https://v3b.fal.media/files/b/0aa0e664/6R67O98x5fu46ljvhtixh_femme-3.png' },
   ],
-  // ⚠️ homme & silhouette : encore des placeholders — à remplacer/enrichir comme femme.
   homme: [
-    {
-      id: 'homme-1',
-      name: 'Homme 1',
-      url: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1080&q=80',
-    },
+    { id: 'homme-1', name: 'Homme 1', url: 'https://v3b.fal.media/files/b/0aa0e664/oGw2ma0SmC7FOc4tK6MB1_homme-1.png' },
+    { id: 'homme-2', name: 'Homme 2', url: 'https://v3b.fal.media/files/b/0aa0e66e/iTCxbGKisL45qYqXGXyq0_homme-2.png' },
+    { id: 'homme-3', name: 'Homme 3', url: 'https://v3b.fal.media/files/b/0aa0e664/eCvolSZUq7sDBOES1iRa3_homme-3.png' },
   ],
+  // ⚠️ silhouette : encore un placeholder — Tom le fera plus tard.
   silhouette: [
     {
       id: 'silhouette-1',
