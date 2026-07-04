@@ -16,6 +16,8 @@ import type {
   ClassifyGarmentResponse,
   CreateGarmentRequest,
   CreateGarmentResponse,
+  CreateScenePresetRequest,
+  CreateScenePresetResponse,
   CreditPacksResponse,
   CreditsResponse,
   GalleryFilter,
@@ -26,6 +28,8 @@ import type {
   GetGenerationResponse,
   RegisterPushTokenRequest,
   RegisterPushTokenResponse,
+  ScenePresetSlot,
+  ScenePresetsResponse,
 } from '@vitrine/shared';
 
 /** Base URL de l'API Fastify (device réel : IP LAN de la machine, pas localhost). */
@@ -177,6 +181,14 @@ export function useApi() {
         list: () => request<BackgroundsResponse>('GET', '/backgrounds'),
         create: (payload: CreateBackgroundRequest) =>
           request<CreateBackgroundResponse>('POST', '/backgrounds', payload),
+      },
+
+      /** Presets texte perso de « Compléter la scène » (rendu objet). */
+      scenePresets: {
+        list: (slot: ScenePresetSlot) =>
+          request<ScenePresetsResponse>('GET', `/scene-presets?slot=${slot}`),
+        create: (payload: CreateScenePresetRequest) =>
+          request<CreateScenePresetResponse>('POST', '/scene-presets', payload),
       },
 
       /** Garde-robe : pièces custom réutilisables (« Compléter la tenue »). */

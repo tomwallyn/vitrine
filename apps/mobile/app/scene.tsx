@@ -25,18 +25,21 @@ export default function SceneScreen() {
     {
       id: 'surface',
       label: 'Surface',
-      required: true,
+      required: false,
       icon: 'apps-outline',
-      value: preset(OBJECT_SURFACES, scene.surface) ?? 'À choisir',
+      value: scene.surface ? (preset(OBJECT_SURFACES, scene.surface) ?? scene.surface) : 'Auto',
     },
     {
       id: 'background',
       label: 'Arrière-plan',
       required: false,
       icon: 'image-outline',
-      value: scene.decor?.url || scene.decor?.thumbUrl
-        ? 'Décor perso'
-        : (preset(OBJECT_SCENES, scene.background) ?? 'Studio par défaut'),
+      value:
+        scene.decor?.url || scene.decor?.thumbUrl
+          ? 'Décor perso'
+          : scene.background
+            ? (preset(OBJECT_SCENES, scene.background) ?? scene.background)
+            : 'Studio par défaut',
       uploading: scene.decor?.status === 'uploading',
       thumb: scene.decor?.thumbUrl ?? null,
     },
@@ -45,7 +48,9 @@ export default function SceneScreen() {
       label: 'Accessoires',
       required: false,
       icon: 'leaf-outline',
-      value: preset(OBJECT_ACCESSORIES, scene.accessoires) ?? 'Aucun',
+      value: scene.accessoires
+        ? (preset(OBJECT_ACCESSORIES, scene.accessoires) ?? scene.accessoires)
+        : 'Aucun',
     },
   ];
 
@@ -87,9 +92,7 @@ export default function SceneScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${slot.label} — modifier`}
               onPress={() => router.push(`/scene-picker?slot=${slot.id}&target=${target}`)}
-              className={`flex-row items-center gap-3 rounded-2xl bg-white p-3 ${
-                slot.required && !scene.surface ? 'border-[1.5px] border-ink' : 'border border-paper3'
-              }`}
+              className="flex-row items-center gap-3 rounded-2xl border border-paper3 bg-white p-3"
             >
               <View className="h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-paper2">
                 {slot.thumb ? (
@@ -139,7 +142,7 @@ export default function SceneScreen() {
 
       <View className="px-5 pb-2 pt-2">
         <Button
-          label={ready ? 'Valider la scène' : 'Choisissez une surface pour continuer'}
+          label={ready ? 'Valider la scène' : 'Envoi du décor…'}
           onPress={() => router.back()}
           disabled={!ready}
         />

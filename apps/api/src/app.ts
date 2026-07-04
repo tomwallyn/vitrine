@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 
 import { registerAuth } from './plugins/auth.js';
 import { registerBackgroundRoutes } from './routes/backgrounds.js';
+import { registerScenePresetRoutes } from './routes/scene-presets.js';
 import { registerCreditRoutes } from './routes/credits.js';
 import { registerGalleryRoutes } from './routes/gallery.js';
 import { registerGarmentRoutes } from './routes/garments.js';
@@ -63,6 +64,9 @@ export function buildApp(): FastifyInstance {
 
   // ── Fonds personnalisés (M3a) ────────────────────────────────
   registerBackgroundRoutes(app);
+
+  // ── Presets texte perso de « Compléter la scène » (objet) ────
+  registerScenePresetRoutes(app);
 
   // ── Garde-robe : pièces de tenue (« Compléter la tenue ») ────
   registerGarmentRoutes(app);

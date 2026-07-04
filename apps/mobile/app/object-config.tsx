@@ -126,11 +126,13 @@ export default function ObjectConfigScreen() {
     generateMutation.mutate(payload);
   };
 
-  // Résumé de la scène pour la carte d'entrée.
+  // Résumé de la scène pour la carte d'entrée (preset OU texte libre).
   const sceneParts = [
-    draft.scene.decor?.url ? 'Décor perso' : presetName(OBJECT_SCENES, draft.scene.background),
-    presetName(OBJECT_SURFACES, draft.scene.surface),
-    presetName(OBJECT_ACCESSORIES, draft.scene.accessoires),
+    draft.scene.decor?.url
+      ? 'Décor perso'
+      : (presetName(OBJECT_SCENES, draft.scene.background) ?? draft.scene.background),
+    presetName(OBJECT_SURFACES, draft.scene.surface) ?? draft.scene.surface,
+    presetName(OBJECT_ACCESSORIES, draft.scene.accessoires) ?? draft.scene.accessoires,
   ].filter(Boolean);
   const sceneSubtitle = sceneParts.length > 0 ? sceneParts.join(' · ') : 'Surface, arrière-plan, accessoires';
 

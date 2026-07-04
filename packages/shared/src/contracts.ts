@@ -566,6 +566,37 @@ export const createBackgroundResponseSchema = z.object({
 });
 export type CreateBackgroundResponse = z.infer<typeof createBackgroundResponseSchema>;
 
+// ── Presets texte perso de « Compléter la scène » (rendu objet) ───
+
+export const scenePresetSlotSchema = z.enum(['surface', 'background', 'accessoires']);
+export type ScenePresetSlot = z.infer<typeof scenePresetSlotSchema>;
+
+export const scenePresetSchema = z.object({
+  id: z.string().uuid(),
+  slot: scenePresetSlotSchema,
+  /** Description libre (ex. « plan de travail en inox brossé »). */
+  text: z.string(),
+  createdAt: z.string(),
+});
+export type ScenePreset = z.infer<typeof scenePresetSchema>;
+
+/** Query de GET /scene-presets — filtré par slot. */
+export const scenePresetsQuerySchema = z.object({ slot: scenePresetSlotSchema });
+
+export const scenePresetsResponseSchema = z.object({
+  presets: z.array(scenePresetSchema),
+});
+export type ScenePresetsResponse = z.infer<typeof scenePresetsResponseSchema>;
+
+export const createScenePresetRequestSchema = z.object({
+  slot: scenePresetSlotSchema,
+  text: z.string().trim().min(1).max(80),
+});
+export type CreateScenePresetRequest = z.infer<typeof createScenePresetRequestSchema>;
+
+export const createScenePresetResponseSchema = z.object({ preset: scenePresetSchema });
+export type CreateScenePresetResponse = z.infer<typeof createScenePresetResponseSchema>;
+
 // ─────────────────────────────────────────────────────────────────
 // Garde-robe — GET /garments · POST /garments (pièces custom réutilisables)
 // ─────────────────────────────────────────────────────────────────

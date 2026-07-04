@@ -41,9 +41,13 @@ export function sceneToPayload(scene: SceneState): GenerationScene | undefined {
   return Object.keys(p).length > 0 ? p : undefined;
 }
 
-/** La surface (requise) est choisie et aucun décor n'est en cours d'upload. */
+/**
+ * Scène prête à valider : plus aucune exigence de surface (tous les slots sont
+ * optionnels — Nano génère une scène crédible même sans surface). Seul un décor
+ * perso en cours d'upload bloque.
+ */
 export function sceneReady(scene: SceneState): boolean {
-  return !!scene.surface && scene.decor?.status !== 'uploading';
+  return scene.decor?.status !== 'uploading';
 }
 
 /** Un décor perso est-il en cours d'upload ? (bloque le CTA « Générer »). */

@@ -60,11 +60,13 @@ export default function BatchStyleScreen() {
   const outfit = useBatchDraft((state) => state.outfit);
   const scene = useBatchDraft((state) => state.scene);
 
-  // Résumé de la scène commune (rendu objet) pour la carte d'entrée.
+  // Résumé de la scène commune (rendu objet) pour la carte d'entrée (preset OU texte libre).
   const sceneParts = [
-    scene.decor?.url ? 'Décor perso' : presetName(OBJECT_SCENES, scene.background),
-    presetName(OBJECT_SURFACES, scene.surface),
-    presetName(OBJECT_ACCESSORIES, scene.accessoires),
+    scene.decor?.url
+      ? 'Décor perso'
+      : (presetName(OBJECT_SCENES, scene.background) ?? scene.background),
+    presetName(OBJECT_SURFACES, scene.surface) ?? scene.surface,
+    presetName(OBJECT_ACCESSORIES, scene.accessoires) ?? scene.accessoires,
   ].filter(Boolean);
   const sceneSubtitle =
     sceneParts.length > 0 ? sceneParts.join(' · ') : 'Surface, arrière-plan, accessoires';

@@ -14,6 +14,11 @@ import {
 
 export const subjectTypeEnum = pgEnum('subject_type', ['vetement', 'objet']);
 export const sceneLightingEnum = pgEnum('scene_lighting', ['douce', 'doree', 'contrastee']);
+export const scenePresetSlotEnum = pgEnum('scene_preset_slot', [
+  'surface',
+  'background',
+  'accessoires',
+]);
 export const renderTypeEnum = pgEnum('render_type', [
   // Vêtement
   'model',
@@ -174,6 +179,25 @@ export const generations = pgTable('generations', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   completedAt: timestamp('completed_at', { withTimezone: true }),
 });
+
+/**
+ * Presets texte perso de « Compléter la scène » (rendu objet) : descriptions
+ * libres saisies par l'utilisateur (surface / arrière-plan / accessoires),
+ * réutilisables. `text` unique par (shop, slot) — pas de doublon.
+ */
+export const scenePresets = pgTable(
+  'scene_presets',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopId: uuid('shop_id')
+      .notNull()
+      .references(() => shops.id),
+    slot: scenePresetSlotEnum('slot').notNull(),
+    text: text('text').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique('scene_presets_shop_slot_text_unique').on(t.shopId, t.slot, t.text)],
+);
 
 /** Fonds personnalisés uploadés, réutilisables (écran 03 + préréglages). */
 export const backgrounds = pgTable('backgrounds', {
