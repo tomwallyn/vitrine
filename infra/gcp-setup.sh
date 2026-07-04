@@ -55,6 +55,21 @@ gcloud iam service-accounts create "${RUNTIME_SA}" \
 gcloud iam service-accounts create "${DEPLOY_SA}" \
   --display-name="GitHub Actions deployer" 2>/dev/null || echo "  (deploy déjà créé)"
 
+# La création d'un SA est asynchrone : on attend sa propagation avant de l'utiliser
+# dans des bindings IAM (sinon INVALID_ARGUMENT: service account does not exist).
+wait_for_sa() {
+  local email="$1"
+  for _ in $(seq 1 30); do
+    gcloud iam service-accounts describe "${email}" >/dev/null 2>&1 && return 0
+    sleep 2
+  done
+  echo "  ✗ SA ${email} introuvable après 60s" >&2
+  return 1
+}
+echo "▸ Attente de la propagation des service accounts…"
+wait_for_sa "${RUNTIME_SA_EMAIL}"
+wait_for_sa "${DEPLOY_SA_EMAIL}"
+
 # ── 4. Droits du SA d'exécution (runtime) ────────────────────────
 # Accès aux secrets + signature d'URLs GCS (signBlob sur lui-même) via ADC.
 echo "▸ IAM runtime SA…"
