@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
-import { useRenderDraft } from '@/lib/render-draft';
+import { useSceneTarget } from '@/lib/use-scene-target';
 import {
   colors,
   OBJECT_ACCESSORIES,
@@ -99,12 +99,12 @@ const DecorTile = memo(function DecorTile({
 export default function ScenePickerScreen() {
   const router = useRouter();
   const api = useApi();
-  const params = useLocalSearchParams<{ slot?: string }>();
+  const params = useLocalSearchParams<{ slot?: string; target?: string }>();
   const slot = (['surface', 'background', 'accessoires'].includes(params.slot ?? '')
     ? params.slot
     : 'surface') as SlotId;
-  const scene = useRenderDraft((s) => s.scene);
-  const setScene = useRenderDraft((s) => s.setScene);
+  const target = params.target === 'batch' ? 'batch' : 'single';
+  const { scene, setScene } = useSceneTarget(target);
 
   const initial: Selection | null =
     slot === 'surface' && scene.surface
@@ -197,7 +197,7 @@ export default function ScenePickerScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Ajouter un décor"
-              onPress={() => router.push('/scene-add')}
+              onPress={() => router.push(`/scene-add?target=${target}`)}
               className="w-[31%]"
             >
               <View className="aspect-square items-center justify-center rounded-2xl border-[1.5px] border-dashed border-gray bg-white">

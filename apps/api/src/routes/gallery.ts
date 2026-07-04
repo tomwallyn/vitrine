@@ -7,7 +7,7 @@ import {
   type GalleryItem,
   type RenderType,
 } from '@vitrine/shared';
-import { and, asc, count, desc, eq, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, type SQL } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 import { getDb, getTxDb } from '../db/client.js';
@@ -63,7 +63,7 @@ export function registerGalleryRoutes(app: FastifyInstance): void {
         .code(400)
         .send({ error: 'Bad Request', details: parsed.error.flatten().fieldErrors });
     }
-    const { filter, sort, limit, offset } = parsed.data;
+    const { q, filter, sort, limit, offset } = parsed.data;
 
     const db = getDb();
     const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
@@ -75,6 +75,7 @@ export function registerGalleryRoutes(app: FastifyInstance): void {
     } else if (filter !== 'all') {
       conditions.push(eq(generations.renderType, filter));
     }
+    if (q) conditions.push(ilike(galleryItems.title, `%${q}%`));
     const where = and(...conditions);
     const orderBy =
       sort === 'oldest' ? asc(galleryItems.createdAt) : desc(galleryItems.createdAt);
@@ -141,7 +142,9 @@ export function registerGalleryRoutes(app: FastifyInstance): void {
       .values({
         shopId: shop.id,
         generationId: generation.id,
-        title: parsed.data.title ?? defaultTitle(generation.renderType, new Date()),
+        // Titre = choix explicite > nom auto IA > « type de rendu · date ».
+        title:
+          parsed.data.title ?? generation.name ?? defaultTitle(generation.renderType, new Date()),
         // Tag par défaut = type de rendu (aligné sur les filtres de l'écran 06).
         tags: parsed.data.tags ?? [generation.renderType],
       })

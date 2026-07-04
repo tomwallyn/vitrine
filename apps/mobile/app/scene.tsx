@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { useRenderDraft } from '@/lib/render-draft';
 import { sceneReady } from '@/lib/scene';
+import { useSceneTarget } from '@/lib/use-scene-target';
 import { colors, OBJECT_ACCESSORIES, OBJECT_SCENES, OBJECT_SURFACES } from '@vitrine/shared';
 
 type SlotId = 'surface' | 'background' | 'accessoires';
@@ -16,8 +16,9 @@ const preset = (list: { key: string; name: string }[], key?: string | null) =>
 /** OBJET·2 — « La scène » : surface (requise) / arrière-plan / accessoires (optionnel). */
 export default function SceneScreen() {
   const router = useRouter();
-  const localUri = useRenderDraft((s) => s.localUri);
-  const scene = useRenderDraft((s) => s.scene);
+  const params = useLocalSearchParams<{ target?: string }>();
+  const target = params.target === 'batch' ? 'batch' : 'single';
+  const { scene, sourceThumb } = useSceneTarget(target);
   const ready = sceneReady(scene);
 
   const SLOTS: { id: SlotId; label: string; required: boolean; icon: keyof typeof Ionicons.glyphMap; value: string; uploading?: boolean; thumb?: string | null }[] = [
@@ -62,17 +63,19 @@ export default function SceneScreen() {
           {/* Objet (verrouillé) */}
           <View className="flex-row items-center gap-3 rounded-2xl bg-ink p-3">
             <View className="h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-paper3">
-              {localUri ? (
-                <Image source={{ uri: localUri }} className="h-full w-full" resizeMode="cover" />
+              {sourceThumb ? (
+                <Image source={{ uri: sourceThumb }} className="h-full w-full" resizeMode="cover" />
               ) : (
                 <Ionicons name="cube-outline" size={20} color={colors.ink} />
               )}
             </View>
             <View className="flex-1">
               <Text className="font-heading text-[10px] uppercase tracking-[1.5px] text-gray">
-                VOTRE OBJET
+                {target === 'batch' ? 'VOTRE LOT' : 'VOTRE OBJET'}
               </Text>
-              <Text className="mt-0.5 font-body-bold text-[13px] text-offwhite">Objet importé</Text>
+              <Text className="mt-0.5 font-body-bold text-[13px] text-offwhite">
+                {target === 'batch' ? 'Scène commune au lot' : 'Objet importé'}
+              </Text>
             </View>
             <Ionicons name="lock-closed" size={16} color={colors.offwhite} />
           </View>
@@ -83,7 +86,7 @@ export default function SceneScreen() {
               key={slot.id}
               accessibilityRole="button"
               accessibilityLabel={`${slot.label} — modifier`}
-              onPress={() => router.push(`/scene-picker?slot=${slot.id}`)}
+              onPress={() => router.push(`/scene-picker?slot=${slot.id}&target=${target}`)}
               className={`flex-row items-center gap-3 rounded-2xl bg-white p-3 ${
                 slot.required && !scene.surface ? 'border-[1.5px] border-ink' : 'border border-paper3'
               }`}

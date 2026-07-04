@@ -26,6 +26,7 @@ export default function CaptureScreen() {
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
 
+  const subjectType = useRenderDraft((s) => s.subjectType);
   const cameraRef = useRef<CameraView>(null);
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<FlashMode>('auto');
@@ -205,7 +206,9 @@ export default function CaptureScreen() {
           <View className="aspect-[3/4] w-full rounded-3xl border-2 border-dashed border-offwhite/60" />
           <View className="mt-4 rounded-full bg-ink/60 px-4 py-2">
             <Text className="text-center font-body-medium text-xs text-offwhite">
-              Placez le vêtement bien à plat, cintre centré
+              {subjectType === 'objet'
+                ? 'Placez l’objet bien centré, fond dégagé'
+                : 'Placez le vêtement bien à plat, cintre centré'}
             </Text>
           </View>
         </View>

@@ -6,10 +6,13 @@ import type {
   GarmentType,
   MannequinOption,
   RenderType,
+  SceneLighting,
+  SubjectType,
 } from '@vitrine/shared';
 import { MAX_BATCH_ITEMS } from '@vitrine/shared';
 
 import type { OutfitPiece, OutfitState } from './outfit';
+import { EMPTY_SCENE, type SceneState } from './scene';
 
 /** État d'un item du lot : upload GCS en cours / prêt / en échec. */
 export type BatchItemStatus = 'uploading' | 'ready' | 'error';
@@ -23,12 +26,16 @@ export type BatchItem = {
   status: BatchItemStatus;
 };
 
-/** Style commun appliqué à TOUT le lot (rendu, mannequin, fond). */
+/** Style commun appliqué à TOUT le lot (sujet, rendu, mannequin/lumière, fond). */
 export type BatchStyle = {
+  /** Type de sujet commun au lot (vêtement/objet). */
+  subjectType: SubjectType;
   renderType: RenderType;
   mannequinOption: MannequinOption;
   /** Variante de mannequin commune au lot (null = 1ʳᵉ par défaut). */
   mannequinId: string | null;
+  /** OBJET — ambiance lumière commune. */
+  lighting: SceneLighting;
   backgroundOption: BackgroundOption;
   /** URL GCS du fond personnalisé (requise si backgroundOption === 'custom'). */
   customBackgroundUrl: string | null;
@@ -43,6 +50,8 @@ type BatchDraftState = {
    */
   garmentType: GarmentType;
   outfit: OutfitState;
+  /** OBJET — scène commune au lot (« Compléter la scène »). */
+  scene: SceneState;
 
   /**
    * Ajoute des photos locales au lot (statut `uploading`), plafonné à
@@ -56,16 +65,22 @@ type BatchDraftState = {
   setUploaded: (id: string, uploadedUrl: string) => void;
   setUploadFailed: (id: string) => void;
   setStyle: (patch: Partial<BatchStyle>) => void;
+  /** Fixe le sujet commun (vêtement/objet) — remet un renderType par défaut + reset scène/tenue. */
+  setSubjectType: (subjectType: SubjectType) => void;
   setGarmentType: (garmentType: GarmentType) => void;
   setOutfitPiece: (slot: GarmentSlot, piece: OutfitPiece) => void;
   clearOutfitPiece: (slot: GarmentSlot) => void;
+  /** OBJET — modifie la scène commune. */
+  setScene: (patch: Partial<SceneState>) => void;
   reset: () => void;
 };
 
 const defaultStyle: BatchStyle = {
+  subjectType: 'vetement',
   renderType: 'model',
   mannequinOption: 'femme',
   mannequinId: null,
+  lighting: 'douce',
   backgroundOption: 'studio',
   customBackgroundUrl: null,
 };
@@ -86,6 +101,7 @@ export const useBatchDraft = create<BatchDraftState>((set) => ({
   style: defaultStyle,
   garmentType: 'haut',
   outfit: {},
+  scene: EMPTY_SCENE,
 
   addItems: (localUris) => {
     const created: BatchItem[] = [];
@@ -120,6 +136,16 @@ export const useBatchDraft = create<BatchDraftState>((set) => ({
     })),
 
   setStyle: (patch) => set((state) => ({ style: { ...state.style, ...patch } })),
+  setSubjectType: (subjectType) =>
+    set((state) => ({
+      style: {
+        ...state.style,
+        subjectType,
+        renderType: subjectType === 'objet' ? 'mise_en_situation' : 'model',
+      },
+      scene: EMPTY_SCENE,
+      outfit: {},
+    })),
   setGarmentType: (garmentType) => set({ garmentType, outfit: {} }),
   setOutfitPiece: (slot, piece) => set((state) => ({ outfit: { ...state.outfit, [slot]: piece } })),
   clearOutfitPiece: (slot) =>
@@ -128,6 +154,8 @@ export const useBatchDraft = create<BatchDraftState>((set) => ({
       delete next[slot];
       return { outfit: next };
     }),
+  setScene: (patch) => set((state) => ({ scene: { ...state.scene, ...patch } })),
 
-  reset: () => set({ items: [], style: defaultStyle, garmentType: 'haut', outfit: {} }),
+  reset: () =>
+    set({ items: [], style: defaultStyle, garmentType: 'haut', outfit: {}, scene: EMPTY_SCENE }),
 }));

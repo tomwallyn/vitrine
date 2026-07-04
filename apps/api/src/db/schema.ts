@@ -119,6 +119,8 @@ export const generations = pgTable('generations', {
     .notNull()
     .references(() => shops.id),
   sourceImageUrl: text('source_image_url').notNull(),
+  /** Nom court auto-généré par IA (titre galerie par défaut + recherche). Null tant que non nommé. */
+  name: text('name'),
   /** Type de sujet (vêtement/objet) — v2. */
   subjectType: subjectTypeEnum('subject_type').notNull().default('vetement'),
   renderType: renderTypeEnum('render_type').notNull(),

@@ -155,11 +155,13 @@ export function useApi() {
         /** GET /gallery — items filtrés/triés/paginés, joints à leur génération. */
         list: (params: {
           filter: GalleryFilter;
+          q?: string;
           sort?: GallerySort;
           limit?: number;
           offset?: number;
         }) => {
           const query = new URLSearchParams({ filter: params.filter });
+          if (params.q) query.set('q', params.q);
           if (params.sort) query.set('sort', params.sort);
           if (params.limit !== undefined) query.set('limit', String(params.limit));
           if (params.offset !== undefined) query.set('offset', String(params.offset));

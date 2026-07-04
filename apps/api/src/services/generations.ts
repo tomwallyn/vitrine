@@ -9,6 +9,7 @@ import { generations, shops } from '../db/schema.js';
 import { ADAPTERS } from './ai/adapters.js';
 import { getFalQueueResult, getFalQueueStatus, submitToFal } from './ai/client.js';
 import { endpointForProvider, resolveAiRoute } from './ai/config.js';
+import { generateProductName } from './ai/name-product.js';
 import { extractProductInfo } from './ai/product-ocr.js';
 import { holdCredit, refundCredit } from './credits.js';
 import { sendPushToShop } from './push.js';
@@ -47,6 +48,7 @@ export async function serializeGeneration(row: GenerationRow): Promise<Generatio
     id: row.id,
     shopId: row.shopId,
     sourceImageUrl,
+    name: row.name,
     subjectType: row.subjectType,
     renderType: row.renderType,
     mannequinOption: row.modelOption,
@@ -325,7 +327,35 @@ export async function finalizeGenerationSuccess(
   // Ne bloque ni ne fait échouer la finalisation (la promesse ne rejette
   // jamais, cf. extractAndStoreProductInfo) — la fiche apparaît au poll suivant.
   void extractAndStoreProductInfo(db, doneRow, log);
+  // Nom auto du produit (titre galerie + recherche) : fire-and-forget, best-effort.
+  void generateAndStoreName(db, doneRow, log);
   return doneRow;
+}
+
+/**
+ * Nomme la génération à partir de la photo source (best-effort, non bloquant) :
+ * un modèle vision propose un nom court FR ({@link generateProductName}) stocké
+ * dans `generations.name`, servant de titre par défaut en galerie + à la recherche.
+ * Ne throw JAMAIS.
+ */
+export async function generateAndStoreName(
+  db: Db,
+  row: GenerationRow,
+  log: GenerationLogger,
+): Promise<void> {
+  try {
+    if (row.name) return; // déjà nommé (webhook rejoué / reconcile)
+    const signed = await signedReadUrl(row.sourceImageUrl, FAL_INPUT_TTL_SECONDS);
+    const name = await generateProductName(signed, row.subjectType, log);
+    if (!name) return;
+    await db.update(generations).set({ name }).where(eq(generations.id, row.id));
+    log.info({ generationId: row.id, name }, 'Nom auto du produit stocké');
+  } catch (err) {
+    log.warn(
+      { generationId: row.id, error: errorMessage(err) },
+      'Nom auto du produit échoué — titre par défaut conservé',
+    );
+  }
 }
 
 /**

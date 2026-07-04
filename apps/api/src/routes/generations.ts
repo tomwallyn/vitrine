@@ -200,6 +200,7 @@ export function registerGenerationBatchRoutes(app: FastifyInstance): void {
     const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
     const {
       items,
+      subjectType,
       renderType,
       mannequinOption,
       mannequinId,
@@ -207,6 +208,8 @@ export function registerGenerationBatchRoutes(app: FastifyInstance): void {
       customBackgroundUrl,
       garmentType,
       outfit,
+      lighting,
+      scene,
     } = parsed.data;
 
     // Le lot entier doit être finançable AVANT le premier hold : pas de lot
@@ -221,16 +224,18 @@ export function registerGenerationBatchRoutes(app: FastifyInstance): void {
       try {
         const row = await createGeneration(db, shop.id, {
           sourceImageUrl: item.sourceImageUrl,
-          // Le lot reste vêtement uniquement en v1.
-          subjectType: 'vetement',
+          subjectType,
           renderType,
-          mannequinOption,
+          ...(mannequinOption ? { mannequinOption } : {}),
           ...(mannequinId ? { mannequinId } : {}),
           backgroundOption,
           ...(customBackgroundUrl ? { customBackgroundUrl } : {}),
           // Tenue commune au lot (« sur modèle » uniquement).
           ...(garmentType ? { garmentType } : {}),
           ...(outfit ? { outfit } : {}),
+          // Objet : ambiance lumière + scène communes au lot.
+          ...(lighting ? { lighting } : {}),
+          ...(scene ? { scene } : {}),
         });
         results.push({ id: row.id, status: row.status });
       } catch (err) {

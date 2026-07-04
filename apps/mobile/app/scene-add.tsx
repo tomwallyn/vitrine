@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { useApi } from '@/lib/api';
 import { useCaptureResult } from '@/lib/capture-result';
-import { useRenderDraft } from '@/lib/render-draft';
+import { useSceneTarget } from '@/lib/use-scene-target';
 import { uploadImageAsync } from '@/lib/upload';
 import { colors } from '@vitrine/shared';
 
@@ -17,7 +17,9 @@ export default function SceneAddScreen() {
   const router = useRouter();
   const api = useApi();
   const queryClient = useQueryClient();
-  const setScene = useRenderDraft((s) => s.setScene);
+  const params = useLocalSearchParams<{ target?: string }>();
+  const target = params.target === 'batch' ? 'batch' : 'single';
+  const { setScene } = useSceneTarget(target);
 
   const [pickedUri, setPickedUri] = useState<string | null>(null);
   const [saveToLibrary, setSaveToLibrary] = useState(true);
@@ -44,7 +46,7 @@ export default function SceneAddScreen() {
     if (!pickedUri) return;
     const uri = pickedUri;
     setScene({ decor: { url: null, thumbUrl: uri, status: 'uploading' }, background: null });
-    router.dismissTo('/scene');
+    router.dismissTo(`/scene?target=${target}`);
 
     uploadImageAsync(api, uri, 'background')
       .then(async ({ publicUrl }) => {

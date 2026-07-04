@@ -14,6 +14,7 @@ import { useBatchDraft, type BatchItem } from '@/lib/batch-draft';
 import { useCaptureResult } from '@/lib/capture-result';
 import { useGenerationTracker } from '@/lib/generation-tracker';
 import { outfitToPayload, outfitUploading } from '@/lib/outfit';
+import { sceneToPayload, sceneUploading } from '@/lib/scene';
 import { uploadImageAsync } from '@/lib/upload';
 import {
   colors,
@@ -33,6 +34,8 @@ export default function BatchScreen() {
   const style = useBatchDraft((state) => state.style);
   const garmentType = useBatchDraft((state) => state.garmentType);
   const outfit = useBatchDraft((state) => state.outfit);
+  const scene = useBatchDraft((state) => state.scene);
+  const isObjet = style.subjectType === 'objet';
 
   // Solde de crédits (header).
   const { data: me } = useQuery({
@@ -101,7 +104,7 @@ export default function BatchScreen() {
 
   /** Choix de la source pour ajouter des pièces : appareil photo ou galerie. */
   const addPhotos = () => {
-    Alert.alert('Ajouter des vêtements', 'Comment voulez-vous ajouter vos photos ?', [
+    Alert.alert(isObjet ? 'Ajouter des objets' : 'Ajouter des vêtements', 'Comment voulez-vous ajouter vos photos ?', [
       { text: 'Appareil photo', onPress: () => void addFromCamera() },
       { text: 'Galerie', onPress: () => void pickImages() },
       { text: 'Annuler', style: 'cancel' },
@@ -163,11 +166,13 @@ export default function BatchScreen() {
   const customBackgroundReady =
     style.backgroundOption !== 'custom' || !!style.customBackgroundUrl;
   const outfitReady = style.renderType !== 'model' || !outfitUploading(outfit);
+  const sceneReadyGate = !isObjet || !sceneUploading(scene);
   const canGenerate =
     readyCount >= 1 &&
     !anyUploading &&
     customBackgroundReady &&
     outfitReady &&
+    sceneReadyGate &&
     !batchMutation.isPending;
 
   /** Valide le payload (contrat zod partagé) puis lance POST /generations/batch. */
@@ -176,20 +181,29 @@ export default function BatchScreen() {
     const sources = readyItems.map((i) => i.uploadedUrl!);
     const payload = createBatchRequestSchema.parse({
       items: sources.map((sourceImageUrl) => ({ sourceImageUrl })),
+      subjectType: style.subjectType,
       renderType: style.renderType,
-      mannequinOption: style.mannequinOption,
-      ...(style.renderType === 'model' && style.mannequinId
-        ? { mannequinId: style.mannequinId }
-        : {}),
-      backgroundOption: style.backgroundOption,
-      ...(style.backgroundOption === 'custom' && style.customBackgroundUrl
-        ? { customBackgroundUrl: style.customBackgroundUrl }
-        : {}),
-      // « Compléter la tenue » (sur modèle) : tenue commune au lot.
-      ...(style.renderType === 'model' ? { garmentType } : {}),
-      ...(style.renderType === 'model' && outfitToPayload(outfit)
-        ? { outfit: outfitToPayload(outfit) }
-        : {}),
+      ...(isObjet
+        ? {
+            // Objet : ambiance lumière + scène communes au lot.
+            lighting: style.lighting,
+            ...(sceneToPayload(scene) ? { scene: sceneToPayload(scene) } : {}),
+          }
+        : {
+            mannequinOption: style.mannequinOption,
+            ...(style.renderType === 'model' && style.mannequinId
+              ? { mannequinId: style.mannequinId }
+              : {}),
+            backgroundOption: style.backgroundOption,
+            ...(style.backgroundOption === 'custom' && style.customBackgroundUrl
+              ? { customBackgroundUrl: style.customBackgroundUrl }
+              : {}),
+            // « Compléter la tenue » (sur modèle) : tenue commune au lot.
+            ...(style.renderType === 'model' ? { garmentType } : {}),
+            ...(style.renderType === 'model' && outfitToPayload(outfit)
+              ? { outfit: outfitToPayload(outfit) }
+              : {}),
+          }),
     });
     batchMutation.mutate({ payload, sources });
   };
@@ -203,7 +217,7 @@ export default function BatchScreen() {
   return (
     <SafeAreaView className="flex-1 bg-paper">
       <ScreenHeader
-        title={`Lot · ${items.length} pièce${items.length > 1 ? 's' : ''}`}
+        title={`Lot · ${items.length} ${isObjet ? 'objet' : 'pièce'}${items.length > 1 ? 's' : ''}`}
         right={<CreditBadge credits={me?.credits ?? 0} />}
       />
 
@@ -235,9 +249,11 @@ export default function BatchScreen() {
             className="mt-5 h-44 items-center justify-center rounded-3xl border border-dashed border-paper3 bg-paper2 active:bg-paper3"
           >
             <Ionicons name="camera-outline" size={28} color={colors.gray2} />
-            <Text className="mt-2 font-body-semibold text-sm text-ink">Ajouter des vêtements</Text>
+            <Text className="mt-2 font-body-semibold text-sm text-ink">
+              {isObjet ? 'Ajouter des objets' : 'Ajouter des vêtements'}
+            </Text>
             <Text className="mt-1 font-body text-xs text-gray">
-              Appareil photo ou galerie · jusqu&apos;à {MAX_BATCH_ITEMS} pièces
+              Appareil photo ou galerie · jusqu&apos;à {MAX_BATCH_ITEMS} {isObjet ? 'objets' : 'pièces'}
             </Text>
           </Pressable>
         ) : (

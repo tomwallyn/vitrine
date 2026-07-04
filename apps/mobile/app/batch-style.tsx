@@ -8,13 +8,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { MannequinSelector } from '@/components/MannequinSelector';
+import { ObjectRenderTypeSelector } from '@/components/ObjectRenderTypeSelector';
 import { RenderTypeSelector } from '@/components/RenderTypeSelector';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
 import { useBatchDraft } from '@/lib/batch-draft';
 import { completionSlots, SLOT_LABEL } from '@/lib/outfit';
 import { uploadImageAsync } from '@/lib/upload';
-import { colors, type GarmentSlot } from '@vitrine/shared';
+import {
+  colors,
+  OBJECT_ACCESSORIES,
+  OBJECT_SCENES,
+  OBJECT_SURFACES,
+  SCENE_LIGHTINGS,
+  type GarmentSlot,
+  type ObjectRenderType,
+  type SceneLighting,
+} from '@vitrine/shared';
+
+const LIGHTING_LABELS: Record<SceneLighting, string> = {
+  douce: 'Douce',
+  doree: 'Dorée',
+  contrastee: 'Contrastée',
+};
+
+const presetName = (list: { key: string; name: string }[], key?: string | null) =>
+  list.find((p) => p.key === key)?.name;
 
 function SectionTitle({ children }: { children: string }) {
   return (
@@ -39,6 +58,16 @@ export default function BatchStyleScreen() {
   const setStyle = useBatchDraft((state) => state.setStyle);
   const garmentType = useBatchDraft((state) => state.garmentType);
   const outfit = useBatchDraft((state) => state.outfit);
+  const scene = useBatchDraft((state) => state.scene);
+
+  // Résumé de la scène commune (rendu objet) pour la carte d'entrée.
+  const sceneParts = [
+    scene.decor?.url ? 'Décor perso' : presetName(OBJECT_SCENES, scene.background),
+    presetName(OBJECT_SURFACES, scene.surface),
+    presetName(OBJECT_ACCESSORIES, scene.accessoires),
+  ].filter(Boolean);
+  const sceneSubtitle =
+    sceneParts.length > 0 ? sceneParts.join(' · ') : 'Surface, arrière-plan, accessoires';
 
   const [customUpload, setCustomUpload] = useState<CustomBackgroundUpload>({
     localUri: null,
@@ -105,13 +134,75 @@ export default function BatchStyleScreen() {
       <ScreenHeader title="Style commun" subtitle="Appliqué à tout le lot" />
 
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-6">
-        {/* STYLE DE VISUEL — 4 types */}
-        <SectionTitle>Style de visuel</SectionTitle>
-        <RenderTypeSelector
-          value={style.renderType}
-          onChange={(renderType) => setStyle({ renderType })}
-          className="mb-6"
-        />
+        {style.subjectType === 'objet' ? (
+          <>
+            {/* TYPE DE RENDU objet — 6 types */}
+            <SectionTitle>Type de rendu</SectionTitle>
+            <ObjectRenderTypeSelector
+              value={style.renderType as ObjectRenderType}
+              onChange={(renderType) => setStyle({ renderType })}
+              className="mb-6"
+            />
+
+            {/* AMBIANCE LUMIÈRE commune */}
+            <SectionTitle>Ambiance lumière</SectionTitle>
+            <View className="mb-6 flex-row gap-2">
+              {SCENE_LIGHTINGS.map((l) => {
+                const selected = style.lighting === l;
+                return (
+                  <Pressable
+                    key={l}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    onPress={() => setStyle({ lighting: l })}
+                    className={`flex-1 items-center rounded-full border py-2.5 ${
+                      selected ? 'border-ink bg-ink' : 'border-paper3 bg-white'
+                    }`}
+                  >
+                    <Text
+                      className={`font-body-semibold text-[13px] ${
+                        selected ? 'text-offwhite' : 'text-ink'
+                      }`}
+                    >
+                      {LIGHTING_LABELS[l]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* COMPLÉTER LA SCÈNE — scène commune au lot */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Compléter la scène"
+              onPress={() => router.push('/scene?target=batch')}
+              className="flex-row items-center gap-3 rounded-2xl border border-paper3 bg-white p-3 active:bg-paper2"
+            >
+              <View className="h-10 w-10 items-center justify-center rounded-xl bg-paper2">
+                <Ionicons name="cube-outline" size={20} color={colors.ink} />
+              </View>
+              <View className="flex-1">
+                <Text className="font-body-bold text-[13px] text-ink">Compléter la scène</Text>
+                <Text className="mt-0.5 font-body text-xs text-gray" numberOfLines={1}>
+                  {sceneSubtitle}
+                </Text>
+              </View>
+              <View className="rounded-full bg-ink px-3 py-1.5">
+                <Text className="font-body-bold text-[11px] text-offwhite">
+                  {sceneParts.length > 0 ? 'Modifier' : 'Configurer'}
+                </Text>
+              </View>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            {/* STYLE DE VISUEL — 4 types */}
+            <SectionTitle>Style de visuel</SectionTitle>
+            <RenderTypeSelector
+              value={style.renderType}
+              onChange={(renderType) => setStyle({ renderType })}
+              className="mb-6"
+            />
 
         {/* MANNEQUIN — visible pour le rendu « Sur modèle » */}
         {style.renderType === 'model' ? (
@@ -264,6 +355,8 @@ export default function BatchStyleScreen() {
             </ScrollView>
           </View>
         ) : null}
+          </>
+        )}
       </ScrollView>
 
       {/* CTA — les choix sont déjà écrits dans le brouillon du lot */}

@@ -1,8 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -114,6 +123,12 @@ export default function GalleryScreen() {
   const api = useApi();
   const [filter, setFilter] = useState<GalleryFilter>('all');
   const [sort, setSort] = useState<GallerySort>('recent');
+  const [search, setSearch] = useState('');
+  const [query, setQuery] = useState(''); // valeur débouncée envoyée à l'API
+  useEffect(() => {
+    const t = setTimeout(() => setQuery(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
   // Générations en cours (tracker global) — tuiles en tête de grille.
   const activeGenerations = useActiveGenerations();
 
@@ -128,8 +143,9 @@ export default function GalleryScreen() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['gallery', filter, sort],
-    queryFn: ({ pageParam }) => api.gallery.list({ filter, sort, offset: pageParam }),
+    queryKey: ['gallery', filter, sort, query],
+    queryFn: ({ pageParam }) =>
+      api.gallery.list({ filter, sort, offset: pageParam, ...(query ? { q: query } : {}) }),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) =>
       lastPage.hasMore
@@ -161,8 +177,37 @@ export default function GalleryScreen() {
           </Pressable>
         </View>
 
-        {/* Filtres Tout / Sur modèle / Cintre — GET /gallery?filter=… */}
-        <View className="mt-4 flex-row gap-2">
+        {/* Barre de recherche */}
+        <View className="mt-4 flex-row items-center gap-2 rounded-2xl border border-paper3 bg-white px-3.5 py-2.5">
+          <Ionicons name="search" size={16} color={colors.gray} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Rechercher une création…"
+            placeholderTextColor={colors.gray}
+            className="flex-1 font-body text-sm text-ink"
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {search ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Effacer la recherche"
+              hitSlop={8}
+              onPress={() => setSearch('')}
+            >
+              <Ionicons name="close-circle" size={16} color={colors.gray} />
+            </Pressable>
+          ) : null}
+        </View>
+
+        {/* Filtres — GET /gallery?filter=… (scroll horizontal) */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mt-3 max-h-11 flex-grow-0"
+          contentContainerClassName="gap-2 pr-5"
+        >
           {GALLERY_FILTERS.map((f) => {
             const selected = filter === f;
             return (
@@ -171,7 +216,7 @@ export default function GalleryScreen() {
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
                 onPress={() => setFilter(f)}
-                className={`rounded-full border px-4 py-2 ${
+                className={`h-9 justify-center rounded-full border px-4 ${
                   selected ? 'border-ink bg-ink' : 'border-paper3 bg-white'
                 }`}
               >
@@ -185,7 +230,7 @@ export default function GalleryScreen() {
               </Pressable>
             );
           })}
-        </View>
+        </ScrollView>
 
         {/* Grille 2 colonnes (loading / erreur / vide / items) */}
         {isPending ? (
@@ -248,18 +293,20 @@ export default function GalleryScreen() {
               <View className="flex-1 items-center justify-center px-8">
                 <Text className="text-4xl">🪞</Text>
                 <Text className="mt-4 text-center font-heading-bold text-lg text-ink">
-                  Aucune création
+                  {query ? 'Aucun résultat' : 'Aucune création'}
                 </Text>
                 <Text className="mt-2 text-center font-body text-sm text-gray2">
-                  {filter === 'all'
-                    ? 'Photographiez votre premier vêtement pour créer votre vitrine.'
-                    : 'Aucun visuel de ce type pour le moment.'}
+                  {query
+                    ? `Rien ne correspond à « ${query} ».`
+                    : filter === 'all'
+                      ? 'Photographiez votre premier produit pour créer votre vitrine.'
+                      : 'Aucun visuel de ce type pour le moment.'}
                 </Text>
-                {filter === 'all' ? (
+                {filter === 'all' && !query ? (
                   <Button
-                    label="Photographier un vêtement"
+                    label="Créer un visuel"
                     className="mt-6 self-stretch"
-                    onPress={() => router.push('/capture')}
+                    onPress={() => router.push('/product-type')}
                   />
                 ) : null}
               </View>

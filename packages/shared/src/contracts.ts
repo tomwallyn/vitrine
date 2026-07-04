@@ -194,6 +194,8 @@ export const generationSchema = z.object({
   id: z.string().uuid(),
   shopId: z.string().uuid(),
   sourceImageUrl: z.string().url(),
+  /** Nom court auto-généré (IA) — null tant que non nommé. */
+  name: z.string().nullable().optional(),
   /** Type de sujet (vêtement/objet) — défaut 'vetement' pour les anciennes lignes. */
   subjectType: subjectTypeSchema.default('vetement'),
   renderType: renderTypeSchema,
@@ -261,8 +263,11 @@ export type BatchGenerationItem = z.infer<typeof batchGenerationItemSchema>;
 export const createBatchRequestSchema = z
   .object({
     items: z.array(batchGenerationItemSchema).min(1).max(MAX_BATCH_ITEMS),
+    /** Type de sujet commun au lot (vêtement/objet). */
+    subjectType: subjectTypeSchema.default('vetement'),
     renderType: renderTypeSchema,
-    mannequinOption: mannequinOptionSchema,
+    /** Requis pour un lot de vêtements ; absent pour un lot d'objets. */
+    mannequinOption: mannequinOptionSchema.optional(),
     /** Variante de mannequin commune au lot (ex. 'homme-2') — défaut = 1ʳᵉ. */
     mannequinId: z.string().optional(),
     backgroundOption: backgroundOptionSchema.default('studio'),
@@ -272,6 +277,9 @@ export const createBatchRequestSchema = z
     garmentType: garmentTypeSchema.optional(),
     /** Tenue commune appliquée à tout le lot (« sur modèle » uniquement). */
     outfit: generationOutfitSchema.optional(),
+    /** OBJET — ambiance lumière + scène communes au lot. */
+    lighting: sceneLightingSchema.optional(),
+    scene: generationSceneSchema.optional(),
   })
   .superRefine((data, ctx) => {
     if (data.backgroundOption === 'custom' && !data.customBackgroundUrl) {
@@ -279,6 +287,31 @@ export const createBatchRequestSchema = z
         code: z.ZodIssueCode.custom,
         path: ['customBackgroundUrl'],
         message: "customBackgroundUrl est requis quand backgroundOption vaut 'custom'",
+      });
+    }
+    if (data.subjectType === 'objet') {
+      if (!isObjectRenderType(data.renderType)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['renderType'],
+          message: 'renderType doit être un rendu objet pour un lot objet',
+        });
+      }
+      return;
+    }
+    // Vêtement : mannequin requis, renderType vêtement, tenue gated sur 'model'.
+    if (!data.mannequinOption) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['mannequinOption'],
+        message: 'mannequinOption est requis pour un lot de vêtements',
+      });
+    }
+    if (isObjectRenderType(data.renderType)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['renderType'],
+        message: 'renderType objet interdit pour un lot de vêtements',
       });
     }
     const hasOutfit = data.outfit && Object.values(data.outfit).some(Boolean);
@@ -319,8 +352,10 @@ export const GALLERY_FILTERS = galleryFilterSchema.options;
 export const gallerySortSchema = z.enum(['recent', 'oldest']);
 export type GallerySort = z.infer<typeof gallerySortSchema>;
 
-/** Query de GET /gallery — filtre + tri + pagination offset. */
+/** Query de GET /gallery — recherche + filtre + tri + pagination offset. */
 export const galleryQuerySchema = z.object({
+  /** Recherche plein-texte sur le titre (barre de recherche écran 10). */
+  q: z.string().trim().max(80).optional(),
   filter: galleryFilterSchema.default('all'),
   sort: gallerySortSchema.default('recent'),
   limit: z.coerce.number().int().min(1).max(100).default(30),

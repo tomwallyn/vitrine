@@ -23,8 +23,8 @@ const MIN_DISPLAY_MS = 13_000;
 const PROGRESS_TICK_MS = 150;
 
 const STEP_LABELS = [
-  'Analyse du vêtement',
-  'Mise en scène du modèle',
+  'Analyse de la photo',
+  'Mise en scène',
   'Rendu final & lumière',
 ] as const;
 

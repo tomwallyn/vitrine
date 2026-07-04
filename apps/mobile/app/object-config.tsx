@@ -228,7 +228,7 @@ export default function ObjectConfigScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Compléter la scène"
-          onPress={() => router.push('/scene')}
+          onPress={() => router.push('/scene?target=single')}
           className="flex-row items-center gap-3 rounded-2xl border border-paper3 bg-white p-3 active:bg-paper2"
         >
           <View className="h-10 w-10 items-center justify-center rounded-xl bg-paper2">

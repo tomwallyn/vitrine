@@ -11,6 +11,7 @@ import { Button } from '@/components/Button';
 import { CreditBadge } from '@/components/CreditBadge';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
+import { useBatchDraft } from '@/lib/batch-draft';
 import { useRenderDraft } from '@/lib/render-draft';
 import { uploadImageAsync } from '@/lib/upload';
 import { colors, type MeResponse } from '@vitrine/shared';
@@ -20,33 +21,39 @@ type ImportMode = 'single' | 'angles' | 'batch';
 /** Source de la photo (mode « Une seule photo » uniquement). */
 type ImportSource = 'camera' | 'gallery';
 
-const MODES: {
+type ModeCard = {
   value: ImportMode;
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   description: string;
   badge?: string;
-}[] = [
-  {
-    value: 'single',
-    icon: 'image-outline',
-    title: 'Une seule photo',
-    description: 'Le plus rapide — 1 vêtement.',
-  },
-  {
-    value: 'angles',
-    icon: 'layers-outline',
-    title: 'Avant + arrière',
-    description: 'Plusieurs angles = rendu plus fidèle.',
-  },
-  {
-    value: 'batch',
-    icon: 'albums-outline',
-    title: 'Lot de vêtements',
-    description: "Tout votre stock, généré d'un coup.",
-    badge: 'Rapide',
-  },
-];
+};
+
+/** Modes d'import adaptés au sujet (vêtement/objet). */
+function buildModes(isObjet: boolean): ModeCard[] {
+  const noun = isObjet ? 'objet' : 'vêtement';
+  return [
+    {
+      value: 'single',
+      icon: 'image-outline',
+      title: 'Une seule photo',
+      description: `Le plus rapide — 1 ${noun}.`,
+    },
+    {
+      value: 'angles',
+      icon: 'layers-outline',
+      title: 'Plusieurs angles',
+      description: 'Plusieurs vues = rendu plus fidèle.',
+    },
+    {
+      value: 'batch',
+      icon: 'albums-outline',
+      title: isObjet ? "Lot d'objets" : 'Lot de vêtements',
+      description: "Tout votre stock, généré d'un coup.",
+      badge: 'Rapide',
+    },
+  ];
+}
 
 /** 01b — HUB D'IMPORT : mode (1 photo / angles / lot) + source, puis routage. */
 export default function ImportHubScreen() {
@@ -54,6 +61,8 @@ export default function ImportHubScreen() {
   const api = useApi();
   const [mode, setMode] = useState<ImportMode>('single');
   const [source, setSource] = useState<ImportSource>('camera');
+  const subjectType = useRenderDraft((s) => s.subjectType);
+  const modes = buildModes(subjectType === 'objet');
 
   // Solde de crédits (header).
   const { data: me } = useQuery({
@@ -91,6 +100,9 @@ export default function ImportHubScreen() {
 
   const onContinue = () => {
     if (mode === 'batch') {
+      // Nouveau lot : on repart propre et on fige le sujet commun (vêtement/objet).
+      useBatchDraft.getState().reset();
+      useBatchDraft.getState().setSubjectType(subjectType);
       router.push('/batch');
       return;
     }
@@ -122,7 +134,7 @@ export default function ImportHubScreen() {
 
         {/* 3 cartes de mode — sélection unique */}
         <View className="mt-6 gap-3">
-          {MODES.map((item) => {
+          {modes.map((item) => {
             const selected = mode === item.value;
             return (
               <Pressable
