@@ -165,7 +165,7 @@ export default function DetailAnglesScreen() {
     draft.startDraft(front.localUri);
     draft.setSourceUploaded(front.publicUrl, front.objectPath);
     draft.setExtraImages(Object.values(extraImages).some(Boolean) ? extraImages : null);
-    router.push('/render-config');
+    router.push(draft.subjectType === 'objet' ? '/object-config' : '/render-config');
   };
 
   const continueLabel = anyUploading

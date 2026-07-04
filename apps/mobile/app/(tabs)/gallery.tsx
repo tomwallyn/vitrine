@@ -19,6 +19,8 @@ import {
 
 const FILTER_LABELS: Record<GalleryFilter, string> = {
   all: 'Tout',
+  vetement: 'Vêtements',
+  objet: 'Objets',
   model: 'Sur modèle',
   hanger: 'Cintre',
 };
@@ -270,7 +272,7 @@ export default function GalleryScreen() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Nouveau visuel"
-        onPress={() => router.push('/import-hub')}
+        onPress={() => router.push('/product-type')}
         className="absolute bottom-6 right-5 h-14 w-14 items-center justify-center rounded-full bg-ink shadow-lg active:opacity-90"
       >
         <Ionicons name="add" size={28} color={colors.offwhite} />

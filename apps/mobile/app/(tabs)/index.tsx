@@ -154,7 +154,7 @@ export default function HomeScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Nouveau visuel"
-          onPress={() => router.push('/import-hub')}
+          onPress={() => router.push('/product-type')}
           className="mt-6 overflow-hidden rounded-3xl bg-ink px-6 pb-7 pt-7 active:opacity-90"
         >
           <View className="flex-row items-center justify-between">

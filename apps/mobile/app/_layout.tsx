@@ -78,7 +78,11 @@ function RootNavigator() {
         />
         <Stack.Screen name="billing" options={{ presentation: 'modal', gestureEnabled: true }} />
         <Stack.Screen name="support" options={{ presentation: 'modal', gestureEnabled: true }} />
-        {/* Flux de création : hub d'import → capture / angles → config. */}
+        {/* Flux de création : fork type → hub d'import → capture / angles → config. */}
+        <Stack.Screen
+          name="product-type"
+          options={{ presentation: 'modal', gestureEnabled: true }}
+        />
         <Stack.Screen
           name="import-hub"
           options={{ presentation: 'modal', gestureEnabled: true }}
@@ -100,6 +104,20 @@ function RootNavigator() {
         />
         <Stack.Screen
           name="outfit-add"
+          options={{ presentation: 'transparentModal', animation: 'fade' }}
+        />
+        {/* Objet (v2) : config rendu → compléter la scène → choisir/ajouter décor. */}
+        <Stack.Screen
+          name="object-config"
+          options={{ presentation: 'modal', gestureEnabled: true }}
+        />
+        <Stack.Screen name="scene" options={{ presentation: 'modal', gestureEnabled: true }} />
+        <Stack.Screen
+          name="scene-picker"
+          options={{ presentation: 'modal', gestureEnabled: true }}
+        />
+        <Stack.Screen
+          name="scene-add"
           options={{ presentation: 'transparentModal', animation: 'fade' }}
         />
         {/* Lot de vêtements : import multiple → style commun → progression. */}

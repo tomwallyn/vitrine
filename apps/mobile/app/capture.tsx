@@ -48,7 +48,7 @@ export default function CaptureScreen() {
     const draft = useRenderDraft.getState();
     draft.startDraft(localUri);
     draft.setSourceUploading();
-    router.push('/render-config');
+    router.push(draft.subjectType === 'objet' ? '/object-config' : '/render-config');
 
     uploadImageAsync(api, localUri, 'source')
       .then(({ publicUrl, objectPath }) =>

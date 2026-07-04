@@ -76,7 +76,7 @@ export default function ImportHubScreen() {
     const draft = useRenderDraft.getState();
     draft.startDraft(asset.uri);
     draft.setSourceUploading();
-    router.push('/render-config');
+    router.push(draft.subjectType === 'objet' ? '/object-config' : '/render-config');
 
     uploadImageAsync(api, asset.uri, 'source')
       .then(({ publicUrl, objectPath }) =>

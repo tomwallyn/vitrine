@@ -8,9 +8,12 @@ import type {
   GenerationExtraImages,
   MannequinOption,
   RenderType,
+  SceneLighting,
+  SubjectType,
 } from '@vitrine/shared';
 
 import type { OutfitPiece, OutfitState } from './outfit';
+import { EMPTY_SCENE, type SceneState } from './scene';
 
 /** État d'un upload GCS (photo source ou fond personnalisé). */
 export type UploadStatus = 'idle' | 'uploading' | 'done' | 'error';
@@ -29,6 +32,8 @@ type RenderDraftState = {
    */
   extraImages: GenerationExtraImages | null;
 
+  /** Type de sujet du visuel (vêtement/objet) — fixé par l'écran de fork. */
+  subjectType: SubjectType;
   renderType: RenderType;
   mannequinOption: MannequinOption;
   /** Variante de mannequin choisie dans la catégorie (null = 1ʳᵉ par défaut). */
@@ -49,6 +54,10 @@ type RenderDraftState = {
   outfit: OutfitState;
   /** Vrai dès que l'utilisateur choisit le type à la main → bloque l'auto-détection. */
   garmentTypeTouched: boolean;
+
+  /** OBJET — ambiance lumière + configuration de scène (« Compléter la scène »). */
+  lighting: SceneLighting;
+  scene: SceneState;
 
   /** Garde anti-écrasement : les préréglages boutique ne s'appliquent qu'une fois. */
   settingsApplied: boolean;
@@ -75,6 +84,13 @@ type RenderDraftState = {
   /** Sélectionne un fond réutilisable déjà uploadé (GET /backgrounds). */
   selectExistingBackground: (imageUrl: string) => void;
 
+  /** Fixe le type de sujet (fork Vêtement/Objet) — remet un renderType par défaut adapté. */
+  setSubjectType: (subjectType: SubjectType) => void;
+  /** OBJET — ambiance lumière. */
+  setLighting: (lighting: SceneLighting) => void;
+  /** OBJET — modifie la config de scène (surface/décor/accessoires/décor perso). */
+  setScene: (patch: Partial<SceneState>) => void;
+
   /** Type de pièce importée (choix MANUEL) — réinitialise la tenue + verrouille l'auto. */
   setGarmentType: (garmentType: GarmentType) => void;
   /** Type deviné par l'IA — appliqué seulement si l'utilisateur n'a pas choisi à la main. */
@@ -100,6 +116,7 @@ const initialState = {
   sourceUploadStatus: 'idle' as UploadStatus,
   sourceUploadError: null,
   extraImages: null as GenerationExtraImages | null,
+  subjectType: 'vetement' as SubjectType,
   renderType: 'model' as RenderType,
   mannequinOption: 'femme' as MannequinOption,
   mannequinId: null as string | null,
@@ -111,6 +128,8 @@ const initialState = {
   garmentType: 'haut' as GarmentType,
   outfit: {} as OutfitState,
   garmentTypeTouched: false,
+  lighting: 'douce' as SceneLighting,
+  scene: EMPTY_SCENE as SceneState,
   settingsApplied: false,
   pendingGeneration: null,
 };
@@ -123,7 +142,15 @@ const initialState = {
 export const useRenderDraft = create<RenderDraftState>((set) => ({
   ...initialState,
 
-  startDraft: (localUri) => set({ ...initialState, localUri }),
+  // Nouvelle photo → réinitialise mais PRÉSERVE le type de sujet (choisi au fork)
+  // et repart d'un renderType par défaut adapté (objet → mise en situation).
+  startDraft: (localUri) =>
+    set((s) => ({
+      ...initialState,
+      subjectType: s.subjectType,
+      renderType: s.subjectType === 'objet' ? 'mise_en_situation' : 'model',
+      localUri,
+    })),
   setSourceUploading: () =>
     set({ sourceUploadStatus: 'uploading', sourceUploadError: null }),
   setSourceUploaded: (publicUrl, objectPath) =>
@@ -163,6 +190,17 @@ export const useRenderDraft = create<RenderDraftState>((set) => ({
       customBackgroundUploadStatus: 'done',
       customBackgroundUploadError: null,
     }),
+
+  setSubjectType: (subjectType) =>
+    set({
+      subjectType,
+      renderType: subjectType === 'objet' ? 'mise_en_situation' : 'model',
+      scene: EMPTY_SCENE,
+      outfit: {},
+      garmentTypeTouched: false,
+    }),
+  setLighting: (lighting) => set({ lighting }),
+  setScene: (patch) => set((s) => ({ scene: { ...s.scene, ...patch } })),
 
   setGarmentType: (garmentType) => set({ garmentType, outfit: {}, garmentTypeTouched: true }),
   setGarmentTypeAuto: (garmentType) =>
