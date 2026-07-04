@@ -205,6 +205,9 @@ export default function RenderConfigScreen() {
       sourceImageUrl: draft.sourceUrl,
       renderType: draft.renderType,
       mannequinOption: draft.mannequinOption,
+      ...(draft.renderType === 'model' && draft.mannequinId
+        ? { mannequinId: draft.mannequinId }
+        : {}),
       backgroundOption: draft.backgroundOption,
       ...(draft.backgroundOption === 'custom' && draft.customBackgroundUrl
         ? { customBackgroundUrl: draft.customBackgroundUrl }
@@ -328,7 +331,9 @@ export default function RenderConfigScreen() {
             <SectionTitle>Mannequin</SectionTitle>
             <MannequinSelector
               value={draft.mannequinOption}
+              mannequinId={draft.mannequinId}
               onChange={draft.setMannequinOption}
+              onChangeMannequin={draft.setMannequinId}
               className="mb-6"
             />
 

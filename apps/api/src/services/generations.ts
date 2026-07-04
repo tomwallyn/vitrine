@@ -130,6 +130,7 @@ export async function createGeneration(
     sourceImageUrl: signedSourceUrl,
     renderType: params.renderType,
     mannequinOption: params.mannequinOption,
+    mannequinId: params.mannequinId ?? null,
     backgroundOption: params.backgroundOption,
     customBackgroundUrl: signedBackgroundUrl,
     extraImageUrls:
@@ -163,6 +164,7 @@ export async function createGeneration(
         sourceImageUrl: params.sourceImageUrl,
         renderType: params.renderType,
         modelOption: params.mannequinOption,
+        mannequinId: params.mannequinId ?? null,
         backgroundOption: params.backgroundOption,
         customBackgroundUrl: params.customBackgroundUrl ?? null,
         // URLs GCS canoniques (les URLs signées ne servent qu'à l'appel fal).

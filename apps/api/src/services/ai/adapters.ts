@@ -1,6 +1,6 @@
 import {
   DEFAULT_MANNEQUIN,
-  MANNEQUIN_IMAGES,
+  resolveMannequin,
   NANO_CUSTOM_BACKGROUND_LAST_SUFFIX,
   NANO_CUSTOM_BACKGROUND_SUFFIX,
   NANO_MODEL_BG_STUDIO,
@@ -27,6 +27,8 @@ export interface GenerationParams {
   sourceImageUrl: string;
   renderType: RenderType;
   mannequinOption: MannequinOption;
+  /** Variante de mannequin dans la catégorie (id catalogue) — défaut = 1ʳᵉ. */
+  mannequinId?: string | null;
   backgroundOption: BackgroundOption;
   customBackgroundUrl?: string | null;
   /**
@@ -83,8 +85,9 @@ export class AiOutputParseError extends Error {
  * Image du mannequin pour le try-on. `studio` n'a pas d'image (le router route
  * ce cas vers Nano Banana) — repli défensif sur DEFAULT_MANNEQUIN si atteint.
  */
-function mannequinImageUrl(option: MannequinOption): string {
-  return option === 'studio' ? MANNEQUIN_IMAGES[DEFAULT_MANNEQUIN] : MANNEQUIN_IMAGES[option];
+function mannequinImageUrl(option: MannequinOption, mannequinId?: string | null): string {
+  const category = option === 'studio' ? DEFAULT_MANNEQUIN : option;
+  return resolveMannequin(category, mannequinId).url;
 }
 
 /**
@@ -190,7 +193,9 @@ const nanobananaAdapter: ProviderAdapter = {
     // « Sur modèle » : le mannequin de référence est la 1ʳᵉ image (Nano l'habille),
     // puis le vêtement (source + vues), les pièces de complétion, et enfin le
     // fond custom éventuel (qui DOIT rester en dernier — cf. suffixe « LAST »).
-    const mannequin = isModelDress(params) ? [mannequinImageUrl(params.mannequinOption)] : [];
+    const mannequin = isModelDress(params)
+      ? [mannequinImageUrl(params.mannequinOption, params.mannequinId)]
+      : [];
     const outfit = isModelDress(params) ? outfitUrls(params) : [];
     return {
       prompt: nanoPrompt(params),

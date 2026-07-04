@@ -27,6 +27,8 @@ export type BatchItem = {
 export type BatchStyle = {
   renderType: RenderType;
   mannequinOption: MannequinOption;
+  /** Variante de mannequin commune au lot (null = 1ʳᵉ par défaut). */
+  mannequinId: string | null;
   backgroundOption: BackgroundOption;
   /** URL GCS du fond personnalisé (requise si backgroundOption === 'custom'). */
   customBackgroundUrl: string | null;
@@ -63,6 +65,7 @@ type BatchDraftState = {
 const defaultStyle: BatchStyle = {
   renderType: 'model',
   mannequinOption: 'femme',
+  mannequinId: null,
   backgroundOption: 'studio',
   customBackgroundUrl: null,
 };

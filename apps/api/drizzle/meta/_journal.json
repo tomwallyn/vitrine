@@ -43,6 +43,13 @@
       "when": 1783158399571,
       "tag": "0005_ancient_bloodscream",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783167816372,
+      "tag": "0006_spicy_metal_master",
+      "breakpoints": true
     }
   ]
 }

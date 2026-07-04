@@ -109,6 +109,8 @@ export const createGenerationRequestSchema = z
     sourceImageUrl: z.string().url(),
     renderType: renderTypeSchema,
     mannequinOption: mannequinOptionSchema,
+    /** Variante de mannequin choisie dans la catégorie (ex. 'femme-2') — défaut = 1ʳᵉ. */
+    mannequinId: z.string().optional(),
     backgroundOption: backgroundOptionSchema.default('studio'),
     /** Requis si backgroundOption === 'custom' (fond uploadé réutilisable). */
     customBackgroundUrl: z.string().url().optional(),
@@ -209,6 +211,8 @@ export const createBatchRequestSchema = z
     items: z.array(batchGenerationItemSchema).min(1).max(MAX_BATCH_ITEMS),
     renderType: renderTypeSchema,
     mannequinOption: mannequinOptionSchema,
+    /** Variante de mannequin commune au lot (ex. 'homme-2') — défaut = 1ʳᵉ. */
+    mannequinId: z.string().optional(),
     backgroundOption: backgroundOptionSchema.default('studio'),
     /** Requis si backgroundOption === 'custom' (fond uploadé réutilisable). */
     customBackgroundUrl: z.string().url().optional(),

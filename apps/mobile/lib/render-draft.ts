@@ -31,6 +31,8 @@ type RenderDraftState = {
 
   renderType: RenderType;
   mannequinOption: MannequinOption;
+  /** Variante de mannequin choisie dans la catégorie (null = 1ʳᵉ par défaut). */
+  mannequinId: string | null;
   backgroundOption: BackgroundOption;
   /** URI locale du fond personnalisé (vignette pendant/après upload). */
   customBackgroundLocalUri: string | null;
@@ -62,7 +64,10 @@ type RenderDraftState = {
   setExtraImages: (extraImages: GenerationExtraImages | null) => void;
 
   setRenderType: (renderType: RenderType) => void;
+  /** Change de catégorie de mannequin — réinitialise la variante choisie. */
   setMannequinOption: (mannequinOption: MannequinOption) => void;
+  /** Choisit une variante précise de mannequin (vignette). */
+  setMannequinId: (mannequinId: string) => void;
   setBackgroundOption: (backgroundOption: BackgroundOption) => void;
   setCustomBackgroundUploading: (localUri: string) => void;
   setCustomBackgroundUploaded: (publicUrl: string) => void;
@@ -97,6 +102,7 @@ const initialState = {
   extraImages: null as GenerationExtraImages | null,
   renderType: 'model' as RenderType,
   mannequinOption: 'femme' as MannequinOption,
+  mannequinId: null as string | null,
   backgroundOption: 'studio' as BackgroundOption,
   customBackgroundLocalUri: null,
   customBackgroundUrl: null,
@@ -132,7 +138,8 @@ export const useRenderDraft = create<RenderDraftState>((set) => ({
   setExtraImages: (extraImages) => set({ extraImages }),
 
   setRenderType: (renderType) => set({ renderType }),
-  setMannequinOption: (mannequinOption) => set({ mannequinOption }),
+  setMannequinOption: (mannequinOption) => set({ mannequinOption, mannequinId: null }),
+  setMannequinId: (mannequinId) => set({ mannequinId }),
   setBackgroundOption: (backgroundOption) => set({ backgroundOption }),
   setCustomBackgroundUploading: (localUri) =>
     set({

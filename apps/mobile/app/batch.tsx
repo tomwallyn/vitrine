@@ -178,6 +178,9 @@ export default function BatchScreen() {
       items: sources.map((sourceImageUrl) => ({ sourceImageUrl })),
       renderType: style.renderType,
       mannequinOption: style.mannequinOption,
+      ...(style.renderType === 'model' && style.mannequinId
+        ? { mannequinId: style.mannequinId }
+        : {}),
       backgroundOption: style.backgroundOption,
       ...(style.backgroundOption === 'custom' && style.customBackgroundUrl
         ? { customBackgroundUrl: style.customBackgroundUrl }

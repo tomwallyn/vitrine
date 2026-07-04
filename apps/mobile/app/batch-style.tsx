@@ -119,7 +119,9 @@ export default function BatchStyleScreen() {
             <SectionTitle>Mannequin</SectionTitle>
             <MannequinSelector
               value={style.mannequinOption}
-              onChange={(mannequinOption) => setStyle({ mannequinOption })}
+              mannequinId={style.mannequinId}
+              onChange={(mannequinOption) => setStyle({ mannequinOption, mannequinId: null })}
+              onChangeMannequin={(mannequinId) => setStyle({ mannequinId })}
               className="mb-6"
             />
 

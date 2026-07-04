@@ -149,14 +149,61 @@ export const NANO_MODEL_BG_STUDIO =
  * - silhouette : placeholder (réutilise « femme ») — à remplacer par un rendu mannequin
  *                neutre/synthétique généré une fois pour toutes.
  */
+/** Un mannequin de référence sélectionnable (variante d'une catégorie). */
+export interface Mannequin {
+  /** Id stable (ex. 'femme-1'). */
+  id: string;
+  /** Libellé affiché (ex. « Femme 1 »). */
+  name: string;
+  /** URL publique de l'image plein pied (fond studio). */
+  url: string;
+}
+
+/**
+ * Catalogue des mannequins par catégorie (femme / homme / silhouette) : plusieurs
+ * variantes par catégorie, chacune avec sa vignette — l'app affiche un choix de
+ * modèles sous les chips de catégorie. `studio` n'a pas de mannequin (packshot ghost).
+ * À ENRICHIR au fil des mannequins générés (cf. prompt fourni au dev).
+ */
+export const MANNEQUINS: Record<Exclude<MannequinOption, 'studio'>, Mannequin[]> = {
+  femme: [
+    {
+      id: 'femme-1',
+      name: 'Femme 1',
+      url: 'https://v3b.fal.media/files/b/0aa0c667/rjKF8pXuGCxl1lQnhnSlA_ChatGPT%20Image%203%20juil.%202026%2C%2015_56_00.png',
+    },
+  ],
+  // ⚠️ homme & silhouette : encore des placeholders — à remplacer/enrichir comme femme.
+  homme: [
+    {
+      id: 'homme-1',
+      name: 'Homme 1',
+      url: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1080&q=80',
+    },
+  ],
+  silhouette: [
+    {
+      id: 'silhouette-1',
+      name: 'Silhouette',
+      url: 'https://v3.fal.media/files/penguin/aOzrM7vPOSLksKfxSovG6_model.png',
+    },
+  ],
+};
+
+/** Mannequin résolu depuis (catégorie, id) — repli sur la 1ʳᵉ variante. */
+export function resolveMannequin(
+  option: Exclude<MannequinOption, 'studio'>,
+  id?: string | null,
+): Mannequin {
+  const list = MANNEQUINS[option];
+  return list.find((m) => m.id === id) ?? list[0]!;
+}
+
+/** Image « de base » par catégorie (1ʳᵉ variante) — benchmark + repli. */
 export const MANNEQUIN_IMAGES: Record<Exclude<MannequinOption, 'studio'>, string> = {
-  // Mannequin femme de référence (généré Gemini, spec FASHN : plein pied, face,
-  // bras écartés, base grise moulante, fond studio uni) — uploadé sur le CDN fal.
-  femme:
-    'https://v3b.fal.media/files/b/0aa0c667/rjKF8pXuGCxl1lQnhnSlA_ChatGPT%20Image%203%20juil.%202026%2C%2015_56_00.png',
-  // ⚠️ homme & silhouette : encore des placeholders — à remplacer comme femme.
-  homme: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1080&q=80',
-  silhouette: 'https://v3.fal.media/files/penguin/aOzrM7vPOSLksKfxSovG6_model.png',
+  femme: MANNEQUINS.femme[0]!.url,
+  homme: MANNEQUINS.homme[0]!.url,
+  silhouette: MANNEQUINS.silhouette[0]!.url,
 };
 
 /** Mannequin de repli (benchmark + garde-fou du router). */

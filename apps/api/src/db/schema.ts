@@ -105,6 +105,8 @@ export const generations = pgTable('generations', {
   sourceImageUrl: text('source_image_url').notNull(),
   renderType: renderTypeEnum('render_type').notNull(),
   modelOption: mannequinOptionEnum('model_option').notNull(),
+  /** Variante de mannequin choisie dans la catégorie (id catalogue, ex. 'femme-2'). */
+  mannequinId: text('mannequin_id'),
   backgroundOption: backgroundOptionEnum('background_option').notNull().default('studio'),
   customBackgroundUrl: text('custom_background_url'),
   /**

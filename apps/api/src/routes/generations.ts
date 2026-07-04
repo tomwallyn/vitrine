@@ -36,6 +36,7 @@ function paramsFromRow(row: GenerationRow, renderType = row.renderType): CreateG
     sourceImageUrl: row.sourceImageUrl,
     renderType,
     mannequinOption: row.modelOption,
+    ...(row.mannequinId ? { mannequinId: row.mannequinId } : {}),
     backgroundOption: row.backgroundOption,
     ...(row.customBackgroundUrl ? { customBackgroundUrl: row.customBackgroundUrl } : {}),
     // Multi-détails : les vues additionnelles suivent la génération d'origine.
@@ -193,8 +194,16 @@ export function registerGenerationBatchRoutes(app: FastifyInstance): void {
 
     const db = getDb();
     const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
-    const { items, renderType, mannequinOption, backgroundOption, customBackgroundUrl, garmentType, outfit } =
-      parsed.data;
+    const {
+      items,
+      renderType,
+      mannequinOption,
+      mannequinId,
+      backgroundOption,
+      customBackgroundUrl,
+      garmentType,
+      outfit,
+    } = parsed.data;
 
     // Le lot entier doit être finançable AVANT le premier hold : pas de lot
     // « à moitié lancé » pour cause de solde connu d'avance insuffisant.
@@ -210,6 +219,7 @@ export function registerGenerationBatchRoutes(app: FastifyInstance): void {
           sourceImageUrl: item.sourceImageUrl,
           renderType,
           mannequinOption,
+          ...(mannequinId ? { mannequinId } : {}),
           backgroundOption,
           ...(customBackgroundUrl ? { customBackgroundUrl } : {}),
           // Tenue commune au lot (« sur modèle » uniquement).
