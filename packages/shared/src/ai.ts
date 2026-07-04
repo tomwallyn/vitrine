@@ -342,25 +342,47 @@ export function objectLightingSuffix(lighting?: SceneLighting | null): string {
   return lighting ? ` Éclairage ${OBJECT_LIGHTING_PROMPT[lighting]}.` : '';
 }
 
-/** Suffixe surface (clé de {@link OBJECT_SURFACES}) — vide si inconnue. */
-export function objectSurfaceSuffix(key?: string | null): string {
-  const s = OBJECT_SURFACES.find((x) => x.key === key);
-  return s ? ` Pose l'objet sur une surface ${s.prompt}.` : '';
+/**
+ * Suffixe surface : clé de {@link OBJECT_SURFACES} OU **texte libre** (surface
+ * décrite par l'utilisateur). Vide si absente.
+ */
+export function objectSurfaceSuffix(value?: string | null): string {
+  if (!value) return '';
+  const s = OBJECT_SURFACES.find((x) => x.key === value);
+  return s ? ` Pose l'objet sur une surface ${s.prompt}.` : ` Pose l'objet sur ${value}.`;
 }
 
-/** Suffixe décor/arrière-plan (clé de {@link OBJECT_SCENES}) — vide si inconnu. */
-export function objectSceneSuffix(key?: string | null): string {
-  const s = OBJECT_SCENES.find((x) => x.key === key);
-  return s ? ` Arrière-plan : ${s.prompt}.` : '';
+/**
+ * Suffixe décor/arrière-plan : clé de {@link OBJECT_SCENES} OU **texte libre**.
+ * Vide si absent.
+ */
+export function objectSceneSuffix(value?: string | null): string {
+  if (!value) return '';
+  const s = OBJECT_SCENES.find((x) => x.key === value);
+  return s ? ` Arrière-plan : ${s.prompt}.` : ` Arrière-plan : ${value}.`;
 }
 
-/** Suffixe accessoires (clé de {@link OBJECT_ACCESSORIES}) — vide si aucun. */
-export function objectAccessoriesSuffix(key?: string | null): string {
-  const a = OBJECT_ACCESSORIES.find((x) => x.key === key);
-  return a && a.prompt ? ` Ajoute discrètement en accessoires ${a.prompt}.` : '';
+/**
+ * Suffixe accessoires : clé de {@link OBJECT_ACCESSORIES} (dont 'aucun' = vide)
+ * OU **texte libre**. Vide si absent.
+ */
+export function objectAccessoriesSuffix(value?: string | null): string {
+  if (!value) return '';
+  const a = OBJECT_ACCESSORIES.find((x) => x.key === value);
+  if (a) return a.prompt ? ` Ajoute discrètement en accessoires ${a.prompt}.` : '';
+  return ` Ajoute discrètement en accessoires ${value}.`;
 }
 
-/** Suffixe « décor perso » (image de référence passée en dernier dans image_urls). */
+/**
+ * Suffixe « décor perso » (image de référence passée en dernier dans image_urls).
+ * Insiste sur l'INTÉGRATION de l'objet DANS le lieu (posé sur une surface réelle
+ * de la scène, ombre de contact, perspective/échelle/lumière du lieu) — surtout
+ * pas un simple collage devant un arrière-plan.
+ */
 export const NANO_OBJECT_DECOR_SUFFIX =
-  " Utilise la DERNIÈRE image fournie comme décor/arrière-plan de la scène, en y intégrant l'objet " +
-  'de façon naturelle (perspective, échelle et éclairage cohérents).';
+  " La DERNIÈRE image fournie est le LIEU réel dans lequel placer l'objet. INTÈGRE l'objet À " +
+  "L'INTÉRIEUR de cette scène : pose-le sur une surface plausible du lieu (sol, table, étagère, " +
+  'plan de travail…), comme s\'il y avait vraiment été photographié — même point de vue et même ' +
+  'perspective que le lieu, échelle réaliste, éclairage et température de couleur du lieu, avec une ' +
+  "ombre de contact au sol. NE colle PAS l'objet en avant-plan devant l'image : il doit faire " +
+  'partie intégrante de la pièce, à un emplacement naturel et crédible.';
