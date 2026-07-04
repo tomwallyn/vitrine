@@ -1,3 +1,4 @@
+import type { RenderType } from '@vitrine/shared';
 import {
   integer,
   jsonb,
@@ -11,7 +12,22 @@ import {
 
 // ── Enums (miroir de @vitrine/shared) ────────────────────────────
 
-export const renderTypeEnum = pgEnum('render_type', ['model', 'hanger', 'folded', 'studio']);
+export const subjectTypeEnum = pgEnum('subject_type', ['vetement', 'objet']);
+export const sceneLightingEnum = pgEnum('scene_lighting', ['douce', 'doree', 'contrastee']);
+export const renderTypeEnum = pgEnum('render_type', [
+  // Vêtement
+  'model',
+  'hanger',
+  'folded',
+  'studio',
+  // Objet (v2)
+  'studio_uni',
+  'texture',
+  'mise_en_situation',
+  'ambiance',
+  'macro',
+  'exterieur',
+]);
 export const mannequinOptionEnum = pgEnum('mannequin_option', [
   'femme',
   'homme',
@@ -56,7 +72,7 @@ export const shops = pgTable('shops', {
   settings: jsonb('settings')
     .$type<{
       watermark: boolean;
-      defaultRenderType?: 'model' | 'hanger' | 'folded' | 'studio';
+      defaultRenderType?: RenderType;
       defaultMannequinOption?: 'femme' | 'homme' | 'silhouette' | 'studio';
       defaultBackgroundOption?: 'studio' | 'custom';
     }>()
@@ -103,6 +119,8 @@ export const generations = pgTable('generations', {
     .notNull()
     .references(() => shops.id),
   sourceImageUrl: text('source_image_url').notNull(),
+  /** Type de sujet (vêtement/objet) — v2. */
+  subjectType: subjectTypeEnum('subject_type').notNull().default('vetement'),
   renderType: renderTypeEnum('render_type').notNull(),
   modelOption: mannequinOptionEnum('model_option').notNull(),
   /** Variante de mannequin choisie dans la catégorie (id catalogue, ex. 'femme-2'). */
@@ -122,6 +140,14 @@ export const generations = pgTable('generations', {
    */
   garmentType: garmentTypeEnum('garment_type'),
   outfit: jsonb('outfit').$type<{ top?: string; bottom?: string; shoes?: string }>(),
+  /** OBJET (v2) : ambiance lumière + scène (surface/décor/accessoires + décor perso). */
+  lighting: sceneLightingEnum('lighting'),
+  scene: jsonb('scene').$type<{
+    surface?: string;
+    background?: string;
+    accessoires?: string;
+    decorUrl?: string;
+  }>(),
   /**
    * Fiche produit extraite par OCR de l'étiquette/détail via un modèle vision
    * fal (openrouter/router/vision) — miroir de `productInfoSchema` de

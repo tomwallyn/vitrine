@@ -47,6 +47,7 @@ export async function serializeGeneration(row: GenerationRow): Promise<Generatio
     id: row.id,
     shopId: row.shopId,
     sourceImageUrl,
+    subjectType: row.subjectType,
     renderType: row.renderType,
     mannequinOption: row.modelOption,
     backgroundOption: row.backgroundOption,
@@ -105,6 +106,7 @@ export async function createGeneration(
     signedTopUrl,
     signedBottomUrl,
     signedShoesUrl,
+    signedDecorUrl,
   ] = await Promise.all([
     signedReadUrl(params.sourceImageUrl, FAL_INPUT_TTL_SECONDS),
     params.customBackgroundUrl
@@ -125,9 +127,14 @@ export async function createGeneration(
     params.outfit?.shoes
       ? signedReadUrl(params.outfit.shoes, FAL_INPUT_TTL_SECONDS)
       : Promise.resolve(null),
+    // Objet : décor perso « Mes scènes » signé comme la source.
+    params.scene?.decorUrl
+      ? signedReadUrl(params.scene.decorUrl, FAL_INPUT_TTL_SECONDS)
+      : Promise.resolve(null),
   ]);
   const input = route.adapter.buildInput({
     sourceImageUrl: signedSourceUrl,
+    subjectType: params.subjectType,
     renderType: params.renderType,
     mannequinOption: params.mannequinOption,
     mannequinId: params.mannequinId ?? null,
@@ -149,6 +156,16 @@ export async function createGeneration(
             ...(signedShoesUrl ? { shoes: signedShoesUrl } : {}),
           }
         : null,
+    // Objet : scène avec le décor perso signé (le reste = clés de preset texte).
+    lighting: params.lighting ?? null,
+    scene: params.scene
+      ? {
+          ...(params.scene.surface ? { surface: params.scene.surface } : {}),
+          ...(params.scene.background ? { background: params.scene.background } : {}),
+          ...(params.scene.accessoires ? { accessoires: params.scene.accessoires } : {}),
+          ...(signedDecorUrl ? { decorUrl: signedDecorUrl } : {}),
+        }
+      : null,
   });
 
   // 1 crédit réservé (= débité, cf. design du ledger). Throw → aucune ligne créée.
@@ -162,8 +179,10 @@ export async function createGeneration(
         id: generationId,
         shopId,
         sourceImageUrl: params.sourceImageUrl,
+        subjectType: params.subjectType ?? 'vetement',
         renderType: params.renderType,
-        modelOption: params.mannequinOption,
+        // Objet : pas de mannequin → repli 'studio' (jamais lu côté objet).
+        modelOption: params.mannequinOption ?? 'studio',
         mannequinId: params.mannequinId ?? null,
         backgroundOption: params.backgroundOption,
         customBackgroundUrl: params.customBackgroundUrl ?? null,
@@ -171,6 +190,8 @@ export async function createGeneration(
         extraImages: params.extraImages ?? null,
         garmentType: params.garmentType ?? null,
         outfit: params.outfit ?? null,
+        lighting: params.lighting ?? null,
+        scene: params.scene ?? null,
         provider: route.provider,
         status: 'queued',
         holdLedgerId,

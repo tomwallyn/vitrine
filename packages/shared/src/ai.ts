@@ -1,4 +1,11 @@
-import type { GarmentSlot, MannequinOption, Provider, RenderType } from './enums.js';
+import type {
+  GarmentSlot,
+  MannequinOption,
+  ObjectRenderType,
+  Provider,
+  RenderType,
+  SceneLighting,
+} from './enums.js';
 
 /**
  * Configuration IA partagée (benchmark M3.0 + pipeline API M3a).
@@ -40,7 +47,7 @@ export const FAL_ENDPOINTS: Record<Provider, string> = {
  * Prompts d'édition Nano Banana par type de rendu (hors `model`, servi par le try-on).
  * Consigne commune : fidélité absolue au vêtement — texture, motif, couleur, coupe.
  */
-export const NANO_PROMPTS: Record<Exclude<RenderType, 'model'>, string> = {
+export const NANO_PROMPTS: Record<'hanger' | 'folded' | 'studio', string> = {
   hanger:
     "Photo produit e-commerce professionnelle : le MÊME vêtement que sur l'image source, " +
     'présenté sur un cintre en bois élégant, devant un fond studio crème uni et doux. ' +
@@ -240,3 +247,120 @@ export const DEFAULT_GARMENT_IMAGES: Record<GarmentSlot, DefaultGarment[]> = {
     { key: 'mocassins-camel', name: 'Mocassins camel', url: 'https://v3b.fal.media/files/b/0aa0e352/DI-ugNPU-1t3IgnVBVSsg_mocassins-camel.png' },
   ],
 };
+
+// ─────────────────────────────────────────────────────────────────
+// OBJETS (v2) — rendu « mise en situation » par prompt texte (Nano Banana).
+// L'objet source reste STRICTEMENT fidèle ; surface/fond/accessoires/lumière
+// sont des presets texte composés en suffixes (aucun asset à héberger).
+// Validé en live 2026-07 : objet préservé, scène crédible, 2K natif.
+// ─────────────────────────────────────────────────────────────────
+
+/** Préambule de fidélité objet (garder l'objet exactement identique). */
+export const NANO_OBJECT_FIDELITY =
+  "Photo produit e-commerce professionnelle : le MÊME objet que sur l'image source. Garde sa forme, " +
+  'sa matière, sa couleur, son motif et ses proportions STRICTEMENT identiques — ne modifie AUCUN ' +
+  "détail de l'objet.";
+
+/** Style de base par type de rendu objet (ajouté après {@link NANO_OBJECT_FIDELITY}). */
+export const NANO_OBJECT_PROMPTS: Record<ObjectRenderType, string> = {
+  studio_uni:
+    ' Présente-le en packshot studio sur un fond uni clair, éclairage doux et homogène, ombre portée ' +
+    'subtile, cadrage produit centré, photoréaliste.',
+  texture:
+    ' Présente-le en packshot sur un support/fond texturé haut de gamme (béton, lin ou pierre), matière ' +
+    'bien visible, éclairage doux, cadrage produit centré, photoréaliste.',
+  mise_en_situation:
+    " Mets l'objet en situation dans une scène d'intérieur réaliste et vendeuse (lifestyle), " +
+    'photoréaliste, cadrage produit.',
+  ambiance:
+    ' Mets-le en valeur dans une ambiance chaleureuse et atmosphérique (lumière et ombres travaillées), ' +
+    'rendu photoréaliste, cadrage produit.',
+  macro:
+    " Rends un gros plan macro sur le détail et la matière de l'objet, faible profondeur de champ, " +
+    "très net sur l'objet, photoréaliste.",
+  exterieur:
+    ' Mets-le en situation en extérieur (terrasse, jardin, lumière naturelle) de façon réaliste et ' +
+    'vendeuse, photoréaliste, cadrage produit.',
+};
+
+/** Catégorie de décor (onglets de l'écran OBJET·3). */
+export const OBJECT_SCENE_CATEGORIES = [
+  { key: 'interieurs', name: 'Intérieurs' },
+  { key: 'exterieurs', name: 'Extérieurs' },
+  { key: 'unis', name: 'Unis' },
+] as const;
+export type ObjectSceneCategory = (typeof OBJECT_SCENE_CATEGORIES)[number]['key'];
+
+/** Un preset texte (surface / décor / accessoire). */
+export interface ObjectPreset {
+  key: string;
+  name: string;
+  /** Fragment injecté dans le prompt Nano. */
+  prompt: string;
+}
+
+/** Surfaces proposées (slot SURFACE de « Compléter la scène »). */
+export const OBJECT_SURFACES: ObjectPreset[] = [
+  { key: 'bois-clair', name: 'Bois clair', prompt: 'en bois clair' },
+  { key: 'marbre', name: 'Marbre', prompt: 'en marbre blanc veiné' },
+  { key: 'beton', name: 'Béton', prompt: 'en béton ciré gris clair' },
+  { key: 'lin', name: 'Lin', prompt: "recouverte d'un lin naturel" },
+  { key: 'ardoise', name: 'Ardoise', prompt: 'en ardoise noire mate' },
+  { key: 'verre', name: 'Verre', prompt: 'en verre transparent' },
+];
+
+/** Décors/scènes proposés, par catégorie (picker OBJET·3). */
+export const OBJECT_SCENES: (ObjectPreset & { category: ObjectSceneCategory })[] = [
+  { key: 'salon-minimal', name: 'Salon minimal', category: 'interieurs', prompt: 'un salon minimaliste, mur clair, décor épuré' },
+  { key: 'table-lin', name: 'Table lin', category: 'interieurs', prompt: 'une table dressée en lin naturel, intérieur chaleureux' },
+  { key: 'etagere-bois', name: 'Étagère bois', category: 'interieurs', prompt: 'une étagère en bois avec quelques objets déco' },
+  { key: 'terrasse', name: 'Terrasse', category: 'exterieurs', prompt: 'une terrasse extérieure ensoleillée avec des plantes' },
+  { key: 'jardin', name: 'Jardin', category: 'exterieurs', prompt: 'un jardin verdoyant en lumière naturelle' },
+  { key: 'mur-brique', name: 'Mur brique', category: 'exterieurs', prompt: 'un mur de brique extérieur, ambiance urbaine' },
+  { key: 'blanc', name: 'Fond blanc', category: 'unis', prompt: 'un fond blanc pur uni' },
+  { key: 'creme', name: 'Fond crème', category: 'unis', prompt: 'un fond crème clair uni' },
+  { key: 'gris', name: 'Fond gris', category: 'unis', prompt: 'un fond gris clair uni' },
+];
+
+/** Accessoires proposés (slot ACCESSOIRES, optionnel). */
+export const OBJECT_ACCESSORIES: ObjectPreset[] = [
+  { key: 'aucun', name: 'Aucun', prompt: '' },
+  { key: 'branche-livres', name: 'Branche & livres', prompt: 'quelques livres et une branche végétale séchée' },
+  { key: 'fleurs', name: 'Fleurs séchées', prompt: 'un bouquet de fleurs séchées' },
+  { key: 'plante', name: 'Plante verte', prompt: 'une petite plante verte en pot' },
+  { key: 'vaisselle', name: 'Vaisselle', prompt: 'de la vaisselle assortie discrète' },
+];
+
+const OBJECT_LIGHTING_PROMPT: Record<SceneLighting, string> = {
+  douce: 'douce et naturelle',
+  doree: 'chaude et dorée (golden hour)',
+  contrastee: 'contrastée et directionnelle',
+};
+
+/** Suffixe ambiance lumière du rendu objet. */
+export function objectLightingSuffix(lighting?: SceneLighting | null): string {
+  return lighting ? ` Éclairage ${OBJECT_LIGHTING_PROMPT[lighting]}.` : '';
+}
+
+/** Suffixe surface (clé de {@link OBJECT_SURFACES}) — vide si inconnue. */
+export function objectSurfaceSuffix(key?: string | null): string {
+  const s = OBJECT_SURFACES.find((x) => x.key === key);
+  return s ? ` Pose l'objet sur une surface ${s.prompt}.` : '';
+}
+
+/** Suffixe décor/arrière-plan (clé de {@link OBJECT_SCENES}) — vide si inconnu. */
+export function objectSceneSuffix(key?: string | null): string {
+  const s = OBJECT_SCENES.find((x) => x.key === key);
+  return s ? ` Arrière-plan : ${s.prompt}.` : '';
+}
+
+/** Suffixe accessoires (clé de {@link OBJECT_ACCESSORIES}) — vide si aucun. */
+export function objectAccessoriesSuffix(key?: string | null): string {
+  const a = OBJECT_ACCESSORIES.find((x) => x.key === key);
+  return a && a.prompt ? ` Ajoute discrètement en accessoires ${a.prompt}.` : '';
+}
+
+/** Suffixe « décor perso » (image de référence passée en dernier dans image_urls). */
+export const NANO_OBJECT_DECOR_SUFFIX =
+  " Utilise la DERNIÈRE image fournie comme décor/arrière-plan de la scène, en y intégrant l'objet " +
+  'de façon naturelle (perspective, échelle et éclairage cohérents).';

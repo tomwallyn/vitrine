@@ -34,6 +34,7 @@ function replyInsufficientCredits(reply: FastifyReply, err: InsufficientCreditsE
 function paramsFromRow(row: GenerationRow, renderType = row.renderType): CreateGenerationRequest {
   return {
     sourceImageUrl: row.sourceImageUrl,
+    subjectType: row.subjectType,
     renderType,
     mannequinOption: row.modelOption,
     ...(row.mannequinId ? { mannequinId: row.mannequinId } : {}),
@@ -44,6 +45,9 @@ function paramsFromRow(row: GenerationRow, renderType = row.renderType): CreateG
     // « Sur modèle » : le type de pièce + la tenue complétée suivent aussi.
     ...(row.garmentType ? { garmentType: row.garmentType } : {}),
     ...(row.outfit ? { outfit: row.outfit } : {}),
+    // Objet : ambiance lumière + scène suivent la génération d'origine.
+    ...(row.lighting ? { lighting: row.lighting } : {}),
+    ...(row.scene ? { scene: row.scene } : {}),
   };
 }
 
@@ -217,6 +221,8 @@ export function registerGenerationBatchRoutes(app: FastifyInstance): void {
       try {
         const row = await createGeneration(db, shop.id, {
           sourceImageUrl: item.sourceImageUrl,
+          // Le lot reste vêtement uniquement en v1.
+          subjectType: 'vetement',
           renderType,
           mannequinOption,
           ...(mannequinId ? { mannequinId } : {}),

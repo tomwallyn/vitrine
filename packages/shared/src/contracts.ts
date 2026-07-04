@@ -4,10 +4,13 @@ import {
   garmentSlotSchema,
   garmentTypeSchema,
   generationStatusSchema,
+  isObjectRenderType,
   ledgerReasonSchema,
   mannequinOptionSchema,
   providerSchema,
   renderTypeSchema,
+  sceneLightingSchema,
+  subjectTypeSchema,
 } from './enums.js';
 
 // ─────────────────────────────────────────────────────────────────
@@ -82,6 +85,23 @@ export const generationOutfitSchema = z.object({
 export type GenerationOutfit = z.infer<typeof generationOutfitSchema>;
 
 /**
+ * Scène d'un rendu OBJET (« Compléter la scène ») — presets texte (clés des
+ * catalogues OBJECT_SURFACES/SCENES/ACCESSORIES) + `decorUrl` optionnel (image
+ * de décor perso réutilisable, URL GCS canonique). Tous optionnels.
+ */
+export const generationSceneSchema = z.object({
+  /** Clé de surface (OBJECT_SURFACES), ex. 'bois-clair'. */
+  surface: z.string().optional(),
+  /** Clé de décor (OBJECT_SCENES), ex. 'salon-minimal'. */
+  background: z.string().optional(),
+  /** Clé d'accessoires (OBJECT_ACCESSORIES), ex. 'branche-livres'. */
+  accessoires: z.string().optional(),
+  /** URL GCS d'un décor perso (« Mes scènes ») — utilisé comme image de référence. */
+  decorUrl: z.string().url().optional(),
+});
+export type GenerationScene = z.infer<typeof generationSceneSchema>;
+
+/**
  * Fiche produit extraite par OCR (modèle vision sur fal) depuis la photo
  * d'étiquette (`extraImages.label`) et/ou de détail matière (`extraImages.detail`).
  * Tous les champs sont optionnels sauf `description` : le modèle ne remplit
@@ -107,8 +127,11 @@ export const createGenerationRequestSchema = z
   .object({
     /** URL GCS de la photo source (obtenue via POST /uploads/sign). */
     sourceImageUrl: z.string().url(),
+    /** Type de sujet : vêtement (défaut) ou objet (v2). */
+    subjectType: subjectTypeSchema.default('vetement'),
     renderType: renderTypeSchema,
-    mannequinOption: mannequinOptionSchema,
+    /** Requis pour un vêtement (cf. superRefine) ; absent pour un objet. */
+    mannequinOption: mannequinOptionSchema.optional(),
     /** Variante de mannequin choisie dans la catégorie (ex. 'femme-2') — défaut = 1ʳᵉ. */
     mannequinId: z.string().optional(),
     backgroundOption: backgroundOptionSchema.default('studio'),
@@ -120,8 +143,35 @@ export const createGenerationRequestSchema = z
     garmentType: garmentTypeSchema.optional(),
     /** Pièces complétant la tenue du mannequin (« sur modèle » uniquement). */
     outfit: generationOutfitSchema.optional(),
+    /** Objet : ambiance lumière (écran OBJET·1). */
+    lighting: sceneLightingSchema.optional(),
+    /** Objet : scène (surface/décor/accessoires/décor perso). */
+    scene: generationSceneSchema.optional(),
   })
   .superRefine((data, ctx) => {
+    // Cohérence sujet ↔ type de rendu.
+    if (data.subjectType === 'vetement') {
+      if (!data.mannequinOption) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['mannequinOption'],
+          message: 'mannequinOption est requis pour un vêtement',
+        });
+      }
+      if (isObjectRenderType(data.renderType)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['renderType'],
+          message: "un renderType objet n'est pas valide pour un vêtement",
+        });
+      }
+    } else if (!isObjectRenderType(data.renderType)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['renderType'],
+        message: 'un renderType objet est requis pour un objet',
+      });
+    }
     if (data.backgroundOption === 'custom' && !data.customBackgroundUrl) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -144,6 +194,8 @@ export const generationSchema = z.object({
   id: z.string().uuid(),
   shopId: z.string().uuid(),
   sourceImageUrl: z.string().url(),
+  /** Type de sujet (vêtement/objet) — défaut 'vetement' pour les anciennes lignes. */
+  subjectType: subjectTypeSchema.default('vetement'),
   renderType: renderTypeSchema,
   mannequinOption: mannequinOptionSchema,
   backgroundOption: backgroundOptionSchema,
@@ -258,8 +310,8 @@ export type CreateBatchResponse = z.infer<typeof createBatchResponseSchema>;
 // Gallery — GET /gallery · POST /gallery (écran 06 « Mes créations »)
 // ─────────────────────────────────────────────────────────────────
 
-/** Filtre de la galerie : Tout / Sur modèle / Cintre (chips écran 06). */
-export const galleryFilterSchema = z.enum(['all', 'model', 'hanger']);
+/** Filtre de la galerie : Tout / Vêtements / Objets / Sur modèle / Cintre (chips écran 10). */
+export const galleryFilterSchema = z.enum(['all', 'vetement', 'objet', 'model', 'hanger']);
 export type GalleryFilter = z.infer<typeof galleryFilterSchema>;
 export const GALLERY_FILTERS = galleryFilterSchema.options;
 

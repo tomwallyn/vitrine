@@ -1,5 +1,6 @@
 import {
   DEFAULT_MANNEQUIN,
+  isObjectRenderType,
   resolveMannequin,
   NANO_CUSTOM_BACKGROUND_LAST_SUFFIX,
   NANO_CUSTOM_BACKGROUND_SUFFIX,
@@ -7,13 +8,22 @@ import {
   NANO_MODEL_DRESS_PROMPT,
   NANO_MODEL_KEEP_BASE_SUFFIX,
   NANO_MULTI_VIEW_SUFFIX,
+  NANO_OBJECT_DECOR_SUFFIX,
+  NANO_OBJECT_FIDELITY,
+  NANO_OBJECT_PROMPTS,
   NANO_PROMPTS,
   nanoOutfitSuffix,
+  objectAccessoriesSuffix,
+  objectLightingSuffix,
+  objectSceneSuffix,
+  objectSurfaceSuffix,
   type BackgroundOption,
   type GarmentType,
   type MannequinOption,
   type Provider,
   type RenderType,
+  type SceneLighting,
+  type SubjectType,
 } from '@vitrine/shared';
 
 /**
@@ -25,8 +35,11 @@ import {
 /** Paramètres d'une génération, indépendants du provider. */
 export interface GenerationParams {
   sourceImageUrl: string;
+  /** Type de sujet (vêtement/objet) — défaut vêtement. */
+  subjectType?: SubjectType | null;
   renderType: RenderType;
-  mannequinOption: MannequinOption;
+  /** Requis pour un vêtement ; absent pour un objet. */
+  mannequinOption?: MannequinOption | null;
   /** Variante de mannequin dans la catégorie (id catalogue) — défaut = 1ʳᵉ. */
   mannequinId?: string | null;
   backgroundOption: BackgroundOption;
@@ -46,6 +59,18 @@ export interface GenerationParams {
    */
   garmentType?: GarmentType | null;
   outfitImages?: { top?: string; bottom?: string; shoes?: string } | null;
+  /**
+   * OBJET (v2) — ambiance lumière + scène : surface/décor/accessoires sont des
+   * clés de preset (texte) ; `decorUrl` est un décor perso (URL **signée GET**)
+   * passé en image de référence à Nano.
+   */
+  lighting?: SceneLighting | null;
+  scene?: {
+    surface?: string;
+    background?: string;
+    accessoires?: string;
+    decorUrl?: string;
+  } | null;
 }
 
 /** Vues additionnelles à passer au rendu, dans un ordre stable (arrière, détail). */
@@ -85,9 +110,27 @@ export class AiOutputParseError extends Error {
  * Image du mannequin pour le try-on. `studio` n'a pas d'image (le router route
  * ce cas vers Nano Banana) — repli défensif sur DEFAULT_MANNEQUIN si atteint.
  */
-function mannequinImageUrl(option: MannequinOption, mannequinId?: string | null): string {
-  const category = option === 'studio' ? DEFAULT_MANNEQUIN : option;
+function mannequinImageUrl(option?: MannequinOption | null, mannequinId?: string | null): string {
+  const opt = option ?? DEFAULT_MANNEQUIN;
+  const category = opt === 'studio' ? DEFAULT_MANNEQUIN : opt;
   return resolveMannequin(category, mannequinId).url;
+}
+
+/**
+ * Prompt d'un rendu OBJET : fidélité stricte à l'objet + style du type de rendu
+ * + suffixes scène (lumière, surface, décor/accessoires). Décor perso (image) →
+ * suffixe « dernière image = décor » et l'image est ajoutée dans image_urls.
+ */
+function objectPrompt(params: GenerationParams): string {
+  const rt = params.renderType;
+  const style = isObjectRenderType(rt) ? NANO_OBJECT_PROMPTS[rt] : NANO_OBJECT_PROMPTS.studio_uni;
+  let prompt = NANO_OBJECT_FIDELITY + style;
+  prompt += objectLightingSuffix(params.lighting);
+  prompt += objectSurfaceSuffix(params.scene?.surface);
+  if (params.scene?.decorUrl) prompt += NANO_OBJECT_DECOR_SUFFIX;
+  else prompt += objectSceneSuffix(params.scene?.background);
+  prompt += objectAccessoriesSuffix(params.scene?.accessoires);
+  return prompt;
 }
 
 /**
@@ -173,7 +216,10 @@ function nanoPrompt(params: GenerationParams): string {
     return prompt + (hasCustomBackground ? NANO_CUSTOM_BACKGROUND_LAST_SUFFIX : NANO_MODEL_BG_STUDIO);
   }
 
-  const base = params.renderType === 'model' ? NANO_PROMPTS.studio : NANO_PROMPTS[params.renderType];
+  const base =
+    params.renderType === 'model'
+      ? NANO_PROMPTS.studio
+      : NANO_PROMPTS[params.renderType as 'hanger' | 'folded' | 'studio'];
   const prompt = hasExtraViews ? base + NANO_MULTI_VIEW_SUFFIX : base;
   if (!hasCustomBackground) return prompt;
   return prompt + (hasExtraViews ? NANO_CUSTOM_BACKGROUND_LAST_SUFFIX : NANO_CUSTOM_BACKGROUND_SUFFIX);
@@ -185,6 +231,18 @@ function nanoPrompt(params: GenerationParams): string {
  */
 const nanobananaAdapter: ProviderAdapter = {
   buildInput(params) {
+    // OBJET (v2) : mise en scène par prompt texte ; décor perso éventuel en 2ᵉ image.
+    if (params.subjectType === 'objet' || isObjectRenderType(params.renderType)) {
+      const decor = params.scene?.decorUrl ? [params.scene.decorUrl] : [];
+      return {
+        prompt: objectPrompt(params),
+        image_urls: [params.sourceImageUrl, ...decor],
+        num_images: 1,
+        output_format: 'png',
+        resolution: '2K',
+      };
+    }
+
     const extraViews = extraViewUrls(params);
     const customBackground =
       params.backgroundOption === 'custom' && params.customBackgroundUrl

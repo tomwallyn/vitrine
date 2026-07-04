@@ -1,9 +1,54 @@
 import { z } from 'zod';
 
-/** Type de rendu généré par l'IA (écran 03 — STYLE). */
-export const renderTypeSchema = z.enum(['model', 'hanger', 'folded', 'studio']);
+/** Type de sujet du visuel : vêtement (habillage) ou objet (mise en scène). */
+export const subjectTypeSchema = z.enum(['vetement', 'objet']);
+export type SubjectType = z.infer<typeof subjectTypeSchema>;
+export const SUBJECT_TYPES = subjectTypeSchema.options;
+
+/**
+ * Type de rendu généré par l'IA. Les 4 premiers sont réservés aux **vêtements**
+ * (écran 06), les 6 suivants aux **objets** (v2) — `subjectType` désambiguïse.
+ */
+export const renderTypeSchema = z.enum([
+  // Vêtement
+  'model',
+  'hanger',
+  'folded',
+  'studio',
+  // Objet (v2)
+  'studio_uni',
+  'texture',
+  'mise_en_situation',
+  'ambiance',
+  'macro',
+  'exterieur',
+]);
 export type RenderType = z.infer<typeof renderTypeSchema>;
 export const RENDER_TYPES = renderTypeSchema.options;
+
+/** Types de rendu réservés aux objets (le reste = vêtement). */
+export const OBJECT_RENDER_TYPES = [
+  'studio_uni',
+  'texture',
+  'mise_en_situation',
+  'ambiance',
+  'macro',
+  'exterieur',
+] as const;
+export type ObjectRenderType = (typeof OBJECT_RENDER_TYPES)[number];
+
+/** Types de rendu vêtement (sélecteur de style côté mode). */
+export const CLOTHING_RENDER_TYPES = ['model', 'hanger', 'folded', 'studio'] as const;
+
+/** Vrai si le type de rendu est un rendu objet. */
+export function isObjectRenderType(rt: RenderType): rt is ObjectRenderType {
+  return (OBJECT_RENDER_TYPES as readonly string[]).includes(rt);
+}
+
+/** Ambiance lumière du rendu objet (écran OBJET·1). */
+export const sceneLightingSchema = z.enum(['douce', 'doree', 'contrastee']);
+export type SceneLighting = z.infer<typeof sceneLightingSchema>;
+export const SCENE_LIGHTINGS = sceneLightingSchema.options;
 
 /** Option de mannequin (écran 03 — MANNEQUIN). */
 export const mannequinOptionSchema = z.enum(['femme', 'homme', 'silhouette', 'studio']);

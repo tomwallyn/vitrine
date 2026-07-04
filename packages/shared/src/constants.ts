@@ -3,10 +3,18 @@ import type { RenderType } from './enums.js';
 
 /** Libellés FR des types de rendu (écrans 03/05/06 + titres de galerie). */
 export const RENDER_TYPE_LABELS: Record<RenderType, string> = {
+  // Vêtement
   model: 'Sur modèle',
   hanger: 'Sur cintre',
   folded: 'Plié à plat',
   studio: 'Fond studio',
+  // Objet
+  studio_uni: 'Studio uni',
+  texture: 'Texturé',
+  mise_en_situation: 'Mise en situation',
+  ambiance: 'Ambiance',
+  macro: 'Macro détail',
+  exterieur: 'Extérieur',
 } as const;
 
 /**

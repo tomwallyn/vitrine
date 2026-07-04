@@ -44,8 +44,15 @@ export interface AiRoute {
   adapter: ProviderAdapter;
 }
 
-/** Résout la route IA d'une génération (provider figé au moment du POST). */
-export function resolveAiRoute(renderType: RenderType, mannequinOption: MannequinOption): AiRoute {
+/**
+ * Résout la route IA d'une génération (provider figé au moment du POST).
+ * Seul le try-on vêtement « sur modèle » quitte Nano ; tout le reste (cintre/
+ * plié/studio + **tous les rendus objet**) passe par Nano Banana.
+ */
+export function resolveAiRoute(
+  renderType: RenderType,
+  mannequinOption?: MannequinOption | null,
+): AiRoute {
   const provider: Provider =
     renderType === 'model' && mannequinOption !== 'studio' ? resolveOnModelProvider() : 'nanobanana';
   return { provider, endpoint: FAL_ENDPOINTS[provider], adapter: ADAPTERS[provider] };

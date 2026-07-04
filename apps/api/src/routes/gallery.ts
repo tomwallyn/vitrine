@@ -69,7 +69,12 @@ export function registerGalleryRoutes(app: FastifyInstance): void {
     const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
 
     const conditions: SQL[] = [eq(galleryItems.shopId, shop.id)];
-    if (filter !== 'all') conditions.push(eq(generations.renderType, filter));
+    // Vêtements/Objets → filtre par type de sujet ; model/hanger → par type de rendu.
+    if (filter === 'vetement' || filter === 'objet') {
+      conditions.push(eq(generations.subjectType, filter));
+    } else if (filter !== 'all') {
+      conditions.push(eq(generations.renderType, filter));
+    }
     const where = and(...conditions);
     const orderBy =
       sort === 'oldest' ? asc(galleryItems.createdAt) : desc(galleryItems.createdAt);
