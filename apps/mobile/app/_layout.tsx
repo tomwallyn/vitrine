@@ -78,54 +78,38 @@ function RootNavigator() {
         />
         <Stack.Screen name="billing" options={{ presentation: 'modal', gestureEnabled: true }} />
         <Stack.Screen name="support" options={{ presentation: 'modal', gestureEnabled: true }} />
-        {/* Flux de création : fork type → hub d'import → capture / angles → config. */}
+        {/*
+         * Flux de création : product-type est la SEULE modal racine (slide-up,
+         * fermable au swipe). Tous les écrans suivants sont des cartes empilées
+         * DANS cette modal (slide latéral + retour) — plus de modals-sur-modals
+         * qui s'accumulent et ne se ferment jamais au swipe.
+         */}
         <Stack.Screen
           name="product-type"
           options={{ presentation: 'modal', gestureEnabled: true }}
         />
-        <Stack.Screen
-          name="import-hub"
-          options={{ presentation: 'modal', gestureEnabled: true }}
-        />
+        <Stack.Screen name="import-hub" options={{ gestureEnabled: true }} />
         <Stack.Screen name="capture" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Screen
-          name="detail-angles"
-          options={{ presentation: 'modal', gestureEnabled: true }}
-        />
-        <Stack.Screen
-          name="render-config"
-          options={{ presentation: 'modal', gestureEnabled: true }}
-        />
+        <Stack.Screen name="detail-angles" options={{ gestureEnabled: true }} />
+        <Stack.Screen name="render-config" options={{ gestureEnabled: true }} />
         {/* « Compléter la tenue » (sur modèle) : tenue → choix pièce → ajout. */}
-        <Stack.Screen name="outfit" options={{ presentation: 'modal', gestureEnabled: true }} />
-        <Stack.Screen
-          name="outfit-picker"
-          options={{ presentation: 'modal', gestureEnabled: true }}
-        />
+        <Stack.Screen name="outfit" options={{ gestureEnabled: true }} />
+        <Stack.Screen name="outfit-picker" options={{ gestureEnabled: true }} />
         <Stack.Screen
           name="outfit-add"
           options={{ presentation: 'transparentModal', animation: 'fade' }}
         />
         {/* Objet (v2) : config rendu → compléter la scène → choisir/ajouter décor. */}
-        <Stack.Screen
-          name="object-config"
-          options={{ presentation: 'modal', gestureEnabled: true }}
-        />
-        <Stack.Screen name="scene" options={{ presentation: 'modal', gestureEnabled: true }} />
-        <Stack.Screen
-          name="scene-picker"
-          options={{ presentation: 'modal', gestureEnabled: true }}
-        />
+        <Stack.Screen name="object-config" options={{ gestureEnabled: true }} />
+        <Stack.Screen name="scene" options={{ gestureEnabled: true }} />
+        <Stack.Screen name="scene-picker" options={{ gestureEnabled: true }} />
         <Stack.Screen
           name="scene-add"
           options={{ presentation: 'transparentModal', animation: 'fade' }}
         />
-        {/* Lot de vêtements : import multiple → style commun → progression. */}
-        <Stack.Screen name="batch" options={{ presentation: 'modal', gestureEnabled: true }} />
-        <Stack.Screen
-          name="batch-style"
-          options={{ presentation: 'modal', gestureEnabled: true }}
-        />
+        {/* Lot : import multiple → style commun → progression. */}
+        <Stack.Screen name="batch" options={{ gestureEnabled: true }} />
+        <Stack.Screen name="batch-style" options={{ gestureEnabled: true }} />
         {/* Quittable : le lot continue en arrière-plan (tracker global). */}
         <Stack.Screen name="batch-progress" options={{ gestureEnabled: true }} />
         {/* Quittable : la génération continue en arrière-plan (tracker global). */}
