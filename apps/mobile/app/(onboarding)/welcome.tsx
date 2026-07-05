@@ -1,34 +1,40 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Image, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { t } from '@/lib/i18n';
-import { colors } from '@vitrine/shared';
 
-/** 01 — ACCUEIL : image hero immersive → « Une photo. Une vitrine pro. » */
+/** 01 — ACCUEIL : image hero plein largeur (bas arrondi) → « Une photo. Une vitrine pro. » */
 export default function WelcomeScreen() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
-  // Image plein largeur en haut, plafonnée pour laisser respirer le texte.
-  const imageHeight = Math.min(width * (4 / 3), height * 0.6);
+  // Grande image plein largeur en haut, plafonnée pour laisser respirer le texte.
+  const imageHeight = Math.min(width * (4 / 3), height * 0.58);
 
   return (
     <View className="flex-1 bg-paper">
-      {/* Visuel hero immersif, bleed sous la status bar */}
-      <Image
-        source={require('../../assets/welcome-hero.jpg')}
-        style={{ position: 'absolute', top: 0, left: 0, width, height: imageHeight }}
-        resizeMode="cover"
-        accessibilityLabel={t('welcome.heroA11y')}
-      />
-      {/* Fondu de l'image vers le crème, où viennent titre + boutons */}
-      <LinearGradient
-        colors={['transparent', colors.paper]}
-        locations={[0, 1]}
-        style={{ position: 'absolute', top: imageHeight - 170, left: 0, width, height: 210 }}
-      />
+      {/* Visuel hero : plein largeur, bleed sous la status bar, bas arrondi + ombre douce */}
+      <View
+        style={{
+          width,
+          height: imageHeight,
+          shadowColor: '#111111',
+          shadowOpacity: 0.1,
+          shadowRadius: 20,
+          shadowOffset: { width: 0, height: 10 },
+        }}
+        className="absolute left-0 top-0"
+      >
+        <View className="h-full w-full overflow-hidden rounded-b-[32px] bg-paper2">
+          <Image
+            source={require('../../assets/welcome-hero.jpg')}
+            className="h-full w-full"
+            resizeMode="cover"
+            accessibilityLabel={t('welcome.heroA11y')}
+          />
+        </View>
+      </View>
 
       <SafeAreaView className="flex-1">
         <View className="flex-1 px-6">
