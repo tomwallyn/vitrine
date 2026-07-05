@@ -16,8 +16,8 @@
       "ios": { "simulator": true },
       "android": { "buildType": "apk" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE_ME_DEV_CLOUD_RUN_URL",
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_REPLACE_ME"
+        "EXPO_PUBLIC_API_URL": "https://vitrine-api-dev-yqii5p5dqa-ew.a.run.app",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_dG9sZXJhbnQtbGFkeWJpcmQtMTguY2xlcmsuYWNjb3VudHMuZGV2JA"
       }
     },
     "production": {
