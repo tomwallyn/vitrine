@@ -71,9 +71,7 @@ jobs:
       # Migrations Neon AVANT le déploiement (migrations additives → sûres pour la
       # révision en cours pendant le court chevauchement). DATABASE_URL lu depuis
       # Secret Manager, jamais exposé en clair dans les logs.
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
+      - uses: pnpm/action-setup@v4 # version lue depuis package.json (packageManager)
       - uses: actions/setup-node@v4
         with:
           node-version: 24
