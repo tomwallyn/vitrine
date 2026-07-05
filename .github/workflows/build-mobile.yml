@@ -1,17 +1,18 @@
 name: Build mobile
 
-# develop → profil preview (APK Android + iOS simulateur)
-# main    → profil production (APK Android signé + iOS simulateur pour l'instant)
-# Les binaires sont buildés par EAS (cloud) puis déposés dans les ARTEFACTS GitHub.
+# MANUEL UNIQUEMENT (pas à chaque push, pour maîtriser le coût des builds EAS).
+# Profil selon la branche sur laquelle on lance le run :
+#   - main            → production (APK Android signé + iOS simulateur)
+#   - develop / autre → preview    (APK Android + iOS simulateur)
+# Binaires buildés par EAS (cloud) puis déposés dans les ARTEFACTS GitHub.
 on:
-  push:
-    branches: [develop, main]
-    paths:
-      - 'apps/mobile/**'
-      - 'packages/shared/**'
-      - 'pnpm-lock.yaml'
-      - '.github/workflows/build-mobile.yml'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Plateformes à builder (android seul = 2× moins cher)'
+        type: choice
+        options: [all, android, ios]
+        default: all
 
 concurrency:
   group: build-mobile-${{ github.ref }}
@@ -48,7 +49,7 @@ jobs:
       - name: EAS build (${{ steps.p.outputs.profile }})
         working-directory: apps/mobile
         run: |
-          eas build --platform all --profile "${{ steps.p.outputs.profile }}" \
+          eas build --platform "${{ inputs.platform }}" --profile "${{ steps.p.outputs.profile }}" \
             --non-interactive --wait --json > builds.json
           echo "Builds terminés :"
           jq -r '.[] | "  \(.platform): \(.artifacts.applicationArchiveUrl)"' builds.json
