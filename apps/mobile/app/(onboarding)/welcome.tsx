@@ -1,12 +1,12 @@
 import { useRouter } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { t } from '@/lib/i18n';
 
-/** 01 — ACCUEIL : « Un cintre. Une vitrine pro. » */
+/** 01 — ACCUEIL : « Une photo. Une vitrine pro. » */
 export default function WelcomeScreen() {
   const router = useRouter();
 
@@ -20,11 +20,20 @@ export default function WelcomeScreen() {
           </Text>
         </View>
 
-        {/* Visuel placeholder : cintre → visuel pro */}
+        {/* Visuel hero : exemple de visuel pro (vêtement + objet) */}
         <View className="mt-10 flex-1 items-center justify-center">
-          <View className="h-72 w-56 items-center justify-center rounded-3xl border border-paper3 bg-paper2">
-            <Text className="text-6xl">🧥</Text>
-            <Badge label={t('welcome.exampleBadge')} variant="light" className="mt-4" />
+          <View className="h-72 w-56 overflow-hidden rounded-3xl border border-paper3 bg-paper2">
+            <Image
+              source={require('../../assets/welcome-hero.jpg')}
+              className="h-full w-full"
+              resizeMode="cover"
+              accessibilityLabel={t('welcome.heroA11y')}
+            />
+            <Badge
+              label={t('welcome.exampleBadge')}
+              variant="light"
+              className="absolute bottom-3 left-3"
+            />
           </View>
         </View>
 

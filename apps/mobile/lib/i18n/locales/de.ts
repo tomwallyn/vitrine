@@ -52,6 +52,7 @@ export default {
   welcome: {
     wordmark: 'Vitrine',
     exampleBadge: 'Beispiel',
+    heroA11y: 'Beispiel eines mit Vitrine erstellten Produktvisuals',
     heading: 'Ein Foto.\nEin Profi-Visual.',
     subtitle:
       'Fotografiere deine Produkte, die KI macht daraus ein professionelles Visual. Ohne Studio, ohne Shooting.',
