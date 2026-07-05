@@ -65,6 +65,8 @@ function RootNavigator() {
         contentStyle: { backgroundColor: colors.paper },
       }}
     >
+      {/* Retour OAuth natif (deep link) : joignable quel que soit l'état d'auth. */}
+      <Stack.Screen name="oauth-native-callback" />
       <Stack.Protected guard={!isSignedIn}>
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(auth)" />

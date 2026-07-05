@@ -18,9 +18,7 @@
       "android": { "buildType": "apk" },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://vitrine-api-dev-yqii5p5dqa-ew.a.run.app",
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_dG9sZXJhbnQtbGFkeWJpcmQtMTguY2xlcmsuYWNjb3VudHMuZGV2JA",
-        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "test_MyypcgwEHdphRynVhepAuheyQvq",
-        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "test_MyypcgwEHdphRynVhepAuheyQvq"
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_dG9sZXJhbnQtbGFkeWJpcmQtMTguY2xlcmsuYWNjb3VudHMuZGV2JA"
       }
     },
     "production": {
