@@ -21,9 +21,7 @@ GITHUB_REPO="${GITHUB_REPO:-tomwallyn/vitrine}" # owner/repo
 
 AR_REPO="vitrine"                              # Artifact Registry (images Docker)
 RUNTIME_SA="vitrine-api-run"                   # SA d'exécution Cloud Run
-DEPLOY_SA="github-deployer"                    # SA impersonné par GitHub Actions
-POOL="github-pool"
-PROVIDER="github-provider"
+DEPLOY_SA="github-deployer"                    # SA utilisé par GitHub Actions (clé JSON)
 
 RUNTIME_SA_EMAIL="${RUNTIME_SA}@${PROJECT_ID}.iam.gserviceaccount.com"
 DEPLOY_SA_EMAIL="${DEPLOY_SA}@${PROJECT_ID}.iam.gserviceaccount.com"
@@ -100,22 +98,12 @@ gcloud iam service-accounts add-iam-policy-binding "${RUNTIME_SA_EMAIL}" \
   --member="serviceAccount:${DEPLOY_SA_EMAIL}" \
   --role="roles/iam.serviceAccountUser" >/dev/null
 
-# ── 6. Workload Identity Federation (GitHub → GCP, sans clé) ──────
-echo "▸ Workload Identity Federation…"
-gcloud iam workload-identity-pools create "${POOL}" \
-  --location=global --display-name="GitHub Actions" 2>/dev/null || echo "  (pool déjà créé)"
-gcloud iam workload-identity-pools providers create-oidc "${PROVIDER}" \
-  --location=global --workload-identity-pool="${POOL}" \
-  --display-name="GitHub OIDC" \
-  --issuer-uri="https://token.actions.githubusercontent.com" \
-  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
-  --attribute-condition="assertion.repository=='${GITHUB_REPO}'" 2>/dev/null || echo "  (provider déjà créé)"
-
-WIF_PROVIDER="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL}/providers/${PROVIDER}"
-# Autoriser SEULEMENT ce repo GitHub à impersonner le deploy SA.
-gcloud iam service-accounts add-iam-policy-binding "${DEPLOY_SA_EMAIL}" \
-  --role="roles/iam.workloadIdentityUser" \
-  --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL}/attribute.repository/${GITHUB_REPO}" >/dev/null
+# ── 6. Clé JSON du SA de déploiement (secret GitHub GCP_SA_KEY) ──
+# Approche simple (comme tes autres projets) : GitHub s'authentifie avec une clé
+# de service account stockée en secret chiffré. Pas de WIF à configurer.
+echo "▸ Clé JSON du deploy SA…"
+KEY_FILE="github-deployer-key.json"
+gcloud iam service-accounts keys create "${KEY_FILE}" --iam-account="${DEPLOY_SA_EMAIL}"
 
 # ── 7. Conteneurs de secrets (valeurs à ajouter ensuite) ─────────
 echo "▸ Secret Manager (conteneurs vides)…"
@@ -150,13 +138,16 @@ cat <<EOF
 2) Donne au runtime SA l'accès aux buckets GCS (cf. plus haut).
 
 3) Ajoute ces SECRETS dans GitHub (repo → Settings → Secrets and variables → Actions) :
-   GCP_WIF_PROVIDER = ${WIF_PROVIDER}
-   GCP_DEPLOY_SA    = ${DEPLOY_SA_EMAIL}
-   GCP_RUNTIME_SA   = ${RUNTIME_SA_EMAIL}
+   GCP_SA_KEY     = <contenu COMPLET du fichier ${KEY_FILE}>
+                    (copie tout le JSON, puis supprime le fichier : rm ${KEY_FILE})
+   GCP_RUNTIME_SA = ${RUNTIME_SA_EMAIL}
 
    Et ces VARIABLES (onglet Variables) :
-   GCP_PROJECT_ID   = ${PROJECT_ID}
-   GCP_REGION       = ${REGION}
-   GCP_AR_REPO      = ${AR_REPO}
+   GCP_PROJECT_ID = ${PROJECT_ID}
+   GCP_REGION     = ${REGION}
+   GCP_AR_REPO    = ${AR_REPO}
+
+⚠️  ${KEY_FILE} est une clé sensible : ne la commite JAMAIS (déjà dans .gitignore),
+   supprime-la après l'avoir copiée dans le secret GitHub.
 ────────────────────────────────────────────────────────────────
 EOF

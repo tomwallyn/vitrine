@@ -7,7 +7,7 @@
 | `develop` | `vitrine-api-dev` (DEV)  | profil `preview` : APK Android + iOS **simulateur**|
 | `main`    | `vitrine-api-prod` (PROD)| profil `production` : APK Android **signé** + iOS simulateur |
 
-- Backend : **scale-to-zero** (0 instance quand personne n'utilise → ~0€). Auth GitHub→GCP par **Workload Identity Federation** (aucune clé JSON). Secrets applicatifs dans **GCP Secret Manager**.
+- Backend : **scale-to-zero** (0 instance quand personne n'utilise → ~0€). Auth GitHub→GCP par **clé de service account** (secret `GCP_SA_KEY`). Secrets applicatifs dans **GCP Secret Manager**.
 - Mobile : builds **EAS cloud**, binaires récupérés et déposés dans les **artefacts GitHub** (onglet Actions → run → Artifacts), téléchargeables.
 - Migrations Neon jouées automatiquement à chaque déploiement backend.
 
@@ -51,12 +51,11 @@ gsutil iam ch serviceAccount:vitrine-api-run@<PROJECT_ID>.iam.gserviceaccount.co
 Repo → **Settings → Secrets and variables → Actions**.
 
 **Secrets** (onglet _Secrets_) :
-| Nom                 | Valeur                                             |
-| ------------------- | -------------------------------------------------- |
-| `GCP_WIF_PROVIDER`  | (affiché par le script)                            |
-| `GCP_DEPLOY_SA`     | `github-deployer@<PROJECT_ID>.iam.gserviceaccount.com` |
-| `GCP_RUNTIME_SA`    | `vitrine-api-run@<PROJECT_ID>.iam.gserviceaccount.com` |
-| `EXPO_TOKEN`        | token robot Expo (expo.dev → Account → Access Tokens) |
+| Nom              | Valeur                                                 |
+| ---------------- | ------------------------------------------------------ |
+| `GCP_SA_KEY`     | contenu JSON complet de `github-deployer-key.json` (créé par le script) |
+| `GCP_RUNTIME_SA` | `vitrine-api-run@<PROJECT_ID>.iam.gserviceaccount.com` |
+| `EXPO_TOKEN`     | token robot Expo (expo.dev → Account → Access Tokens)  |
 
 **Variables** (onglet _Variables_) :
 | Nom               | Valeur                    |

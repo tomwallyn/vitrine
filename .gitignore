@@ -41,3 +41,7 @@ infra/benchmark/inputs/*
 # IDE
 .idea/
 .vscode/
+
+# Clé de service account GCP (ne JAMAIS commiter)
+github-deployer-key.json
+*-key.json
