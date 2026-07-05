@@ -1,35 +1,41 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { t } from '@/lib/i18n';
 
-/** 01 — ACCUEIL : image hero plein écran + dégradé chaud → « Une photo. Une vitrine pro. » */
+/** Fond sombre chaud dans lequel l'image se fond (= bas de l'écran + fin du dégradé). */
+const WARM_DARK = '#171009';
+
+/** 01 — ACCUEIL : image hero pleine largeur (ratio naturel, sans zoom) fondue dans un bas sombre. */
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
+  // Pleine largeur au ratio naturel 3:4 → aucun recadrage/zoom (plafonné sur petits écrans).
+  const imageHeight = Math.min(width * (4 / 3), height * 0.72);
 
   return (
-    <View className="flex-1 bg-ink">
-      {/* Image plein écran */}
+    <View className="flex-1" style={{ backgroundColor: WARM_DARK }}>
+      {/* Image pleine largeur, ancrée en haut */}
       <Image
         source={require('../../assets/welcome-hero.jpg')}
-        style={StyleSheet.absoluteFill}
+        style={{ position: 'absolute', top: 0, left: 0, width, height: imageHeight }}
         resizeMode="cover"
         accessibilityLabel={t('welcome.heroA11y')}
       />
-      {/* Dégradé d'ombre chaud en bas : garde le haut clair (wordmark encre) et
-          assombrit le bas pour la lisibilité des textes/boutons blancs. */}
+      {/* Dégradé : haut clair (wordmark encre) → se fond dans le sombre chaud au bas de l'image,
+          en continuité avec le fond → pas de couture visible. */}
       <LinearGradient
-        colors={['transparent', 'transparent', 'rgba(26,18,12,0.6)', 'rgba(14,9,5,0.96)']}
-        locations={[0, 0.35, 0.65, 1]}
-        style={StyleSheet.absoluteFill}
+        colors={['transparent', 'transparent', 'rgba(23,16,9,0.5)', WARM_DARK]}
+        locations={[0, 0.45, 0.78, 1]}
+        style={{ position: 'absolute', top: 0, left: 0, width, height: imageHeight }}
       />
 
       <SafeAreaView className="flex-1">
         <View className="flex-1 px-6 pb-4">
-          {/* Wordmark en haut (encre, sur le mur crème clair) */}
+          {/* Wordmark en haut-gauche (encre, sur le mur crème clair) */}
           <Text className="pt-6 font-heading-bold text-2xl uppercase tracking-[6px] text-ink">
             {t('welcome.wordmark')}
           </Text>
