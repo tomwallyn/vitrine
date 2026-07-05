@@ -18,7 +18,18 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d0d0d"
-      }
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "com.android.vending.BILLING"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -63,8 +74,10 @@
     "icon": "./assets/icon.png",
     "extra": {
       "eas": {
-        "projectId": ""
-      }
-    }
+        "projectId": "2ad22f21-62e4-4851-aef8-068f53077249"
+      },
+      "router": {}
+    },
+    "owner": "tomwallyn"
   }
 }
