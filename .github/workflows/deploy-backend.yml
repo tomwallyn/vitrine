@@ -37,12 +37,19 @@ jobs:
             echo "bucket=${{ vars.GCS_BUCKET_PROD }}" >>"$GITHUB_OUTPUT"
             echo "db_secret=vitrine-database-url-prod" >>"$GITHUB_OUTPUT"
             echo "clerk_secret=vitrine-clerk-secret-prod" >>"$GITHUB_OUTPUT"
+            # prod : min=1 garde une instance chaude (pas de cold start ~10s) ;
+            #        max=3 plafonne la facture tout en absorbant les pics.
+            echo "min=1" >>"$GITHUB_OUTPUT"
+            echo "max=3" >>"$GITHUB_OUTPUT"
           else
             echo "name=dev" >>"$GITHUB_OUTPUT"
             echo "service=vitrine-api-dev" >>"$GITHUB_OUTPUT"
             echo "bucket=${{ vars.GCS_BUCKET_DEV }}" >>"$GITHUB_OUTPUT"
             echo "db_secret=vitrine-database-url-dev" >>"$GITHUB_OUTPUT"
             echo "clerk_secret=vitrine-clerk-secret-dev" >>"$GITHUB_OUTPUT"
+            # dev : min=0 (scale-to-zero, gratuit à l'idle), max=1 (1 instance partagée).
+            echo "min=0" >>"$GITHUB_OUTPUT"
+            echo "max=1" >>"$GITHUB_OUTPUT"
           fi
 
       - name: Auth GCP
@@ -84,8 +91,9 @@ jobs:
             --region="${{ vars.GCP_REGION }}" \
             --service-account="${{ secrets.GCP_RUNTIME_SA }}" \
             --allow-unauthenticated \
-            --min-instances=0 --max-instances=3 --concurrency=80 \
-            --memory=512Mi --cpu=1 --timeout=300 \
+            --min-instances="${{ steps.env.outputs.min }}" \
+            --max-instances="${{ steps.env.outputs.max }}" \
+            --concurrency=80 --memory=512Mi --cpu=1 --timeout=300 \
             --set-env-vars="NODE_ENV=production,GCS_PROJECT_ID=${{ vars.GCP_PROJECT_ID }},GCS_BUCKET=${{ steps.env.outputs.bucket }}" \
             --set-secrets="DATABASE_URL=${{ steps.env.outputs.db_secret }}:latest,CLERK_SECRET_KEY=${{ steps.env.outputs.clerk_secret }}:latest,FAL_KEY=vitrine-fal-key:latest,FAL_WEBHOOK_SECRET=vitrine-fal-webhook-secret:latest,REVENUECAT_WEBHOOK_SECRET=vitrine-revenuecat-webhook-secret:latest"
 
