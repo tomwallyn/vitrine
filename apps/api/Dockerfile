@@ -21,7 +21,8 @@ COPY apps/api apps/api
 RUN pnpm --filter @vitrine/shared build && pnpm --filter api build
 
 # Arbre de prod autonome (node_modules résolus, workspace inclus)
-RUN pnpm --filter api deploy --prod /app
+# --legacy : pnpm v10+ exige sinon inject-workspace-packages=true pour `deploy`.
+RUN pnpm --filter api deploy --prod --legacy /app
 
 # ── Stage 2 : runtime minimal ────────────────────────────────────
 FROM node:24-slim AS runtime
