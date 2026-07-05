@@ -3,7 +3,6 @@ import type {
   MannequinOption,
   ObjectRenderType,
   Provider,
-  RenderType,
   SceneLighting,
 } from './enums.js';
 
