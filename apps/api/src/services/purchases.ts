@@ -1,23 +1,16 @@
-import {
-  CREDIT_SUBSCRIPTION,
-  findPackByProductId,
-  isSubscriptionProductId,
-} from '@vitrine/shared';
+import { findPackByProductId } from '@vitrine/shared';
 
 import type { TxDb } from '../db/client.js';
 import { creditPurchases, creditsLedger } from '../db/schema.js';
 
 /**
- * product_id RevenueCat → nombre de crédits à créditer :
- * packs consommables (credits_10 → 10, credits_50 → 50, credits_200 → 200,
- * préfixe reverse-DNS et base plan Google tolérés) + abonnement
- * (creditsPerPeriod à chaque période). null si produit inconnu.
+ * product_id RevenueCat → nombre de crédits à créditer : packs consommables
+ * (credits_50 → 50, credits_200 → 200, credits_500 → 500 ; préfixe reverse-DNS
+ * et base plan Google tolérés). null si produit inconnu.
  */
 export function creditsForProduct(productId: string): number | null {
   const pack = findPackByProductId(productId);
-  if (pack) return pack.credits;
-  if (isSubscriptionProductId(productId)) return CREDIT_SUBSCRIPTION.creditsPerPeriod;
-  return null;
+  return pack ? pack.credits : null;
 }
 
 export type ApplyPurchaseInput = {

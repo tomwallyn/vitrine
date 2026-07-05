@@ -73,7 +73,9 @@ export default function ObjectConfigScreen() {
       if (isInsufficientCredits(err)) {
         Alert.alert(
           t('objectConfig.insufficientCreditsTitle'),
-          t('objectConfig.insufficientCreditsMessage', { count: GENERATION_COST_CREDITS }),
+          t('objectConfig.insufficientCreditsMessage', {
+            credits: t('common.credits', { count: GENERATION_COST_CREDITS }),
+          }),
           [
             { text: t('objectConfig.later'), style: 'cancel' },
             { text: t('objectConfig.reload'), onPress: () => router.push('/(tabs)/credits') },
@@ -142,7 +144,9 @@ export default function ObjectConfigScreen() {
     ? t('objectConfig.generatingLabel')
     : draft.sourceUploadStatus === 'uploading'
       ? t('objectConfig.uploadingPhotoLabel')
-      : t('objectConfig.generateLabel', { count: GENERATION_COST_CREDITS });
+      : t('objectConfig.generateLabel', {
+          credits: t('common.credits', { count: GENERATION_COST_CREDITS }),
+        });
 
   return (
     <SafeAreaView className="flex-1 bg-paper">

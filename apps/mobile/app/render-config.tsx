@@ -113,7 +113,9 @@ export default function RenderConfigScreen() {
       if (isInsufficientCredits(err)) {
         Alert.alert(
           t('renderConfig.insufficientCreditsTitle'),
-          t('renderConfig.insufficientCreditsMessage', { count: GENERATION_COST_CREDITS }),
+          t('renderConfig.insufficientCreditsMessage', {
+            credits: t('common.credits', { count: GENERATION_COST_CREDITS }),
+          }),
           [
             { text: t('renderConfig.later'), style: 'cancel' },
             { text: t('renderConfig.recharge'), onPress: () => router.push('/(tabs)/credits') },
@@ -254,7 +256,9 @@ export default function RenderConfigScreen() {
     ? t('renderConfig.generating')
     : draft.sourceUploadStatus === 'uploading'
       ? t('renderConfig.sendingPhoto')
-      : t('renderConfig.generateCta', { count: GENERATION_COST_CREDITS });
+      : t('renderConfig.generateCta', {
+          credits: t('common.credits', { count: GENERATION_COST_CREDITS }),
+        });
 
   return (
     <SafeAreaView className="flex-1 bg-paper">

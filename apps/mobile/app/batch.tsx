@@ -21,6 +21,7 @@ import { uploadImageAsync } from '@/lib/upload';
 import {
   colors,
   createBatchRequestSchema,
+  GENERATION_COST_CREDITS,
   MAX_BATCH_ITEMS,
   type CreateBatchRequest,
   type MeResponse,
@@ -150,7 +151,9 @@ export default function BatchScreen() {
       if (isInsufficientCredits(err)) {
         Alert.alert(
           t('batch.insufficientCreditsTitle'),
-          t('batch.insufficientCreditsMessage', { count: payload.items.length }),
+          t('batch.insufficientCreditsMessage', {
+            credits: t('common.credits', { count: payload.items.length * GENERATION_COST_CREDITS }),
+          }),
           [
             { text: t('batch.later'), style: 'cancel' },
             { text: t('batch.recharge'), onPress: () => router.push('/(tabs)/credits') },
@@ -217,7 +220,10 @@ export default function BatchScreen() {
     ? t('batch.launching')
     : anyUploading
       ? t('batch.uploadingPhotos')
-      : t('batch.generateCta', { count: readyCount });
+      : t('batch.generateCta', {
+          count: readyCount,
+          credits: t('common.credits', { count: readyCount * GENERATION_COST_CREDITS }),
+        });
 
   return (
     <SafeAreaView className="flex-1 bg-paper">

@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { t } from '@/lib/i18n';
-import { packDiscountPercent, type CreditPackOffer } from '@vitrine/shared';
+import { GENERATION_COST_CREDITS, packDiscountPercent, type CreditPackOffer } from '@vitrine/shared';
 
 type PackCardProps = {
   pack: CreditPackOffer;
@@ -25,6 +25,13 @@ function formatEur(value: number): string {
 export function PackCard({ pack, selected, onPress, priceLabel }: PackCardProps) {
   const discount = packDiscountPercent(pack);
   const price = priceLabel ?? `${pack.priceEur} €`;
+  const badge = pack.popular
+    ? discount > 0
+      ? t('packCard.popularBadgeDiscount', { discount })
+      : t('packCard.popularBadge')
+    : discount > 0
+      ? t('packCard.discountBadge', { discount })
+      : null;
 
   return (
     <Pressable
@@ -33,12 +40,12 @@ export function PackCard({ pack, selected, onPress, priceLabel }: PackCardProps)
       onPress={onPress}
       className={`relative flex-row items-center justify-between rounded-2xl bg-white px-4 py-4 ${
         selected ? 'border-[1.5px] border-ink' : 'border border-paper3 active:bg-paper2'
-      } ${pack.popular ? 'mt-2' : ''}`}
+      } ${badge ? 'mt-2' : ''}`}
     >
-      {pack.popular ? (
+      {badge ? (
         <View className="absolute -top-2.5 left-4 rounded-full bg-ink px-2.5 py-1">
           <Text className="font-heading-bold text-[9px] uppercase tracking-widest text-white">
-            {discount > 0 ? t('packCard.popularBadgeDiscount', { discount }) : t('packCard.popularBadge')}
+            {badge}
           </Text>
         </View>
       ) : null}
@@ -49,7 +56,9 @@ export function PackCard({ pack, selected, onPress, priceLabel }: PackCardProps)
         <Text
           className={`mt-0.5 font-body-medium text-[11px] ${selected ? 'text-ink' : 'text-gray'}`}
         >
-          {t('packCard.pricePerVisual', { price: formatEur(pack.pricePerCreditEur) })}
+          {t('packCard.pricePerVisual', {
+            price: formatEur((pack.priceEur * GENERATION_COST_CREDITS) / pack.credits),
+          })}
         </Text>
       </View>
       <View className={`rounded-xl px-3.5 py-2 ${selected ? 'bg-ink' : 'bg-paper2'}`}>

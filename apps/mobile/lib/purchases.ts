@@ -2,7 +2,7 @@ import { useAuth } from '@clerk/clerk-expo';
 import { useCallback, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
-import { findPackByProductId, isSubscriptionProductId } from '@vitrine/shared';
+import { findPackByProductId } from '@vitrine/shared';
 
 import type { PurchasesError, PurchasesPackage } from 'react-native-purchases';
 
@@ -80,18 +80,16 @@ export type PurchaseResult =
 export type CreditPurchases = {
   /** 'unavailable' → achat désactivé (« configuration paiement requise »). */
   status: PurchasesStatus;
-  /** Package RevenueCat par id de pack (credits_10 / credits_50 / credits_200). */
+  /** Package RevenueCat par id de pack (credits_50 / credits_200 / credits_500). */
   packagesByPackId: Record<string, PurchasesPackage>;
-  /** Package de l'abonnement (upsell « Passer à l'abonnement »), si offert. */
-  subscriptionPackage: PurchasesPackage | null;
-  /** Lance l'achat natif d'un package (pack ou abonnement). */
+  /** Lance l'achat natif d'un pack. */
   purchase: (pkg: PurchasesPackage) => Promise<PurchaseResult>;
 };
 
 /**
  * Hook de l'écran 07 : configure RevenueCat pour l'utilisateur Clerk courant,
  * charge l'offering courant et mappe ses packages sur les packs de crédits
- * (product_id → pack via @vitrine/shared) + l'abonnement.
+ * (product_id → pack via @vitrine/shared).
  */
 export function useCreditPurchases(): CreditPurchases {
   const { userId } = useAuth();
@@ -99,7 +97,6 @@ export function useCreditPurchases(): CreditPurchases {
     REVENUECAT_API_KEY ? 'loading' : 'unavailable',
   );
   const [packagesByPackId, setPackagesByPackId] = useState<Record<string, PurchasesPackage>>({});
-  const [subscriptionPackage, setSubscriptionPackage] = useState<PurchasesPackage | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,21 +114,12 @@ export function useCreditPurchases(): CreditPurchases {
         const offerings = await Purchases.getOfferings();
         const available = offerings.current?.availablePackages ?? [];
         const byPackId: Record<string, PurchasesPackage> = {};
-        let subscription: PurchasesPackage | null = null;
         for (const pkg of available) {
           const pack = findPackByProductId(pkg.product.identifier);
-          if (pack) {
-            byPackId[pack.id] = pkg;
-          } else if (
-            isSubscriptionProductId(pkg.product.identifier) ||
-            String(pkg.product.productCategory) === 'SUBSCRIPTION'
-          ) {
-            subscription = pkg;
-          }
+          if (pack) byPackId[pack.id] = pkg;
         }
         if (!cancelled) {
           setPackagesByPackId(byPackId);
-          setSubscriptionPackage(subscription);
           setStatus('ready');
         }
       } catch {
@@ -160,5 +148,5 @@ export function useCreditPurchases(): CreditPurchases {
     }
   }, []);
 
-  return { status, packagesByPackId, subscriptionPackage, purchase };
+  return { status, packagesByPackId, purchase };
 }

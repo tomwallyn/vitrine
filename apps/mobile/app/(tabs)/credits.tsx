@@ -11,6 +11,7 @@ import { useCreditPurchases } from '@/lib/purchases';
 import {
   colors,
   CREDIT_PACKS,
+  creditsToVisuals,
   packPricePerCredit,
   type CreditPacksResponse,
 } from '@vitrine/shared';
@@ -24,8 +25,8 @@ const DEFAULT_PACK_ID = CREDIT_PACKS.find((pack) => pack.popular)?.id ?? 'credit
 
 /**
  * 07 — CRÉDITS : SOLDE ACTUEL (GET /credits) · RECHARGER (3 packs, achat
- * RevenueCat) · upsell abonnement. Le crédit réel arrive via le webhook
- * RevenueCat → après achat on invalide `credits`/`me` (refetch).
+ * RevenueCat). Le crédit réel arrive via le webhook RevenueCat → après achat
+ * on invalide `credits`/`me` (refetch).
  */
 export default function CreditsScreen() {
   const api = useApi();
@@ -40,7 +41,7 @@ export default function CreditsScreen() {
     placeholderData: FALLBACK_PACKS,
   });
 
-  const { status, packagesByPackId, subscriptionPackage, purchase } = useCreditPurchases();
+  const { status, packagesByPackId, purchase } = useCreditPurchases();
 
   const packs = packsQuery.data?.packs ?? FALLBACK_PACKS.packs;
   const selectedPack = packs.find((pack) => pack.id === selectedPackId) ?? packs[0];
@@ -67,24 +68,6 @@ export default function CreditsScreen() {
     if (result.outcome === 'success') onPurchaseSuccess();
     else if (result.outcome === 'error') Alert.alert(t('credits.purchaseErrorTitle'), result.message);
     // 'cancelled' → silencieux (annulation volontaire du sheet natif).
-  };
-
-  const onSubscribe = async () => {
-    if (buying) return;
-    if (!subscriptionPackage) {
-      Alert.alert(
-        t('credits.subscribeUnavailableTitle'),
-        status === 'ready'
-          ? t('credits.subscribeUnavailableReady')
-          : t('credits.subscribeUnavailableConfig'),
-      );
-      return;
-    }
-    setBuying(true);
-    const result = await purchase(subscriptionPackage);
-    setBuying(false);
-    if (result.outcome === 'success') onPurchaseSuccess();
-    else if (result.outcome === 'error') Alert.alert(t('credits.subscribeErrorTitle'), result.message);
   };
 
   const purchaseUnavailable = status === 'unavailable' || (status === 'ready' && !selectedPackage);
@@ -123,7 +106,7 @@ export default function CreditsScreen() {
                 </Text>
               </View>
               <Text className="mt-2 font-body-medium text-xs text-gray">
-                {t('credits.balanceHint', { balance })}
+                {t('credits.balanceHint', { visuals: creditsToVisuals(balance ?? 0) })}
               </Text>
             </>
           )}
@@ -145,13 +128,6 @@ export default function CreditsScreen() {
           ))}
         </View>
 
-        {/* Upsell abonnement */}
-        <Pressable accessibilityRole="button" onPress={onSubscribe} className="mt-5 items-center py-2">
-          <Text className="font-body-medium text-xs text-gray2">
-            {t('credits.subscribeUpsell')}{' '}
-            <Text className="font-body-semibold text-ink">{t('credits.subscribeUpsellCta')}</Text>
-          </Text>
-        </Pressable>
       </ScrollView>
 
       {/* CTA d'achat du pack sélectionné */}

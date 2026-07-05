@@ -71,7 +71,7 @@ export default {
     balanceLabel: 'Current balance',
     balanceUnavailable: 'Balance unavailable ·',
     unit: 'credits',
-    balanceHint: '≈ {{balance}} visuals · 1 credit = 1 photo',
+    balanceHint: '≈ {{visuals}} visuals · 1 visual = 10 credits',
     rechargeTitle: 'Top up',
     purchaseSuccessTitle: 'Thank you!',
     purchaseSuccessMessage: 'Purchase confirmed — your credits will be added in a moment.',
@@ -206,7 +206,7 @@ export default {
     gallery: 'Gallery',
     insufficientCreditsTitle: 'Not enough credits',
     insufficientCreditsMessage:
-      'You need {{count}} credits to generate this batch (1 per visual). Top up your balance to continue.',
+      'You need {{credits}} to generate this batch. Top up your balance to continue.',
     later: 'Later',
     recharge: 'Top up',
     generateErrorTitle: 'Generation failed',
@@ -214,8 +214,8 @@ export default {
     launching: 'Launching batch…',
     uploadingPhotos: 'Uploading photos…',
     generateCta: {
-      one: 'Generate {{count}} visual · {{count}} credit',
-      other: 'Generate {{count}} visuals · {{count}} credits',
+      one: 'Generate {{count}} visual · {{credits}}',
+      other: 'Generate {{count}} visuals · {{credits}}',
     },
     headerObjet: { one: 'Batch · {{count}} object', other: 'Batch · {{count}} objects' },
     headerGarment: { one: 'Batch · {{count}} item', other: 'Batch · {{count}} items' },
@@ -357,10 +357,10 @@ export default {
     sceneSubtitlePlaceholder: 'Surface, background, props',
     generatingLabel: 'Launching render…',
     uploadingPhotoLabel: 'Uploading photo…',
-    generateLabel: 'Generate visual · {{count}} credit',
+    generateLabel: 'Generate visual · {{credits}}',
     insufficientCreditsTitle: 'Not enough credits',
     insufficientCreditsMessage:
-      'You need {{count}} credit to generate a visual. Top up your balance to continue.',
+      'You need {{credits}} to generate a visual. Top up your balance to continue.',
     later: 'Later',
     reload: 'Top up',
     generationErrorTitle: 'Generation failed',
@@ -453,17 +453,14 @@ export default {
     backgroundLabel: 'Background {{name}}',
     insufficientCreditsTitle: 'Not enough credits',
     insufficientCreditsMessage:
-      'You need {{count}} credit to generate a visual. Top up your balance to continue.',
+      'You need {{credits}} to generate a visual. Top up your balance to continue.',
     later: 'Later',
     recharge: 'Top up',
     generateErrorTitle: 'Generation failed',
     generateErrorFallback: 'Try again in a moment.',
     generating: 'Launching render…',
     sendingPhoto: 'Uploading photo…',
-    generateCta: {
-      one: 'Generate visual · {{count}} credit',
-      other: 'Generate visual · {{count}} credits',
-    },
+    generateCta: 'Generate visual · {{credits}}',
   },
   renderPresets: {
     title: 'Presets',
@@ -523,7 +520,7 @@ export default {
     addToGalleryCta: 'Add to my gallery',
     alreadyInGalleryLabel: 'Already in gallery',
     variantsSubtitle:
-      'Generate the same product in other styles · {{cost}} credit per variation',
+      'Generate the same product in other styles · {{credits}} per variation',
     selectStyle: 'Select a style',
     launchingVariants: 'Launching variations…',
     generateVariantsCount: {
@@ -621,6 +618,7 @@ export default {
   packCard: {
     popularBadge: 'Popular',
     popularBadgeDiscount: 'Popular · −{{discount}}%',
+    discountBadge: '−{{discount}}%',
     pricePerVisual: '{{price}} / visual',
   },
   renderTypeSelector: {

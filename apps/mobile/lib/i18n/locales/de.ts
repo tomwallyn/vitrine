@@ -71,7 +71,7 @@ export default {
     balanceLabel: 'Aktuelles Guthaben',
     balanceUnavailable: 'Guthaben nicht verfügbar ·',
     unit: 'Guthaben',
-    balanceHint: '≈ {{balance}} Visuals · 1 Guthaben = 1 Foto',
+    balanceHint: '≈ {{visuals}} Visuals · 1 Visual = 10 Guthaben',
     rechargeTitle: 'Aufladen',
     purchaseSuccessTitle: 'Danke!',
     purchaseSuccessMessage: 'Kauf bestätigt – dein Guthaben wird gleich gutgeschrieben.',
@@ -206,7 +206,7 @@ export default {
     gallery: 'Galerie',
     insufficientCreditsTitle: 'Nicht genug Guthaben',
     insufficientCreditsMessage:
-      'Für diesen Stapel brauchst du {{count}} Guthaben (1 pro Visual). Lade dein Guthaben auf, um fortzufahren.',
+      'Für diesen Stapel brauchst du {{credits}}. Lade dein Guthaben auf, um fortzufahren.',
     later: 'Später',
     recharge: 'Aufladen',
     generateErrorTitle: 'Generierung nicht möglich',
@@ -214,8 +214,8 @@ export default {
     launching: 'Stapel wird gestartet…',
     uploadingPhotos: 'Fotos werden gesendet…',
     generateCta: {
-      one: '{{count}} Visual generieren · {{count}} Guthaben',
-      other: '{{count}} Visuals generieren · {{count}} Guthaben',
+      one: '{{count}} Visual generieren · {{credits}}',
+      other: '{{count}} Visuals generieren · {{credits}}',
     },
     headerObjet: { one: 'Stapel · {{count}} Objekt', other: 'Stapel · {{count}} Objekte' },
     headerGarment: { one: 'Stapel · {{count}} Teil', other: 'Stapel · {{count}} Teile' },
@@ -357,10 +357,10 @@ export default {
     sceneSubtitlePlaceholder: 'Oberfläche, Hintergrund, Accessoires',
     generatingLabel: 'Rendering wird gestartet…',
     uploadingPhotoLabel: 'Foto wird gesendet…',
-    generateLabel: 'Visual generieren · {{count}} Guthaben',
+    generateLabel: 'Visual generieren · {{credits}}',
     insufficientCreditsTitle: 'Nicht genug Guthaben',
     insufficientCreditsMessage:
-      'Für ein Visual brauchst du {{count}} Guthaben. Lade dein Guthaben auf, um fortzufahren.',
+      'Für ein Visual brauchst du {{credits}}. Lade dein Guthaben auf, um fortzufahren.',
     later: 'Später',
     reload: 'Aufladen',
     generationErrorTitle: 'Generierung nicht möglich',
@@ -453,17 +453,14 @@ export default {
     backgroundLabel: 'Hintergrund {{name}}',
     insufficientCreditsTitle: 'Nicht genug Guthaben',
     insufficientCreditsMessage:
-      'Für ein Visual brauchst du {{count}} Guthaben. Lade dein Guthaben auf, um fortzufahren.',
+      'Für ein Visual brauchst du {{credits}}. Lade dein Guthaben auf, um fortzufahren.',
     later: 'Später',
     recharge: 'Aufladen',
     generateErrorTitle: 'Generierung nicht möglich',
     generateErrorFallback: 'Versuche es gleich erneut.',
     generating: 'Rendering wird gestartet…',
     sendingPhoto: 'Foto wird gesendet…',
-    generateCta: {
-      one: 'Visual generieren · {{count}} Guthaben',
-      other: 'Visual generieren · {{count}} Guthaben',
-    },
+    generateCta: 'Visual generieren · {{credits}}',
   },
   renderPresets: {
     title: 'Voreinstellungen',
@@ -523,7 +520,7 @@ export default {
     addToGalleryCta: 'Zu meiner Galerie hinzufügen',
     alreadyInGalleryLabel: 'Bereits in der Galerie',
     variantsSubtitle:
-      'Generiere dasselbe Produkt in anderen Stilen · {{cost}} Guthaben pro Variante',
+      'Generiere dasselbe Produkt in anderen Stilen · {{credits}} pro Variante',
     selectStyle: 'Wähle einen Stil',
     launchingVariants: 'Varianten werden gestartet…',
     generateVariantsCount: {
@@ -621,6 +618,7 @@ export default {
   packCard: {
     popularBadge: 'Beliebt',
     popularBadgeDiscount: 'Beliebt · −{{discount}}%',
+    discountBadge: '−{{discount}}%',
     pricePerVisual: '{{price}} / Visual',
   },
   renderTypeSelector: {

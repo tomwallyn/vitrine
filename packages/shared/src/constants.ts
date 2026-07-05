@@ -19,23 +19,29 @@ export const RENDER_TYPE_LABELS: Record<RenderType, string> = {
 
 /**
  * Les 3 packs de crédits (écran 07), miroir des consommables RevenueCat.
- * 1 crédit = 1 visuel généré.
+ * 1 visuel = {@link GENERATION_COST_CREDITS} crédits. Prix cible/photo : 1,60 €
+ * (Découverte) → 1,40 € (−12 %) → 1,28 € (−20 %).
  */
 export const CREDIT_PACKS: readonly CreditPack[] = [
-  { id: 'credits_10', credits: 10, priceEur: 9 },
-  { id: 'credits_50', credits: 50, priceEur: 34, popular: true },
-  { id: 'credits_200', credits: 200, priceEur: 110 },
+  { id: 'credits_50', credits: 50, priceEur: 7.99 },
+  { id: 'credits_200', credits: 200, priceEur: 27.99, popular: true },
+  { id: 'credits_500', credits: 500, priceEur: 63.99 },
 ] as const;
 
-/** Coût d'une génération, en crédits. */
-export const GENERATION_COST_CREDITS = 1;
+/** Coût d'une génération, en crédits (1 visuel = 10 crédits). */
+export const GENERATION_COST_CREDITS = 10;
+
+/** Nombre de visuels finançables par un solde de crédits (solde ÷ coût). */
+export function creditsToVisuals(credits: number): number {
+  return Math.floor(Math.max(0, credits) / GENERATION_COST_CREDITS);
+}
 
 /**
  * Crédits offerts à la création de la boutique (première connexion).
  * Crédités UNE SEULE FOIS, à l'INSERT du shop (ledger `bonus`, cf.
  * services/shops.ts côté API) — jamais rétroactif pour les shops existants.
  */
-export const SIGNUP_BONUS_CREDITS = 10;
+export const SIGNUP_BONUS_CREDITS = 50;
 
 /**
  * Minutes « gagnées » par visuel généré (vs shooting produit artisanal :
@@ -58,24 +64,14 @@ export function formatTimeSaved(minutes: number): string {
   return `~${Math.round(minutes / 60)}h`;
 }
 
-/**
- * Abonnement auto-renouvelable (upsell « Passer à l'abonnement » de l'écran 07).
- * Crédite `creditsPerPeriod` à chaque période via le webhook RevenueCat
- * (INITIAL_PURCHASE / RENEWAL). Pricing store à affiner en M6.
- */
-export const CREDIT_SUBSCRIPTION = {
-  productId: 'vitrine_sub_monthly',
-  creditsPerPeriod: 50,
-} as const;
-
-/** Prix par visuel d'un pack, arrondi au centime (0,90 / 0,68 / 0,55 €). */
+/** Prix par crédit d'un pack, arrondi au centime (0,16 / 0,14 / 0,128 €). */
 export function packPricePerCredit(pack: CreditPack): number {
   return Math.round((pack.priceEur / pack.credits) * 100) / 100;
 }
 
 /**
- * Remise (%) d'un pack par rapport au prix/visuel le plus cher (pack de 10),
- * arrondie à l'entier supérieur — badge « −25 % » du pack 50 (maquette 07).
+ * Remise (%) d'un pack par rapport au prix/crédit le plus cher (pack Découverte),
+ * arrondie à l'entier supérieur — badges « −12 % » (Boutique) / « −20 % » (Pro).
  */
 export function packDiscountPercent(pack: CreditPack): number {
   const reference = Math.max(...CREDIT_PACKS.map((p) => p.priceEur / p.credits));
@@ -97,9 +93,4 @@ function productIdCandidates(productId: string): string[] {
 export function findPackByProductId(productId: string): CreditPack | undefined {
   const candidates = productIdCandidates(productId);
   return CREDIT_PACKS.find((pack) => candidates.includes(pack.id));
-}
-
-/** true si le product_id RevenueCat correspond à l'abonnement (upsell). */
-export function isSubscriptionProductId(productId: string): boolean {
-  return productIdCandidates(productId).includes(CREDIT_SUBSCRIPTION.productId);
 }

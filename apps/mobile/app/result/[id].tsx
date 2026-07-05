@@ -436,7 +436,9 @@ export default function ResultScreen() {
                     {t('result.actionVariants')}
                   </Text>
                   <Text className="mt-1 font-body text-xs text-gray2">
-                    {t('result.variantsSubtitle', { cost: GENERATION_COST_CREDITS })}
+                    {t('result.variantsSubtitle', {
+                      credits: t('common.credits', { count: GENERATION_COST_CREDITS }),
+                    })}
                   </Text>
 
                   <View className="mt-4 gap-2.5">

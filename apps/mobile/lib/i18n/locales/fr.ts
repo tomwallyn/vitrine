@@ -71,7 +71,7 @@ export default {
     balanceLabel: 'Solde actuel',
     balanceUnavailable: 'Solde indisponible ·',
     unit: 'crédits',
-    balanceHint: '≈ {{balance}} visuels · 1 crédit = 1 photo',
+    balanceHint: '≈ {{visuals}} visuels · 1 visuel = 10 crédits',
     rechargeTitle: 'Recharger',
     purchaseSuccessTitle: 'Merci !',
     purchaseSuccessMessage: 'Achat confirmé — vos crédits seront ajoutés dans un instant.',
@@ -206,7 +206,7 @@ export default {
     gallery: 'Galerie',
     insufficientCreditsTitle: 'Crédits insuffisants',
     insufficientCreditsMessage:
-      "Il faut {{count}} crédits pour générer ce lot (1 par visuel). Rechargez votre solde pour continuer.",
+      'Il faut {{credits}} pour générer ce lot. Rechargez votre solde pour continuer.',
     later: 'Plus tard',
     recharge: 'Recharger',
     generateErrorTitle: 'Génération impossible',
@@ -214,8 +214,8 @@ export default {
     launching: 'Lancement du lot…',
     uploadingPhotos: 'Envoi des photos…',
     generateCta: {
-      one: 'Générer {{count}} visuel · {{count}} crédit',
-      other: 'Générer {{count}} visuels · {{count}} crédits',
+      one: 'Générer {{count}} visuel · {{credits}}',
+      other: 'Générer {{count}} visuels · {{credits}}',
     },
     headerObjet: { one: 'Lot · {{count}} objet', other: 'Lot · {{count}} objets' },
     headerGarment: { one: 'Lot · {{count}} pièce', other: 'Lot · {{count}} pièces' },
@@ -357,10 +357,10 @@ export default {
     sceneSubtitlePlaceholder: 'Surface, arrière-plan, accessoires',
     generatingLabel: 'Lancement du rendu…',
     uploadingPhotoLabel: 'Envoi de la photo…',
-    generateLabel: 'Générer le visuel · {{count}} crédit',
+    generateLabel: 'Générer le visuel · {{credits}}',
     insufficientCreditsTitle: 'Crédits insuffisants',
     insufficientCreditsMessage:
-      'Il faut {{count}} crédit pour générer un visuel. Rechargez votre solde pour continuer.',
+      'Il faut {{credits}} pour générer un visuel. Rechargez votre solde pour continuer.',
     later: 'Plus tard',
     reload: 'Recharger',
     generationErrorTitle: 'Génération impossible',
@@ -453,17 +453,14 @@ export default {
     backgroundLabel: 'Fond {{name}}',
     insufficientCreditsTitle: 'Crédits insuffisants',
     insufficientCreditsMessage:
-      'Il faut {{count}} crédit pour générer un visuel. Rechargez votre solde pour continuer.',
+      'Il faut {{credits}} pour générer un visuel. Rechargez votre solde pour continuer.',
     later: 'Plus tard',
     recharge: 'Recharger',
     generateErrorTitle: 'Génération impossible',
     generateErrorFallback: 'Réessayez dans un instant.',
     generating: 'Lancement du rendu…',
     sendingPhoto: 'Envoi de la photo…',
-    generateCta: {
-      one: 'Générer le visuel · {{count}} crédit',
-      other: 'Générer le visuel · {{count}} crédits',
-    },
+    generateCta: 'Générer le visuel · {{credits}}',
   },
   renderPresets: {
     title: 'Préréglages',
@@ -523,7 +520,7 @@ export default {
     addToGalleryCta: 'Ajouter à ma galerie',
     alreadyInGalleryLabel: 'Déjà dans la galerie',
     variantsSubtitle:
-      "Générez le même produit sous d'autres styles · {{cost}} crédit par variante",
+      "Générez le même produit sous d'autres styles · {{credits}} par variante",
     selectStyle: 'Sélectionnez un style',
     launchingVariants: 'Lancement des variantes…',
     generateVariantsCount: {
@@ -621,6 +618,7 @@ export default {
   packCard: {
     popularBadge: 'Populaire',
     popularBadgeDiscount: 'Populaire · −{{discount}}%',
+    discountBadge: '−{{discount}}%',
     pricePerVisual: '{{price}} / visuel',
   },
   renderTypeSelector: {

@@ -7,19 +7,12 @@ import { applyPurchase, creditsForProduct } from '../services/purchases.js';
 import { upsertShopByAuthId } from '../services/shops.js';
 
 /**
- * Événements RevenueCat qui créditent des crédits :
- * - NON_RENEWING_PURCHASE : achat d'un consommable = pack de crédits ;
- * - INITIAL_PURCHASE / RENEWAL / PRODUCT_CHANGE : abonnement (upsell) —
- *   crédite les crédits de la période.
- * Tout le reste (TEST, CANCELLATION, EXPIRATION, BILLING_ISSUE, TRANSFER…)
- * est acquitté en 200 sans effet.
+ * Événements RevenueCat qui créditent des crédits : achat d'un consommable =
+ * pack de crédits (NON_RENEWING_PURCHASE, INITIAL_PURCHASE selon le store).
+ * Tout le reste (TEST, CANCELLATION, EXPIRATION, TRANSFER…) est acquitté en 200
+ * sans effet. (Plus d'abonnement : offre 100 % packs.)
  */
-const CREDITING_EVENT_TYPES = new Set([
-  'INITIAL_PURCHASE',
-  'NON_RENEWING_PURCHASE',
-  'RENEWAL',
-  'PRODUCT_CHANGE',
-]);
+const CREDITING_EVENT_TYPES = new Set(['NON_RENEWING_PURCHASE', 'INITIAL_PURCHASE']);
 
 /** Event RevenueCat (parse tolérant — seuls les champs utilisés sont typés). */
 const rcEventSchema = z
