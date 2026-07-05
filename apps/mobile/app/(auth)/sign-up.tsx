@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { OAuthButtons, OAuthDivider } from '@/components/OAuthButtons';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { clerkErrorMessage } from '@/lib/clerk-error';
+import { t } from '@/lib/i18n';
 import { colors } from '@vitrine/shared';
 
 /**
@@ -50,7 +51,7 @@ export default function SignUpScreen() {
         await setActive({ session: attempt.createdSessionId });
         // La garde d'auth (Stack.Protected) bascule vers (tabs).
       } else {
-        setError('Vérification incomplète — réessayez.');
+        setError(t('signUp.incompleteError'));
       }
     } catch (err) {
       setError(clerkErrorMessage(err));
@@ -61,7 +62,7 @@ export default function SignUpScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title="Créer un compte" />
+      <ScreenHeader title={t('signUp.title')} />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -69,14 +70,14 @@ export default function SignUpScreen() {
         <ScrollView className="flex-1 px-6" contentContainerClassName="pt-6 pb-8" keyboardShouldPersistTaps="handled">
           {pendingVerification ? (
             <>
-              <Text className="font-heading-bold text-3xl text-ink">Vérifiez{'\n'}votre email.</Text>
+              <Text className="font-heading-bold text-3xl text-ink">{t('signUp.verifyHeading')}</Text>
               <Text className="mt-2 font-body text-base text-gray2">
-                Un code à 6 chiffres a été envoyé à {email.trim()}.
+                {t('signUp.verifySubtitle', { email: email.trim() })}
               </Text>
 
               <View className="mt-8">
                 <TextInput
-                  placeholder="Code de vérification"
+                  placeholder={t('signUp.codePlaceholder')}
                   placeholderTextColor={colors.gray}
                   value={code}
                   onChangeText={setCode}
@@ -92,7 +93,7 @@ export default function SignUpScreen() {
               ) : null}
 
               <Button
-                label={submitting ? 'Vérification…' : 'Valider'}
+                label={submitting ? t('signUp.verifying') : t('signUp.verify')}
                 className="mt-6"
                 disabled={!isLoaded || submitting || code.trim().length < 6}
                 onPress={onVerify}
@@ -100,17 +101,17 @@ export default function SignUpScreen() {
 
               <Pressable className="mt-8" onPress={() => setPendingVerification(false)}>
                 <Text className="text-center font-body-semibold text-sm text-gray2">
-                  Modifier mon email
+                  {t('signUp.editEmail')}
                 </Text>
               </Pressable>
             </>
           ) : (
             <>
               <Text className="font-heading-bold text-3xl text-ink">
-                Votre boutique,{'\n'}en vitrine.
+                {t('signUp.heading')}
               </Text>
               <Text className="mt-2 font-body text-base text-gray2">
-                Créez votre compte pour générer vos premiers visuels.
+                {t('signUp.subtitle')}
               </Text>
 
               <View className="mt-8">
@@ -120,7 +121,7 @@ export default function SignUpScreen() {
 
               <View className="gap-3">
                 <TextInput
-                  placeholder="Email"
+                  placeholder={t('signUp.emailPlaceholder')}
                   placeholderTextColor={colors.gray}
                   value={email}
                   onChangeText={setEmail}
@@ -130,7 +131,7 @@ export default function SignUpScreen() {
                   className="h-14 rounded-2xl border border-paper3 bg-white px-4 font-body text-base text-ink"
                 />
                 <TextInput
-                  placeholder="Mot de passe (8 caractères min.)"
+                  placeholder={t('signUp.passwordPlaceholder')}
                   placeholderTextColor={colors.gray}
                   value={password}
                   onChangeText={setPassword}
@@ -145,7 +146,7 @@ export default function SignUpScreen() {
               ) : null}
 
               <Button
-                label={submitting ? 'Création…' : 'Créer ma boutique'}
+                label={submitting ? t('signUp.creating') : t('signUp.submit')}
                 className="mt-6"
                 disabled={!isLoaded || submitting || !email.trim() || password.length < 8}
                 onPress={onSignUp}
@@ -153,7 +154,7 @@ export default function SignUpScreen() {
 
               <Pressable className="mt-8" onPress={() => router.replace('/(auth)/sign-in')}>
                 <Text className="text-center font-body-semibold text-sm text-gray2">
-                  Déjà un compte ? <Text className="text-ink">Se connecter</Text>
+                  {t('signUp.hasAccount')} <Text className="text-ink">{t('signUp.signIn')}</Text>
                 </Text>
               </Pressable>
             </>

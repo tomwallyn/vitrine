@@ -13,6 +13,8 @@ import { isInsufficientCredits, useApi } from '@/lib/api';
 import { useBatchDraft, type BatchItem } from '@/lib/batch-draft';
 import { useCaptureResult } from '@/lib/capture-result';
 import { useGenerationTracker } from '@/lib/generation-tracker';
+import { t } from '@/lib/i18n';
+import { renderTypeLabel } from '@/lib/i18n/labels';
 import { outfitToPayload, outfitUploading } from '@/lib/outfit';
 import { sceneToPayload, sceneUploading } from '@/lib/scene';
 import { uploadImageAsync } from '@/lib/upload';
@@ -20,7 +22,6 @@ import {
   colors,
   createBatchRequestSchema,
   MAX_BATCH_ITEMS,
-  RENDER_TYPE_LABELS,
   type CreateBatchRequest,
   type MeResponse,
 } from '@vitrine/shared';
@@ -54,7 +55,7 @@ export default function BatchScreen() {
   const pickImages = async () => {
     const remaining = MAX_BATCH_ITEMS - useBatchDraft.getState().items.length;
     if (remaining <= 0) {
-      Alert.alert('Lot complet', `Un lot contient au maximum ${MAX_BATCH_ITEMS} pièces.`);
+      Alert.alert(t('batch.limitTitle'), t('batch.limitMessage', { max: MAX_BATCH_ITEMS }));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -73,7 +74,7 @@ export default function BatchScreen() {
   const addFromCamera = () => {
     const remaining = MAX_BATCH_ITEMS - useBatchDraft.getState().items.length;
     if (remaining <= 0) {
-      Alert.alert('Lot complet', `Un lot contient au maximum ${MAX_BATCH_ITEMS} pièces.`);
+      Alert.alert(t('batch.limitTitle'), t('batch.limitMessage', { max: MAX_BATCH_ITEMS }));
       return;
     }
     useCaptureResult.getState().request('batch');
@@ -104,11 +105,15 @@ export default function BatchScreen() {
 
   /** Choix de la source pour ajouter des pièces : appareil photo ou galerie. */
   const addPhotos = () => {
-    Alert.alert(isObjet ? 'Ajouter des objets' : 'Ajouter des vêtements', 'Comment voulez-vous ajouter vos photos ?', [
-      { text: 'Appareil photo', onPress: () => void addFromCamera() },
-      { text: 'Galerie', onPress: () => void pickImages() },
-      { text: 'Annuler', style: 'cancel' },
-    ]);
+    Alert.alert(
+      isObjet ? t('batch.addPhotosTitleObjet') : t('batch.addPhotosTitleGarment'),
+      t('batch.addPhotosMessage'),
+      [
+        { text: t('batch.camera'), onPress: () => void addFromCamera() },
+        { text: t('batch.gallery'), onPress: () => void pickImages() },
+        { text: t('common.cancel'), style: 'cancel' },
+      ],
+    );
   };
 
   /** Réessaie l'upload d'un item en échec (même fichier). */
@@ -144,18 +149,18 @@ export default function BatchScreen() {
     onError: (err, { payload }) => {
       if (isInsufficientCredits(err)) {
         Alert.alert(
-          'Crédits insuffisants',
-          `Il faut ${payload.items.length} crédits pour générer ce lot (1 par visuel). Rechargez votre solde pour continuer.`,
+          t('batch.insufficientCreditsTitle'),
+          t('batch.insufficientCreditsMessage', { count: payload.items.length }),
           [
-            { text: 'Plus tard', style: 'cancel' },
-            { text: 'Recharger', onPress: () => router.push('/(tabs)/credits') },
+            { text: t('batch.later'), style: 'cancel' },
+            { text: t('batch.recharge'), onPress: () => router.push('/(tabs)/credits') },
           ],
         );
         return;
       }
       Alert.alert(
-        'Génération impossible',
-        err instanceof Error ? err.message : 'Réessayez dans un instant.',
+        t('batch.generateErrorTitle'),
+        err instanceof Error ? err.message : t('batch.generateErrorFallback'),
       );
     },
   });
@@ -209,15 +214,19 @@ export default function BatchScreen() {
   };
 
   const generateLabel = batchMutation.isPending
-    ? 'Lancement du lot…'
+    ? t('batch.launching')
     : anyUploading
-      ? 'Envoi des photos…'
-      : `Générer ${readyCount} visuel${readyCount > 1 ? 's' : ''} · ${readyCount} crédit${readyCount > 1 ? 's' : ''}`;
+      ? t('batch.uploadingPhotos')
+      : t('batch.generateCta', { count: readyCount });
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
       <ScreenHeader
-        title={`Lot · ${items.length} ${isObjet ? 'objet' : 'pièce'}${items.length > 1 ? 's' : ''}`}
+        title={
+          isObjet
+            ? t('batch.headerObjet', { count: items.length })
+            : t('batch.headerGarment', { count: items.length })
+        }
         right={<CreditBadge credits={me?.credits ?? 0} />}
       />
 
@@ -225,7 +234,7 @@ export default function BatchScreen() {
         {/* Barre STYLE COMMUN — appliqué à tout le lot, modifiable (modal) */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Modifier le style commun du lot"
+          accessibilityLabel={t('batch.editStyleLabel')}
           onPress={() => router.push('/batch-style')}
           className="mt-2 flex-row items-center gap-3 rounded-3xl border border-paper3 bg-paper2 px-4 py-4 active:bg-paper3"
         >
@@ -234,11 +243,11 @@ export default function BatchScreen() {
           </View>
           <View className="flex-1">
             <Text className="font-body-bold text-sm text-ink">
-              Style commun · {RENDER_TYPE_LABELS[style.renderType]}
+              {t('batch.commonStyleLabel', { renderType: renderTypeLabel(style.renderType) })}
             </Text>
-            <Text className="mt-0.5 font-body text-xs text-gray2">Appliqué à tout le lot</Text>
+            <Text className="mt-0.5 font-body text-xs text-gray2">{t('batch.appliedToBatch')}</Text>
           </View>
-          <Text className="font-body-semibold text-xs text-ink underline">Modifier</Text>
+          <Text className="font-body-semibold text-xs text-ink underline">{t('common.modify')}</Text>
         </Pressable>
 
         {items.length === 0 ? (
@@ -250,10 +259,12 @@ export default function BatchScreen() {
           >
             <Ionicons name="camera-outline" size={28} color={colors.gray2} />
             <Text className="mt-2 font-body-semibold text-sm text-ink">
-              {isObjet ? 'Ajouter des objets' : 'Ajouter des vêtements'}
+              {isObjet ? t('batch.addPhotosTitleObjet') : t('batch.addPhotosTitleGarment')}
             </Text>
             <Text className="mt-1 font-body text-xs text-gray">
-              Appareil photo ou galerie · jusqu&apos;à {MAX_BATCH_ITEMS} {isObjet ? 'objets' : 'pièces'}
+              {isObjet
+                ? t('batch.addPhotosSubtitleObjet', { max: MAX_BATCH_ITEMS })
+                : t('batch.addPhotosSubtitleGarment', { max: MAX_BATCH_ITEMS })}
             </Text>
           </Pressable>
         ) : (
@@ -265,8 +276,8 @@ export default function BatchScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={
                   item.status === 'error'
-                    ? 'Envoi impossible — appuyez pour réessayer'
-                    : 'Pièce du lot'
+                    ? t('batch.uploadErrorLabel')
+                    : t('batch.itemLabel')
                 }
                 onPress={() => {
                   if (item.status === 'error') retryItem(item);
@@ -277,7 +288,7 @@ export default function BatchScreen() {
                   source={{ uri: item.localUri }}
                   className="absolute h-full w-full"
                   resizeMode="cover"
-                  accessibilityLabel="Photo du vêtement"
+                  accessibilityLabel={t('batch.itemPhotoLabel')}
                 />
 
                 {/* Statut d'upload : spinner / coche / réessayer */}
@@ -289,7 +300,7 @@ export default function BatchScreen() {
                   <View className="flex-1 items-center justify-center bg-ink/60 px-1.5">
                     <Ionicons name="alert-circle-outline" size={18} color={colors.offwhite} />
                     <Text className="mt-1 text-center font-body-semibold text-[10px] text-offwhite underline">
-                      Réessayer
+                      {t('common.retry')}
                     </Text>
                   </View>
                 ) : (
@@ -301,7 +312,7 @@ export default function BatchScreen() {
                 {/* Croix de suppression */}
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Retirer cette pièce du lot"
+                  accessibilityLabel={t('batch.removeItemLabel')}
                   hitSlop={8}
                   onPress={() => useBatchDraft.getState().removeItem(item.id)}
                   className="absolute right-1.5 top-1.5 h-5 w-5 items-center justify-center rounded-full bg-ink/70 active:bg-ink"
@@ -315,12 +326,12 @@ export default function BatchScreen() {
             {items.length < MAX_BATCH_ITEMS ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Ajouter des photos au lot"
+                accessibilityLabel={t('batch.addPhotosLabel')}
                 onPress={addPhotos}
                 className="aspect-square w-[31%] items-center justify-center gap-1.5 rounded-2xl border border-dashed border-paper3 bg-paper2 active:bg-paper3"
               >
                 <Ionicons name="add" size={26} color={colors.ink} />
-                <Text className="font-body-semibold text-xs text-ink">Ajouter</Text>
+                <Text className="font-body-semibold text-xs text-ink">{t('common.add')}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -331,7 +342,7 @@ export default function BatchScreen() {
           <View className="mt-5 flex-row items-center gap-2.5 rounded-2xl border border-paper3 bg-paper2 px-4 py-3">
             <Ionicons name="information-circle-outline" size={18} color={colors.gray3} />
             <Text className="flex-1 font-body text-xs leading-4 text-gray2">
-              1 crédit par pièce — le style choisi s&apos;applique à tout le lot.
+              {t('batch.creditInfo')}
             </Text>
           </View>
         ) : null}

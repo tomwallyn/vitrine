@@ -21,11 +21,12 @@ import { RenderTypeSelector } from '@/components/RenderTypeSelector';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { isInsufficientCredits, useApi } from '@/lib/api';
 import { useGenerationTracker } from '@/lib/generation-tracker';
+import { t } from '@/lib/i18n';
+import { formatDate, slotLabel } from '@/lib/i18n/labels';
 import {
   completionSlots,
   outfitToPayload,
   outfitUploading,
-  SLOT_LABEL,
 } from '@/lib/outfit';
 import { useRenderDraft } from '@/lib/render-draft';
 import { uploadImageAsync } from '@/lib/upload';
@@ -111,18 +112,18 @@ export default function RenderConfigScreen() {
     onError: (err) => {
       if (isInsufficientCredits(err)) {
         Alert.alert(
-          'Crédits insuffisants',
-          `Il faut ${GENERATION_COST_CREDITS} crédit pour générer un visuel. Rechargez votre solde pour continuer.`,
+          t('renderConfig.insufficientCreditsTitle'),
+          t('renderConfig.insufficientCreditsMessage', { count: GENERATION_COST_CREDITS }),
           [
-            { text: 'Plus tard', style: 'cancel' },
-            { text: 'Recharger', onPress: () => router.push('/(tabs)/credits') },
+            { text: t('renderConfig.later'), style: 'cancel' },
+            { text: t('renderConfig.recharge'), onPress: () => router.push('/(tabs)/credits') },
           ],
         );
         return;
       }
       Alert.alert(
-        'Génération impossible',
-        err instanceof Error ? err.message : 'Réessayez dans un instant.',
+        t('renderConfig.generateErrorTitle'),
+        err instanceof Error ? err.message : t('renderConfig.generateErrorFallback'),
       );
     },
   });
@@ -139,7 +140,7 @@ export default function RenderConfigScreen() {
       .catch((err: unknown) =>
         useRenderDraft
           .getState()
-          .setSourceUploadFailed(err instanceof Error ? err.message : 'Envoi impossible'),
+          .setSourceUploadFailed(err instanceof Error ? err.message : t('renderConfig.uploadFailed')),
       );
   };
 
@@ -165,7 +166,9 @@ export default function RenderConfigScreen() {
         try {
           await api.backgrounds.create({
             imageUrl: publicUrl,
-            name: `Fond du ${new Date().toLocaleDateString('fr-FR')}`,
+            name: t('renderConfig.backgroundDefaultName', {
+              date: formatDate(new Date()),
+            }),
           });
           await queryClient.invalidateQueries({ queryKey: ['backgrounds'] });
         } catch {
@@ -176,7 +179,7 @@ export default function RenderConfigScreen() {
         useRenderDraft
           .getState()
           .setCustomBackgroundUploadFailed(
-            err instanceof Error ? err.message : 'Envoi impossible',
+            err instanceof Error ? err.message : t('renderConfig.uploadFailed'),
           ),
       );
   };
@@ -232,9 +235,14 @@ export default function RenderConfigScreen() {
     .map(([slot]) => slot);
   const outfitSubtitle =
     outfitFilled.length > 0
-      ? outfitFilled.map((slot) => SLOT_LABEL[slot]).join(' · ')
+      ? outfitFilled.map((slot) => slotLabel(slot)).join(' · ')
       : completionSlots(draft.garmentType)
-          .map((s) => `${SLOT_LABEL[s.slot]}${s.required ? ' requis' : ' en option'}`)
+          .map(
+            (s) =>
+              `${slotLabel(s.slot)}${
+                s.required ? t('renderConfig.outfitRequiredSuffix') : t('renderConfig.outfitOptionalSuffix')
+              }`,
+          )
           .join(' · ');
 
   /** Nombre de vues additionnelles jointes (flux multi-détails). */
@@ -243,16 +251,16 @@ export default function RenderConfigScreen() {
     : 0;
 
   const generateLabel = generateMutation.isPending
-    ? 'Lancement du rendu…'
+    ? t('renderConfig.generating')
     : draft.sourceUploadStatus === 'uploading'
-      ? 'Envoi de la photo…'
-      : `Générer le visuel · ${GENERATION_COST_CREDITS} crédit`;
+      ? t('renderConfig.sendingPhoto')
+      : t('renderConfig.generateCta', { count: GENERATION_COST_CREDITS });
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
       <ScreenHeader
-        title="Choisir le rendu"
-        subtitle="Étape 2/3"
+        title={t('renderConfig.title')}
+        subtitle={t('renderConfig.subtitle')}
         right={<CreditBadge credits={me?.credits ?? 0} />}
       />
 
@@ -264,32 +272,32 @@ export default function RenderConfigScreen() {
               source={{ uri: draft.localUri }}
               className="h-28 w-24 rounded-2xl bg-paper3"
               resizeMode="cover"
-              accessibilityLabel="Photo du vêtement"
+              accessibilityLabel={t('renderConfig.sourcePhotoAlt')}
             />
             <View className="flex-1">
               <Text className="font-body-semibold text-sm text-ink">
                 {extraCount > 0
-                  ? `Photo importée · +${extraCount} vue${extraCount > 1 ? 's' : ''}`
-                  : 'Photo importée'}
+                  ? t('renderConfig.photoImportedViews', { count: extraCount })
+                  : t('renderConfig.photoImported')}
               </Text>
               {draft.sourceUploadStatus === 'uploading' ? (
                 <View className="mt-1 flex-row items-center gap-2">
                   <ActivityIndicator size="small" color={colors.ink} />
-                  <Text className="font-body text-xs text-gray2">Envoi en cours…</Text>
+                  <Text className="font-body text-xs text-gray2">{t('renderConfig.uploading')}</Text>
                 </View>
               ) : draft.sourceUploadStatus === 'done' ? (
                 <View className="mt-1 flex-row items-center gap-1.5">
                   <Ionicons name="checkmark-circle" size={14} color={colors.ink} />
-                  <Text className="font-body text-xs text-gray2">Photo envoyée</Text>
+                  <Text className="font-body text-xs text-gray2">{t('renderConfig.uploaded')}</Text>
                 </View>
               ) : draft.sourceUploadStatus === 'error' ? (
                 <View className="mt-1">
                   <Text className="font-body text-xs text-ink" numberOfLines={2}>
-                    ⚠️ {draft.sourceUploadError ?? 'Envoi impossible'}
+                    {`⚠️ ${draft.sourceUploadError ?? t('renderConfig.uploadFailed')}`}
                   </Text>
                   <Pressable accessibilityRole="button" onPress={retrySourceUpload}>
                     <Text className="mt-1 font-body-semibold text-xs text-ink underline">
-                      Réessayer
+                      {t('common.retry')}
                     </Text>
                   </Pressable>
                 </View>
@@ -299,7 +307,7 @@ export default function RenderConfigScreen() {
                 onPress={changePhoto}
                 className="mt-3 self-start rounded-full border border-ink px-4 py-1.5 active:bg-paper3"
               >
-                <Text className="font-body-semibold text-xs text-ink">Changer</Text>
+                <Text className="font-body-semibold text-xs text-ink">{t('common.change')}</Text>
               </Pressable>
             </View>
           </View>
@@ -310,15 +318,15 @@ export default function RenderConfigScreen() {
             className="mb-6 h-44 items-center justify-center rounded-3xl border border-dashed border-paper3 bg-paper2 active:bg-paper3"
           >
             <Ionicons name="camera-outline" size={28} color={colors.gray2} />
-            <Text className="mt-2 font-body-semibold text-sm text-ink">Prendre une photo</Text>
+            <Text className="mt-2 font-body-semibold text-sm text-ink">{t('renderConfig.captureCta')}</Text>
             <Text className="mt-1 font-body text-xs text-gray">
-              Le vêtement bien à plat, cintre centré
+              {t('renderConfig.captureHint')}
             </Text>
           </Pressable>
         )}
 
         {/* STYLE DE VISUEL — 4 types */}
-        <SectionTitle>Style de visuel</SectionTitle>
+        <SectionTitle>{t('renderConfig.styleSectionTitle')}</SectionTitle>
         <RenderTypeSelector
           value={draft.renderType}
           onChange={draft.setRenderType}
@@ -328,7 +336,7 @@ export default function RenderConfigScreen() {
         {/* MANNEQUIN — visible pour le rendu « Sur modèle » */}
         {draft.renderType === 'model' ? (
           <>
-            <SectionTitle>Mannequin</SectionTitle>
+            <SectionTitle>{t('renderConfig.mannequinSectionTitle')}</SectionTitle>
             <MannequinSelector
               value={draft.mannequinOption}
               mannequinId={draft.mannequinId}
@@ -340,7 +348,7 @@ export default function RenderConfigScreen() {
             {/* COMPLÉTER LA TENUE — entrée du sous-flux d'habillage */}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Compléter la tenue"
+              accessibilityLabel={t('renderConfig.completeOutfitLabel')}
               onPress={() => router.push('/outfit?target=single')}
               className="mb-6 flex-row items-center gap-3 rounded-2xl border border-paper3 bg-white p-3 active:bg-paper2"
             >
@@ -348,12 +356,14 @@ export default function RenderConfigScreen() {
                 <Ionicons name="shirt-outline" size={20} color={colors.ink} />
               </View>
               <View className="flex-1">
-                <Text className="font-body-bold text-[13px] text-ink">Compléter la tenue</Text>
+                <Text className="font-body-bold text-[13px] text-ink">
+                  {t('renderConfig.completeOutfitLabel')}
+                </Text>
                 <Text className="mt-0.5 font-body text-xs text-gray">{outfitSubtitle}</Text>
               </View>
               <View className="rounded-full bg-ink px-3 py-1.5">
                 <Text className="font-body-bold text-[11px] text-offwhite">
-                  {outfitFilled.length > 0 ? 'Modifier' : 'Configurer'}
+                  {outfitFilled.length > 0 ? t('common.modify') : t('common.configure')}
                 </Text>
               </View>
             </Pressable>
@@ -361,7 +371,7 @@ export default function RenderConfigScreen() {
         ) : null}
 
         {/* FOND — studio / personnalisé (upload) / fonds réutilisables */}
-        <SectionTitle>Fond</SectionTitle>
+        <SectionTitle>{t('renderConfig.backgroundSectionTitle')}</SectionTitle>
         <View className="flex-row gap-3">
           <Pressable
             accessibilityRole="button"
@@ -376,9 +386,9 @@ export default function RenderConfigScreen() {
                 draft.backgroundOption === 'studio' ? 'text-offwhite' : 'text-ink'
               }`}
             >
-              Fond studio
+              {t('renderConfig.backgroundStudio')}
             </Text>
-            <Text className="mt-1 font-body text-xs text-gray">Crème, neutre</Text>
+            <Text className="mt-1 font-body text-xs text-gray">{t('renderConfig.backgroundStudioHint')}</Text>
           </Pressable>
 
           <Pressable
@@ -397,7 +407,7 @@ export default function RenderConfigScreen() {
                   source={{ uri: draft.customBackgroundLocalUri }}
                   className="h-6 w-6 rounded-md bg-paper3"
                   resizeMode="cover"
-                  accessibilityLabel="Fond personnalisé"
+                  accessibilityLabel={t('renderConfig.backgroundCustomAlt')}
                 />
               ) : (
                 <Ionicons
@@ -411,7 +421,7 @@ export default function RenderConfigScreen() {
                   draft.backgroundOption === 'custom' ? 'text-offwhite' : 'text-ink'
                 }`}
               >
-                Personnalisé
+                {t('renderConfig.backgroundCustom')}
               </Text>
             </View>
             {draft.customBackgroundUploadStatus === 'uploading' ? (
@@ -420,18 +430,18 @@ export default function RenderConfigScreen() {
                   size="small"
                   color={draft.backgroundOption === 'custom' ? colors.offwhite : colors.ink}
                 />
-                <Text className="font-body text-xs text-gray">Envoi du fond…</Text>
+                <Text className="font-body text-xs text-gray">{t('renderConfig.backgroundUploading')}</Text>
               </View>
             ) : draft.customBackgroundUploadStatus === 'error' ? (
               <Text className="mt-1 font-body text-xs text-gray" numberOfLines={2}>
-                ⚠️ {draft.customBackgroundUploadError ?? 'Envoi impossible'} — réappuyez
+                {`⚠️ ${draft.customBackgroundUploadError ?? t('renderConfig.uploadFailed')} — ${t('renderConfig.retryTap')}`}
               </Text>
             ) : draft.customBackgroundUrl ? (
               <Text className="mt-1 font-body text-xs text-gray">
-                Fond envoyé — appuyez pour changer
+                {t('renderConfig.backgroundUploaded')}
               </Text>
             ) : (
-              <Text className="mt-1 font-body text-xs text-gray">Votre boutique, un mur…</Text>
+              <Text className="mt-1 font-body text-xs text-gray">{t('renderConfig.backgroundCustomHint')}</Text>
             )}
           </Pressable>
         </View>
@@ -440,7 +450,7 @@ export default function RenderConfigScreen() {
         {savedBackgrounds.length > 0 ? (
           <View className="mt-4">
             <Text className="mb-2 font-body-semibold text-[10px] uppercase tracking-[2px] text-gray">
-              Mes fonds
+              {t('renderConfig.myBackgroundsTitle')}
             </Text>
             <ScrollView
               horizontal
@@ -455,7 +465,7 @@ export default function RenderConfigScreen() {
                   <Pressable
                     key={bg.id}
                     accessibilityRole="button"
-                    accessibilityLabel={`Fond ${bg.name}`}
+                    accessibilityLabel={t('renderConfig.backgroundLabel', { name: bg.name })}
                     accessibilityState={{ selected }}
                     onPress={() => draft.selectExistingBackground(bg.imageUrl)}
                     className={`overflow-hidden rounded-xl border-2 ${

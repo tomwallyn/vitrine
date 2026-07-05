@@ -9,6 +9,7 @@ import { MannequinSelector } from '@/components/MannequinSelector';
 import { RenderTypeSelector } from '@/components/RenderTypeSelector';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
+import { t } from '@/lib/i18n';
 import {
   colors,
   type BackgroundOption,
@@ -78,11 +79,11 @@ export default function RenderPresetsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title="Préréglages" />
+      <ScreenHeader title={t('renderPresets.title')} />
       <ScrollView className="flex-1 px-5" contentContainerClassName="pt-2 pb-8">
-        <Text className="font-heading-bold text-3xl text-ink">Vos défauts de rendu.</Text>
+        <Text className="font-heading-bold text-3xl text-ink">{t('renderPresets.heading')}</Text>
         <Text className="mt-2 font-body text-base text-gray2">
-          Appliqués à chaque nouveau visuel — modifiables au moment du rendu.
+          {t('renderPresets.subtitle')}
         </Text>
 
         {isPending && !hydrated ? (
@@ -93,29 +94,33 @@ export default function RenderPresetsScreen() {
           <>
             {/* STYLE DE VISUEL — 4 types */}
             <View className="mt-8">
-              <SectionTitle>Style de visuel</SectionTitle>
+              <SectionTitle>{t('renderPresets.styleSectionTitle')}</SectionTitle>
               <RenderTypeSelector value={renderType} onChange={setRenderType} />
             </View>
 
             {/* MANNEQUIN — pertinent pour le rendu « Sur modèle » */}
             {renderType === 'model' ? (
               <View className="mt-6">
-                <SectionTitle>Mannequin</SectionTitle>
+                <SectionTitle>{t('renderPresets.mannequinSectionTitle')}</SectionTitle>
                 <MannequinSelector value={mannequinOption} onChange={setMannequinOption} />
               </View>
             ) : null}
 
             {/* FOND — studio / personnalisé */}
             <View className="mt-6">
-              <SectionTitle>Fond</SectionTitle>
+              <SectionTitle>{t('renderPresets.backgroundSectionTitle')}</SectionTitle>
               <View className="flex-row gap-3">
                 {(
                   [
-                    { value: 'studio', label: 'Fond studio', hint: 'Crème, neutre' },
+                    {
+                      value: 'studio',
+                      label: t('renderPresets.backgroundStudioLabel'),
+                      hint: t('renderPresets.backgroundStudioHint'),
+                    },
                     {
                       value: 'custom',
-                      label: 'Personnalisé',
-                      hint: 'À choisir parmi « Mes fonds »',
+                      label: t('renderPresets.backgroundCustomLabel'),
+                      hint: t('renderPresets.backgroundCustomHint'),
                     },
                   ] as const
                 ).map((item) => {
@@ -144,8 +149,7 @@ export default function RenderPresetsScreen() {
               </View>
               {backgroundOption === 'custom' ? (
                 <Text className="mt-2 font-body text-xs text-gray2">
-                  Le fond lui-même se sélectionne à chaque rendu (vos fonds enregistrés ou un
-                  nouvel upload).
+                  {t('renderPresets.backgroundCustomNote')}
                 </Text>
               ) : null}
             </View>
@@ -155,12 +159,12 @@ export default function RenderPresetsScreen() {
                 ⚠️{' '}
                 {mutation.error instanceof Error
                   ? mutation.error.message
-                  : 'Enregistrement impossible.'}
+                  : t('renderPresets.saveError')}
               </Text>
             ) : null}
 
             <Button
-              label={mutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+              label={mutation.isPending ? t('renderPresets.saving') : t('common.save')}
               className="mt-8"
               disabled={mutation.isPending || !data}
               onPress={onSave}

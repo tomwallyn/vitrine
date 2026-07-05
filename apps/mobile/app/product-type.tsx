@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { t } from '@/lib/i18n';
 import { useRenderDraft } from '@/lib/render-draft';
 import { colors, type SubjectType } from '@vitrine/shared';
 
@@ -18,16 +19,16 @@ const OPTIONS: {
 }[] = [
   {
     value: 'vetement',
-    label: 'Vêtement',
-    sub: 'Sur modèle, sur cintre, plié, fond studio',
+    label: t('productType.clothingLabel'),
+    sub: t('productType.clothingSub'),
     icon: 'shirt-outline',
   },
   {
     value: 'objet',
-    label: 'Objet',
-    sub: 'Meuble, déco, vaisselle, luminaire, flacon…',
+    label: t('productType.objectLabel'),
+    sub: t('productType.objectSub'),
     icon: 'cube-outline',
-    badge: 'NOUVEAU',
+    badge: t('productType.newBadge'),
   },
 ];
 
@@ -43,12 +44,12 @@ export default function ProductTypeScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title="Nouveau visuel" />
+      <ScreenHeader title={t('productType.headerTitle')} />
 
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-6">
-        <Text className="font-heading text-xl text-ink">Que voulez-vous mettre en valeur ?</Text>
+        <Text className="font-heading text-xl text-ink">{t('productType.heading')}</Text>
         <Text className="mt-1.5 font-body text-[12.5px] leading-5 text-gray">
-          Chaque type a ses propres rendus. Vous pourrez changer à tout moment.
+          {t('productType.subtitle')}
         </Text>
 
         <View className="mt-6 gap-3">
@@ -95,7 +96,7 @@ export default function ProductTypeScreen() {
       </ScrollView>
 
       <View className="px-5 pb-2 pt-2">
-        <Button label="Continuer" onPress={onContinue} />
+        <Button label={t('common.continue')} onPress={onContinue} />
       </View>
     </SafeAreaView>
   );

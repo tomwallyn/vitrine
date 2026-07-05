@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import type { ReactNode } from 'react';
 
 import { colors } from '@vitrine/shared';
+import { t } from '@/lib/i18n';
 
 type ScreenHeaderProps = {
   title: string;
@@ -23,7 +24,7 @@ export function ScreenHeader({ title, subtitle, showBack = true, right }: Screen
         {showBack && router.canGoBack() ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Retour"
+            accessibilityLabel={t('common.back')}
             onPress={() => router.back()}
             className="h-10 w-10 items-center justify-center rounded-full bg-paper2 active:bg-paper3"
           >

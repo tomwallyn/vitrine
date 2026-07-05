@@ -8,7 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
-import { SLOT_LABEL } from '@/lib/outfit';
+import { t } from '@/lib/i18n';
+import { slotLabel } from '@/lib/i18n/labels';
 import { useOutfitTarget, type OutfitTarget } from '@/lib/use-outfit-target';
 import { colors, DEFAULT_GARMENT_IMAGES, garmentSlotSchema, type GarmentSlot } from '@vitrine/shared';
 
@@ -106,12 +107,12 @@ export default function OutfitPickerScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title={`Choisir ${SLOT_ARTICLE[slot]}`} />
+      <ScreenHeader title={t('outfitPicker.title', { article: SLOT_ARTICLE[slot] })} />
 
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-6">
         {/* Suggestions par défaut + Ajouter */}
         <Text className="mb-3 font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
-          Suggestions
+          {t('outfitPicker.sectionSuggestions')}
         </Text>
         <View className="flex-row flex-wrap gap-x-[3.5%] gap-y-3">
           {suggestions.map((choice) => (
@@ -125,14 +126,14 @@ export default function OutfitPickerScreen() {
           {/* Ajouter une pièce custom */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Ajouter une pièce"
+            accessibilityLabel={t('outfitPicker.addPieceLabel')}
             onPress={() => router.push(`/outfit-add?slot=${slot}&target=${target}`)}
             className="w-[31%]"
           >
             <View className="aspect-square items-center justify-center rounded-2xl border-[1.5px] border-dashed border-gray bg-white">
               <Ionicons name="add" size={26} color={colors.ink} />
             </View>
-            <Text className="mt-1 text-center font-body-bold text-[9.5px] text-ink">Ajouter</Text>
+            <Text className="mt-1 text-center font-body-bold text-[9.5px] text-ink">{t('common.add')}</Text>
           </Pressable>
         </View>
 
@@ -140,7 +141,7 @@ export default function OutfitPickerScreen() {
         {saved.length > 0 ? (
           <>
             <Text className="mb-3 mt-6 font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
-              Mes pièces · {saved.length}
+              {t('outfitPicker.mySavedPieces', { count: saved.length })}
             </Text>
             <View className="flex-row flex-wrap gap-x-[3.5%] gap-y-3">
               {saved.map((choice) => (
@@ -157,7 +158,11 @@ export default function OutfitPickerScreen() {
       </ScrollView>
 
       <View className="px-5 pb-2 pt-2">
-        <Button label={`Valider ${SLOT_LABEL[slot].toLowerCase()}`} onPress={validate} disabled={!selected} />
+        <Button
+          label={t('outfitPicker.validateButton', { label: slotLabel(slot).toLowerCase() })}
+          onPress={validate}
+          disabled={!selected}
+        />
       </View>
     </SafeAreaView>
   );

@@ -7,11 +7,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
+import { t } from '@/lib/i18n';
+import { formatDate } from '@/lib/i18n/labels';
 import { colors } from '@vitrine/shared';
 
 /** Date FR courte d'une ligne d'achat (« 12 juin 2026 »). */
 function purchaseDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', {
+  return formatDate(iso, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -37,17 +39,14 @@ export default function BillingScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title="Facturation" />
+      <ScreenHeader title={t('billing.title')} />
       <ScrollView className="flex-1 px-5" contentContainerClassName="pt-2 pb-8">
-        <Text className="font-heading-bold text-3xl text-ink">Vos achats.</Text>
-        <Text className="mt-2 font-body text-base text-gray2">
-          VITRINE fonctionne par packs de crédits, sans engagement. Les paiements et reçus sont
-          gérés par l{"'"}App Store ou Google Play.
-        </Text>
+        <Text className="font-heading-bold text-3xl text-ink">{t('billing.heading')}</Text>
+        <Text className="mt-2 font-body text-base text-gray2">{t('billing.subtitle')}</Text>
 
         {/* Historique d'achats — lignes `purchase` du ledger */}
         <Text className="mb-3 mt-8 font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
-          Historique d{"'"}achats
+          {t('billing.historyTitle')}
         </Text>
 
         {isPending ? (
@@ -56,21 +55,21 @@ export default function BillingScreen() {
           </View>
         ) : isError ? (
           <View className="items-center rounded-3xl border border-paper3 bg-white px-5 py-6">
-            <Text className="font-body text-sm text-gray2">
-              Impossible de charger votre historique.
-            </Text>
+            <Text className="font-body text-sm text-gray2">{t('billing.loadError')}</Text>
             <Pressable accessibilityRole="button" onPress={() => refetch()} className="mt-3">
-              <Text className="font-body-semibold text-sm text-ink underline">Réessayer</Text>
+              <Text className="font-body-semibold text-sm text-ink underline">
+                {t('common.retry')}
+              </Text>
             </Pressable>
           </View>
         ) : purchases.length === 0 ? (
           <View className="items-center rounded-3xl border border-paper3 bg-white px-5 py-8">
             <Ionicons name="receipt-outline" size={24} color={colors.gray} />
             <Text className="mt-3 font-body-semibold text-sm text-ink">
-              Aucun achat pour le moment
+              {t('billing.emptyTitle')}
             </Text>
             <Text className="mt-1 text-center font-body text-xs text-gray2">
-              Vos packs de crédits achetés apparaîtront ici.
+              {t('billing.emptySubtitle')}
             </Text>
           </View>
         ) : (
@@ -86,13 +85,15 @@ export default function BillingScreen() {
                   <Ionicons name="card-outline" size={16} color={colors.ink} />
                 </View>
                 <View className="flex-1">
-                  <Text className="font-body-semibold text-sm text-ink">Pack de crédits</Text>
+                  <Text className="font-body-semibold text-sm text-ink">
+                    {t('billing.packLabel')}
+                  </Text>
                   <Text className="font-body text-xs text-gray2">
                     {purchaseDate(entry.createdAt)}
                   </Text>
                 </View>
                 <Text className="font-heading-bold text-base text-ink">
-                  +{entry.delta} crédit{entry.delta > 1 ? 's' : ''}
+                  +{t('common.credits', { count: entry.delta })}
                 </Text>
               </View>
             ))}
@@ -100,13 +101,12 @@ export default function BillingScreen() {
         )}
 
         <Button
-          label="Recharger des crédits"
+          label={t('billing.rechargeCta')}
           className="mt-8"
           onPress={() => router.push('/(tabs)/credits')}
         />
         <Text className="mt-4 text-center font-body text-xs text-gray">
-          Abonnement mensuel : proposé depuis l{"'"}écran Crédits, géré ensuite dans les réglages
-          App Store / Google Play.
+          {t('billing.subscriptionNote')}
         </Text>
       </ScrollView>
     </SafeAreaView>

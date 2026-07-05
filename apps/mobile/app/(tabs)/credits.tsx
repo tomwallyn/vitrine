@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { PackCard } from '@/components/PackCard';
 import { useApi } from '@/lib/api';
+import { t } from '@/lib/i18n';
 import { useCreditPurchases } from '@/lib/purchases';
 import {
   colors,
@@ -55,7 +56,7 @@ export default function CreditsScreen() {
   const onPurchaseSuccess = useCallback(() => {
     refreshBalances();
     setTimeout(refreshBalances, 4000);
-    Alert.alert('Merci !', 'Achat confirmé — vos crédits seront ajoutés dans un instant.');
+    Alert.alert(t('credits.purchaseSuccessTitle'), t('credits.purchaseSuccessMessage'));
   }, [refreshBalances]);
 
   const onBuy = async () => {
@@ -64,7 +65,7 @@ export default function CreditsScreen() {
     const result = await purchase(selectedPackage);
     setBuying(false);
     if (result.outcome === 'success') onPurchaseSuccess();
-    else if (result.outcome === 'error') Alert.alert('Achat impossible', result.message);
+    else if (result.outcome === 'error') Alert.alert(t('credits.purchaseErrorTitle'), result.message);
     // 'cancelled' → silencieux (annulation volontaire du sheet natif).
   };
 
@@ -72,10 +73,10 @@ export default function CreditsScreen() {
     if (buying) return;
     if (!subscriptionPackage) {
       Alert.alert(
-        'Abonnement indisponible',
+        t('credits.subscribeUnavailableTitle'),
         status === 'ready'
-          ? "L'abonnement n'est pas encore proposé. Réessayez plus tard."
-          : 'Configuration paiement requise pour souscrire.',
+          ? t('credits.subscribeUnavailableReady')
+          : t('credits.subscribeUnavailableConfig'),
       );
       return;
     }
@@ -83,7 +84,7 @@ export default function CreditsScreen() {
     const result = await purchase(subscriptionPackage);
     setBuying(false);
     if (result.outcome === 'success') onPurchaseSuccess();
-    else if (result.outcome === 'error') Alert.alert('Souscription impossible', result.message);
+    else if (result.outcome === 'error') Alert.alert(t('credits.subscribeErrorTitle'), result.message);
   };
 
   const purchaseUnavailable = status === 'unavailable' || (status === 'ready' && !selectedPackage);
@@ -93,12 +94,12 @@ export default function CreditsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-paper">
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-4">
-        <Text className="pt-4 font-heading-bold text-2xl text-ink">Crédits</Text>
+        <Text className="pt-4 font-heading-bold text-2xl text-ink">{t('credits.title')}</Text>
 
         {/* SOLDE ACTUEL — GET /credits */}
         <View className="mt-4 overflow-hidden rounded-3xl bg-ink px-6 py-6">
           <Text className="font-heading text-[11px] uppercase tracking-[2px] text-gray">
-            Solde actuel
+            {t('credits.balanceLabel')}
           </Text>
           {creditsQuery.isPending ? (
             <ActivityIndicator color={colors.offwhite} className="mt-4 self-start" />
@@ -109,17 +110,20 @@ export default function CreditsScreen() {
               className="mt-3"
             >
               <Text className="font-body text-sm text-paper3">
-                Solde indisponible · <Text className="font-body-semibold underline">Réessayer</Text>
+                {t('credits.balanceUnavailable')}{' '}
+                <Text className="font-body-semibold underline">{t('common.retry')}</Text>
               </Text>
             </Pressable>
           ) : (
             <>
               <View className="mt-2 flex-row items-baseline gap-2">
                 <Text className="font-heading-bold text-5xl text-white">{balance}</Text>
-                <Text className="font-body-semibold text-base text-paper3">crédits</Text>
+                <Text className="font-body-semibold text-base text-paper3">
+                  {t('credits.unit')}
+                </Text>
               </View>
               <Text className="mt-2 font-body-medium text-xs text-gray">
-                ≈ {balance} visuels · 1 crédit = 1 photo
+                {t('credits.balanceHint', { balance })}
               </Text>
             </>
           )}
@@ -127,7 +131,7 @@ export default function CreditsScreen() {
 
         {/* RECHARGER — 3 packs (GET /credit-packs, achat via RevenueCat) */}
         <Text className="mb-3 mt-7 font-heading text-[11px] uppercase tracking-[2px] text-gray2">
-          Recharger
+          {t('credits.rechargeTitle')}
         </Text>
         <View className="gap-2.5">
           {packs.map((pack) => (
@@ -144,8 +148,8 @@ export default function CreditsScreen() {
         {/* Upsell abonnement */}
         <Pressable accessibilityRole="button" onPress={onSubscribe} className="mt-5 items-center py-2">
           <Text className="font-body-medium text-xs text-gray2">
-            Boutique active ?{' '}
-            <Text className="font-body-semibold text-ink">Passer à l{"'"}abonnement →</Text>
+            {t('credits.subscribeUpsell')}{' '}
+            <Text className="font-body-semibold text-ink">{t('credits.subscribeUpsellCta')}</Text>
           </Text>
         </Pressable>
       </ScrollView>
@@ -154,14 +158,14 @@ export default function CreditsScreen() {
       <View className="px-5 pb-2 pt-1">
         {purchaseUnavailable ? (
           <Text className="mb-2 text-center font-body text-xs text-gray">
-            Paiement indisponible — configuration RevenueCat requise.
+            {t('credits.paymentUnavailable')}
           </Text>
         ) : null}
         <Button
           label={
             buying
-              ? 'Achat en cours…'
-              : `Acheter ${selectedPack?.credits ?? ''} crédits · ${ctaPrice}`
+              ? t('credits.buying')
+              : t('credits.buyCta', { credits: selectedPack?.credits ?? '', price: ctaPrice })
           }
           onPress={onBuy}
           disabled={!canBuy}

@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
-import { OBJECT_RENDER_TYPES, RENDER_TYPE_LABELS, type ObjectRenderType } from '@vitrine/shared';
+import { OBJECT_RENDER_TYPES, type ObjectRenderType } from '@vitrine/shared';
+import { renderTypeLabel } from '@/lib/i18n/labels';
 
 const ICONS: Record<ObjectRenderType, string> = {
   studio_uni: '📦',
@@ -44,7 +45,7 @@ export function ObjectRenderTypeSelector({
                 selected ? 'text-offwhite' : 'text-ink'
               }`}
             >
-              {RENDER_TYPE_LABELS[type]}
+              {renderTypeLabel(type)}
             </Text>
           </Pressable>
         );

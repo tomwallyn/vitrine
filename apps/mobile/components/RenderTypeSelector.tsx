@@ -1,12 +1,13 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { t } from '@/lib/i18n';
 import { type RenderType } from '@vitrine/shared';
 
 const RENDER_STYLES: { value: RenderType; label: string; icon: string }[] = [
-  { value: 'model', label: 'Sur modèle', icon: '🧍' },
-  { value: 'hanger', label: 'Sur cintre', icon: '🧥' },
-  { value: 'folded', label: 'Plié à plat', icon: '🗂️' },
-  { value: 'studio', label: 'Fond studio', icon: '📦' },
+  { value: 'model', label: t('renderTypeSelector.model'), icon: '🧍' },
+  { value: 'hanger', label: t('renderTypeSelector.hanger'), icon: '🧥' },
+  { value: 'folded', label: t('renderTypeSelector.folded'), icon: '🗂️' },
+  { value: 'studio', label: t('renderTypeSelector.studio'), icon: '📦' },
 ];
 
 type RenderTypeSelectorProps = {

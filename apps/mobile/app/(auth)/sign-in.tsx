@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { OAuthButtons, OAuthDivider } from '@/components/OAuthButtons';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { clerkErrorMessage } from '@/lib/clerk-error';
+import { t } from '@/lib/i18n';
 import { colors } from '@vitrine/shared';
 
 /** Auth — Connexion (Clerk : email + mot de passe, Apple, Google). */
@@ -30,7 +31,7 @@ export default function SignInScreen() {
         await setActive({ session: attempt.createdSessionId });
         // La garde d'auth (Stack.Protected) bascule vers (tabs).
       } else {
-        setError('Connexion incomplète — vérifiez vos identifiants.');
+        setError(t('signIn.incompleteError'));
       }
     } catch (err) {
       setError(clerkErrorMessage(err));
@@ -41,16 +42,14 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title="Connexion" />
+      <ScreenHeader title={t('signIn.title')} />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView className="flex-1 px-6" contentContainerClassName="pt-6 pb-8" keyboardShouldPersistTaps="handled">
-          <Text className="font-heading-bold text-3xl text-ink">Bon retour.</Text>
-          <Text className="mt-2 font-body text-base text-gray2">
-            Connectez-vous pour retrouver votre boutique.
-          </Text>
+          <Text className="font-heading-bold text-3xl text-ink">{t('signIn.heading')}</Text>
+          <Text className="mt-2 font-body text-base text-gray2">{t('signIn.subtitle')}</Text>
 
           <View className="mt-8">
             <OAuthButtons onError={setError} />
@@ -59,7 +58,7 @@ export default function SignInScreen() {
 
           <View className="gap-3">
             <TextInput
-              placeholder="Email"
+              placeholder={t('signIn.emailPlaceholder')}
               placeholderTextColor={colors.gray}
               value={email}
               onChangeText={setEmail}
@@ -69,7 +68,7 @@ export default function SignInScreen() {
               className="h-14 rounded-2xl border border-paper3 bg-white px-4 font-body text-base text-ink"
             />
             <TextInput
-              placeholder="Mot de passe"
+              placeholder={t('signIn.passwordPlaceholder')}
               placeholderTextColor={colors.gray}
               value={password}
               onChangeText={setPassword}
@@ -84,7 +83,7 @@ export default function SignInScreen() {
           ) : null}
 
           <Button
-            label={submitting ? 'Connexion…' : 'Se connecter'}
+            label={submitting ? t('signIn.submitting') : t('signIn.submit')}
             className="mt-6"
             disabled={!isLoaded || submitting || !email.trim() || !password}
             onPress={onSignIn}
@@ -92,7 +91,7 @@ export default function SignInScreen() {
 
           <Pressable className="mt-8" onPress={() => router.replace('/(auth)/sign-up')}>
             <Text className="text-center font-body-semibold text-sm text-gray2">
-              Pas encore de compte ? <Text className="text-ink">Créer ma boutique</Text>
+              {t('signIn.noAccount')} <Text className="text-ink">{t('signIn.createAccount')}</Text>
             </Text>
           </Pressable>
         </ScrollView>

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { clerkErrorMessage } from '@/lib/clerk-error';
+import { t } from '@/lib/i18n';
 import { colors } from '@vitrine/shared';
 
 // Termine proprement la session d'auth du navigateur au retour dans l'app.
@@ -37,8 +38,8 @@ export function OAuthButtons({ onError }: OAuthButtonsProps) {
   };
 
   const buttons = [
-    { key: 'apple', icon: 'logo-apple' as const, label: 'Continuer avec Apple', flow: startAppleFlow },
-    { key: 'google', icon: 'logo-google' as const, label: 'Continuer avec Google', flow: startGoogleFlow },
+    { key: 'apple', icon: 'logo-apple' as const, label: t('oAuthButtons.continueApple'), flow: startAppleFlow },
+    { key: 'google', icon: 'logo-google' as const, label: t('oAuthButtons.continueGoogle'), flow: startGoogleFlow },
   ];
 
   return (
@@ -66,7 +67,7 @@ export function OAuthDivider() {
   return (
     <View className="my-6 flex-row items-center gap-3">
       <View className="h-px flex-1 bg-paper3" />
-      <Text className="font-body text-xs uppercase tracking-widest text-gray">ou</Text>
+      <Text className="font-body text-xs uppercase tracking-widest text-gray">{t('oAuthButtons.or')}</Text>
       <View className="h-px flex-1 bg-paper3" />
     </View>
   );

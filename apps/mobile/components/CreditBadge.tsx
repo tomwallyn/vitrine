@@ -1,5 +1,7 @@
 import { Text, View } from 'react-native';
 
+import { t } from '@/lib/i18n';
+
 type CreditBadgeProps = {
   credits?: number;
   className?: string;
@@ -12,7 +14,7 @@ export function CreditBadge({ credits = 12, className = '' }: CreditBadgeProps) 
       className={`flex-row items-center gap-1.5 self-start rounded-full border border-paper3 bg-white px-3 py-1.5 ${className}`}
     >
       <View className="h-2 w-2 rounded-full bg-ink" />
-      <Text className="font-body-bold text-xs text-ink">{credits} crédits</Text>
+      <Text className="font-body-bold text-xs text-ink">{t('common.credits', { count: credits })}</Text>
     </View>
   );
 }

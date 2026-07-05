@@ -69,7 +69,8 @@
       ],
       "./plugins/withRevenueCat.js",
       "expo-font",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-localization"
     ],
     "icon": "./assets/icon.png",
     "extra": {

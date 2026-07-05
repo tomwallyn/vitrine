@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
+import { t } from '@/lib/i18n';
 import { colors, type GenerationStatus } from '@vitrine/shared';
 
 /**
@@ -23,7 +24,7 @@ function ItemStatus({ status }: { status: GenerationStatus | undefined }) {
     return (
       <View className="flex-row items-center gap-1.5">
         <Ionicons name="checkmark-circle" size={16} color={colors.ink} />
-        <Text className="font-body-bold text-xs text-ink">Prêt</Text>
+        <Text className="font-body-bold text-xs text-ink">{t('batchProgress.statusReady')}</Text>
       </View>
     );
   }
@@ -31,7 +32,7 @@ function ItemStatus({ status }: { status: GenerationStatus | undefined }) {
     return (
       <View className="flex-row items-center gap-1.5">
         <Ionicons name="alert-circle-outline" size={16} color={colors.gray2} />
-        <Text className="font-body-semibold text-xs text-gray2">Échec · remboursé</Text>
+        <Text className="font-body-semibold text-xs text-gray2">{t('batchProgress.statusFailedRefunded')}</Text>
       </View>
     );
   }
@@ -49,7 +50,7 @@ function ItemStatus({ status }: { status: GenerationStatus | undefined }) {
   // queued / premier fetch en cours
   return (
     <View className="flex-row items-center gap-1.5">
-      <Text className="font-body-semibold text-xs text-gray2">En attente</Text>
+      <Text className="font-body-semibold text-xs text-gray2">{t('batchProgress.statusWaiting')}</Text>
       <Text className="font-body-bold text-xs tracking-[2px] text-gray">•••</Text>
     </View>
   );
@@ -93,7 +94,7 @@ export default function BatchProgressScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title="Génération du lot" />
+      <ScreenHeader title={t('batchProgress.title')} />
 
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-6">
         {/* Compteur global + barre de progression du lot */}
@@ -102,7 +103,7 @@ export default function BatchProgressScreen() {
             {doneCount} / {total}
           </Text>
           <Text className="mt-1 font-body-medium text-xs text-gray2">
-            visuel{doneCount > 1 ? 's' : ''} terminé{doneCount > 1 ? 's' : ''}
+            {t('batchProgress.completedCount', { count: doneCount })}
           </Text>
           <View className="mt-4 h-1.5 overflow-hidden rounded-full bg-paper3">
             <View
@@ -117,7 +118,7 @@ export default function BatchProgressScreen() {
           <View className="mt-4 flex-row items-center gap-2.5 rounded-2xl border border-paper3 bg-paper2 px-4 py-3">
             <Ionicons name="notifications-outline" size={18} color={colors.gray3} />
             <Text className="flex-1 font-body text-xs leading-4 text-gray2">
-              Vous pouvez quitter — on vous prévient à la fin.
+              {t('batchProgress.leaveNotice')}
             </Text>
           </View>
         ) : null}
@@ -133,7 +134,9 @@ export default function BatchProgressScreen() {
                 key={id}
                 accessibilityRole="button"
                 accessibilityLabel={
-                  ready ? `Pièce ${index + 1} — voir le visuel` : `Pièce ${index + 1}`
+                  ready
+                    ? t('batchProgress.itemLabelReady', { number: index + 1 })
+                    : t('batchProgress.itemLabel', { number: index + 1 })
                 }
                 disabled={!ready}
                 onPress={() => router.push(`/result/${id}`)}
@@ -147,17 +150,17 @@ export default function BatchProgressScreen() {
                       source={{ uri: generation.sourceImageUrl }}
                       className="h-full w-full"
                       resizeMode="cover"
-                      accessibilityLabel={`Photo de la pièce ${index + 1}`}
+                      accessibilityLabel={t('batchProgress.itemPhotoLabel', { number: index + 1 })}
                     />
                   ) : null}
                 </View>
                 <View className="flex-1">
                   <Text className="font-body-semibold text-sm text-ink">
-                    Pièce {index + 1}
+                    {t('batchProgress.itemTitle', { number: index + 1 })}
                   </Text>
                   {ready ? (
                     <Text className="mt-0.5 font-body text-xs text-gray">
-                      Appuyez pour voir le visuel
+                      {t('batchProgress.tapToView')}
                     </Text>
                   ) : null}
                 </View>
@@ -170,7 +173,7 @@ export default function BatchProgressScreen() {
 
       {/* CTA — la galerie affiche les tuiles « en cours » du tracker global */}
       <View className="border-t border-paper3 px-5 pb-4 pt-3">
-        <Button label="Voir la galerie" onPress={() => router.replace('/(tabs)/gallery')} />
+        <Button label={t('batchProgress.viewGallery')} onPress={() => router.replace('/(tabs)/gallery')} />
       </View>
     </SafeAreaView>
   );

@@ -8,6 +8,8 @@ import { create } from 'zustand';
 
 import { colors } from '@vitrine/shared';
 
+import { t } from '@/lib/i18n';
+
 /** Durée d'affichage du banner avant auto-dismiss. */
 const AUTO_DISMISS_MS = 5_000;
 
@@ -71,7 +73,9 @@ export function GenerationToast() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
-          done ? 'Ton visuel est prêt — voir le résultat' : 'La génération a échoué'
+          done
+            ? t('generationToast.readyAccessibilityLabel')
+            : t('generationToast.failedAccessibilityLabel')
         }
         onPress={onPress}
         className="flex-row items-center gap-3 rounded-2xl bg-ink px-4 py-3.5 shadow-lg active:opacity-90"
@@ -79,10 +83,10 @@ export function GenerationToast() {
         <Text className="text-lg">{done ? '✨' : '⚠️'}</Text>
         <View className="flex-1">
           <Text className="font-body-semibold text-sm text-offwhite">
-            {done ? 'Ton visuel est prêt' : 'La génération a échoué'}
+            {done ? t('generationToast.readyTitle') : t('generationToast.failedTitle')}
           </Text>
           <Text className="mt-0.5 font-body text-xs text-gray">
-            {done ? 'Touche pour le découvrir' : 'Crédit remboursé automatiquement'}
+            {done ? t('generationToast.readySubtitle') : t('generationToast.failedSubtitle')}
           </Text>
         </View>
         <Ionicons

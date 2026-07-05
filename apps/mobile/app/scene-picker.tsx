@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
+import { t } from '@/lib/i18n';
 import { useSceneTarget } from '@/lib/use-scene-target';
 import {
   colors,
@@ -24,14 +25,14 @@ type SlotId = ScenePresetSlot;
 type Selection = { kind: 'value'; value: string } | { kind: 'decor'; url: string; thumbUrl: string };
 
 const TITLES: Record<SlotId, string> = {
-  surface: 'Choisir une surface',
-  background: 'Arrière-plan',
-  accessoires: 'Accessoires',
+  surface: t('scenePicker.titleSurface'),
+  background: t('scenePicker.titleBackground'),
+  accessoires: t('scenePicker.titleAccessoires'),
 };
 const CUSTOM_PLACEHOLDER: Record<SlotId, string> = {
-  surface: 'ex. plan de travail en inox brossé',
-  background: 'ex. atelier d’artiste lumineux',
-  accessoires: 'ex. bougie et galets',
+  surface: t('scenePicker.placeholderSurface'),
+  background: t('scenePicker.placeholderBackground'),
+  accessoires: t('scenePicker.placeholderAccessoires'),
 };
 
 /** Tuile texte (preset built-in ou description perso) — mémoïsée. */
@@ -220,7 +221,7 @@ export default function ScenePickerScreen() {
         ) : null}
 
         <Text className="mb-3 font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
-          {slot === 'background' ? 'Scènes proposées' : 'Suggestions'}
+          {slot === 'background' ? t('scenePicker.suggestedScenes') : t('scenePicker.suggestions')}
         </Text>
         <View className="flex-row flex-wrap gap-x-[3.5%] gap-y-3">
           {builtins.map((p) => (
@@ -234,21 +235,21 @@ export default function ScenePickerScreen() {
           {slot === 'background' ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Ajouter un décor"
+              accessibilityLabel={t('scenePicker.addDecorLabel')}
               onPress={() => router.push(`/scene-add?target=${target}`)}
               className="w-[31%]"
             >
               <View className="aspect-square items-center justify-center rounded-2xl border-[1.5px] border-dashed border-gray bg-white">
                 <Ionicons name="add" size={26} color={colors.ink} />
               </View>
-              <Text className="mt-1 text-center font-body-bold text-[9.5px] text-ink">Ajouter</Text>
+              <Text className="mt-1 text-center font-body-bold text-[9.5px] text-ink">{t('common.add')}</Text>
             </Pressable>
           ) : null}
         </View>
 
         {/* Décrire la vôtre (texte libre) + enregistrement */}
         <Text className="mb-2 mt-6 font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
-          Ou décrivez la vôtre
+          {t('scenePicker.describeYours')}
         </Text>
         <View className="flex-row items-center gap-2 rounded-2xl border border-paper3 bg-white px-3.5 py-1">
           <Ionicons name="create-outline" size={16} color={colors.gray} />
@@ -264,7 +265,7 @@ export default function ScenePickerScreen() {
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Enregistrer la description"
+            accessibilityLabel={t('scenePicker.saveDescriptionLabel')}
             hitSlop={8}
             disabled={customText.trim().length === 0 || saveMutation.isPending}
             onPress={commitCustom}
@@ -277,7 +278,7 @@ export default function ScenePickerScreen() {
                 customText.trim().length > 0 ? 'text-offwhite' : 'text-gray'
               }`}
             >
-              Enregistrer
+              {t('common.save')}
             </Text>
           </Pressable>
         </View>
@@ -286,7 +287,7 @@ export default function ScenePickerScreen() {
         {savedPresets.length > 0 ? (
           <>
             <Text className="mb-3 mt-6 font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
-              Mes descriptions · {savedPresets.length}
+              {t('scenePicker.myDescriptions', { count: savedPresets.length })}
             </Text>
             <View className="flex-row flex-wrap gap-x-[3.5%] gap-y-3">
               {savedPresets.map((p) => (
@@ -305,7 +306,7 @@ export default function ScenePickerScreen() {
         {slot === 'background' && decors.length > 0 ? (
           <>
             <Text className="mb-3 mt-6 font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
-              Mes scènes · {decors.length}
+              {t('scenePicker.myScenes', { count: decors.length })}
             </Text>
             <View className="flex-row flex-wrap gap-x-[3.5%] gap-y-3">
               {decors.map((d) => (
@@ -323,7 +324,7 @@ export default function ScenePickerScreen() {
       </ScrollView>
 
       <View className="px-5 pb-2 pt-2">
-        <Button label="Valider" onPress={validate} disabled={!selected} />
+        <Button label={t('scenePicker.validate')} onPress={validate} disabled={!selected} />
       </View>
     </SafeAreaView>
   );

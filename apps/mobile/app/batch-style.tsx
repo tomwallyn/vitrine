@@ -13,7 +13,9 @@ import { RenderTypeSelector } from '@/components/RenderTypeSelector';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
 import { useBatchDraft } from '@/lib/batch-draft';
-import { completionSlots, SLOT_LABEL } from '@/lib/outfit';
+import { t } from '@/lib/i18n';
+import { formatDate, slotLabel } from '@/lib/i18n/labels';
+import { completionSlots } from '@/lib/outfit';
 import { uploadImageAsync } from '@/lib/upload';
 import {
   colors,
@@ -27,9 +29,9 @@ import {
 } from '@vitrine/shared';
 
 const LIGHTING_LABELS: Record<SceneLighting, string> = {
-  douce: 'Douce',
-  doree: 'Dorée',
-  contrastee: 'Contrastée',
+  douce: t('batchStyle.lightingDouce'),
+  doree: t('batchStyle.lightingDoree'),
+  contrastee: t('batchStyle.lightingContrastee'),
 };
 
 const presetName = (list: { key: string; name: string }[], key?: string | null) =>
@@ -63,13 +65,13 @@ export default function BatchStyleScreen() {
   // Résumé de la scène commune (rendu objet) pour la carte d'entrée (preset OU texte libre).
   const sceneParts = [
     scene.decor?.url
-      ? 'Décor perso'
+      ? t('batchStyle.customDecor')
       : (presetName(OBJECT_SCENES, scene.background) ?? scene.background),
     presetName(OBJECT_SURFACES, scene.surface) ?? scene.surface,
     presetName(OBJECT_ACCESSORIES, scene.accessoires) ?? scene.accessoires,
   ].filter(Boolean);
   const sceneSubtitle =
-    sceneParts.length > 0 ? sceneParts.join(' · ') : 'Surface, arrière-plan, accessoires';
+    sceneParts.length > 0 ? sceneParts.join(' · ') : t('batchStyle.sceneSubtitleDefault');
 
   const [customUpload, setCustomUpload] = useState<CustomBackgroundUpload>({
     localUri: null,
@@ -108,7 +110,9 @@ export default function BatchStyleScreen() {
         try {
           await api.backgrounds.create({
             imageUrl: publicUrl,
-            name: `Fond du ${new Date().toLocaleDateString('fr-FR')}`,
+            name: t('batchStyle.defaultBackgroundName', {
+              date: formatDate(new Date()),
+            }),
           });
           await queryClient.invalidateQueries({ queryKey: ['backgrounds'] });
         } catch {
@@ -126,20 +130,28 @@ export default function BatchStyleScreen() {
     .map(([slot]) => slot);
   const outfitSubtitle =
     outfitFilled.length > 0
-      ? outfitFilled.map((slot) => SLOT_LABEL[slot]).join(' · ')
+      ? outfitFilled.map((slot) => slotLabel(slot)).join(' · ')
       : completionSlots(garmentType)
-          .map((s) => `${SLOT_LABEL[s.slot]}${s.required ? ' requis' : ' en option'}`)
+          .map(
+            (s) =>
+              `${slotLabel(s.slot)}${
+                s.required ? t('batchStyle.requiredSuffix') : t('batchStyle.optionalSuffix')
+              }`
+          )
           .join(' · ');
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title="Style commun" subtitle="Appliqué à tout le lot" />
+      <ScreenHeader
+        title={t('batchStyle.headerTitle')}
+        subtitle={t('batchStyle.headerSubtitle')}
+      />
 
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-6">
         {style.subjectType === 'objet' ? (
           <>
             {/* TYPE DE RENDU objet — 6 types */}
-            <SectionTitle>Type de rendu</SectionTitle>
+            <SectionTitle>{t('batchStyle.renderTypeTitle')}</SectionTitle>
             <ObjectRenderTypeSelector
               value={style.renderType as ObjectRenderType}
               onChange={(renderType) => setStyle({ renderType })}
@@ -147,7 +159,7 @@ export default function BatchStyleScreen() {
             />
 
             {/* AMBIANCE LUMIÈRE commune */}
-            <SectionTitle>Ambiance lumière</SectionTitle>
+            <SectionTitle>{t('batchStyle.lightingTitle')}</SectionTitle>
             <View className="mb-6 flex-row gap-2">
               {SCENE_LIGHTINGS.map((l) => {
                 const selected = style.lighting === l;
@@ -176,7 +188,7 @@ export default function BatchStyleScreen() {
             {/* COMPLÉTER LA SCÈNE — scène commune au lot */}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Compléter la scène"
+              accessibilityLabel={t('batchStyle.completeSceneLabel')}
               onPress={() => router.push('/scene?target=batch')}
               className="flex-row items-center gap-3 rounded-2xl border border-paper3 bg-white p-3 active:bg-paper2"
             >
@@ -184,14 +196,16 @@ export default function BatchStyleScreen() {
                 <Ionicons name="cube-outline" size={20} color={colors.ink} />
               </View>
               <View className="flex-1">
-                <Text className="font-body-bold text-[13px] text-ink">Compléter la scène</Text>
+                <Text className="font-body-bold text-[13px] text-ink">
+                  {t('batchStyle.completeSceneLabel')}
+                </Text>
                 <Text className="mt-0.5 font-body text-xs text-gray" numberOfLines={1}>
                   {sceneSubtitle}
                 </Text>
               </View>
               <View className="rounded-full bg-ink px-3 py-1.5">
                 <Text className="font-body-bold text-[11px] text-offwhite">
-                  {sceneParts.length > 0 ? 'Modifier' : 'Configurer'}
+                  {sceneParts.length > 0 ? t('common.modify') : t('common.configure')}
                 </Text>
               </View>
             </Pressable>
@@ -199,7 +213,7 @@ export default function BatchStyleScreen() {
         ) : (
           <>
             {/* STYLE DE VISUEL — 4 types */}
-            <SectionTitle>Style de visuel</SectionTitle>
+            <SectionTitle>{t('batchStyle.visualStyleTitle')}</SectionTitle>
             <RenderTypeSelector
               value={style.renderType}
               onChange={(renderType) => setStyle({ renderType })}
@@ -209,7 +223,7 @@ export default function BatchStyleScreen() {
         {/* MANNEQUIN — visible pour le rendu « Sur modèle » */}
         {style.renderType === 'model' ? (
           <>
-            <SectionTitle>Mannequin</SectionTitle>
+            <SectionTitle>{t('batchStyle.mannequinTitle')}</SectionTitle>
             <MannequinSelector
               value={style.mannequinOption}
               mannequinId={style.mannequinId}
@@ -221,7 +235,7 @@ export default function BatchStyleScreen() {
             {/* COMPLÉTER LA TENUE — tenue commune au lot */}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Compléter la tenue"
+              accessibilityLabel={t('batchStyle.completeOutfitLabel')}
               onPress={() => router.push('/outfit?target=batch')}
               className="mb-6 flex-row items-center gap-3 rounded-2xl border border-paper3 bg-white p-3 active:bg-paper2"
             >
@@ -229,12 +243,14 @@ export default function BatchStyleScreen() {
                 <Ionicons name="shirt-outline" size={20} color={colors.ink} />
               </View>
               <View className="flex-1">
-                <Text className="font-body-bold text-[13px] text-ink">Compléter la tenue</Text>
+                <Text className="font-body-bold text-[13px] text-ink">
+                  {t('batchStyle.completeOutfitLabel')}
+                </Text>
                 <Text className="mt-0.5 font-body text-xs text-gray">{outfitSubtitle}</Text>
               </View>
               <View className="rounded-full bg-ink px-3 py-1.5">
                 <Text className="font-body-bold text-[11px] text-offwhite">
-                  {outfitFilled.length > 0 ? 'Modifier' : 'Configurer'}
+                  {outfitFilled.length > 0 ? t('common.modify') : t('common.configure')}
                 </Text>
               </View>
             </Pressable>
@@ -242,7 +258,7 @@ export default function BatchStyleScreen() {
         ) : null}
 
         {/* FOND — studio / personnalisé (upload) / fonds réutilisables */}
-        <SectionTitle>Fond</SectionTitle>
+        <SectionTitle>{t('batchStyle.backgroundTitle')}</SectionTitle>
         <View className="flex-row gap-3">
           <Pressable
             accessibilityRole="button"
@@ -257,9 +273,11 @@ export default function BatchStyleScreen() {
                 style.backgroundOption === 'studio' ? 'text-offwhite' : 'text-ink'
               }`}
             >
-              Fond studio
+              {t('batchStyle.studioBackgroundTitle')}
             </Text>
-            <Text className="mt-1 font-body text-xs text-gray">Crème, neutre</Text>
+            <Text className="mt-1 font-body text-xs text-gray">
+              {t('batchStyle.studioBackgroundSubtitle')}
+            </Text>
           </Pressable>
 
           <Pressable
@@ -276,7 +294,7 @@ export default function BatchStyleScreen() {
                   source={{ uri: customUpload.localUri }}
                   className="h-6 w-6 rounded-md bg-paper3"
                   resizeMode="cover"
-                  accessibilityLabel="Fond personnalisé"
+                  accessibilityLabel={t('batchStyle.customBackgroundLabel')}
                 />
               ) : (
                 <Ionicons
@@ -290,7 +308,7 @@ export default function BatchStyleScreen() {
                   customSelected ? 'text-offwhite' : 'text-ink'
                 }`}
               >
-                Personnalisé
+                {t('batchStyle.customBackgroundTitle')}
               </Text>
             </View>
             {customUpload.status === 'uploading' ? (
@@ -299,18 +317,22 @@ export default function BatchStyleScreen() {
                   size="small"
                   color={customSelected ? colors.offwhite : colors.ink}
                 />
-                <Text className="font-body text-xs text-gray">Envoi du fond…</Text>
+                <Text className="font-body text-xs text-gray">
+                  {t('batchStyle.customBackgroundUploading')}
+                </Text>
               </View>
             ) : customUpload.status === 'error' ? (
               <Text className="mt-1 font-body text-xs text-gray" numberOfLines={2}>
-                ⚠️ Envoi impossible — réappuyez
+                {t('batchStyle.customBackgroundError')}
               </Text>
             ) : customSelected && style.customBackgroundUrl ? (
               <Text className="mt-1 font-body text-xs text-gray">
-                Fond envoyé — appuyez pour changer
+                {t('batchStyle.customBackgroundDone')}
               </Text>
             ) : (
-              <Text className="mt-1 font-body text-xs text-gray">Votre boutique, un mur…</Text>
+              <Text className="mt-1 font-body text-xs text-gray">
+                {t('batchStyle.customBackgroundPlaceholder')}
+              </Text>
             )}
           </Pressable>
         </View>
@@ -319,7 +341,7 @@ export default function BatchStyleScreen() {
         {savedBackgrounds.length > 0 ? (
           <View className="mt-4">
             <Text className="mb-2 font-body-semibold text-[10px] uppercase tracking-[2px] text-gray">
-              Mes fonds
+              {t('batchStyle.savedBackgroundsTitle')}
             </Text>
             <ScrollView
               horizontal
@@ -332,7 +354,7 @@ export default function BatchStyleScreen() {
                   <Pressable
                     key={bg.id}
                     accessibilityRole="button"
-                    accessibilityLabel={`Fond ${bg.name}`}
+                    accessibilityLabel={t('batchStyle.savedBackgroundLabel', { name: bg.name })}
                     accessibilityState={{ selected }}
                     onPress={() =>
                       setStyle({ backgroundOption: 'custom', customBackgroundUrl: bg.imageUrl })
@@ -363,7 +385,7 @@ export default function BatchStyleScreen() {
 
       {/* CTA — les choix sont déjà écrits dans le brouillon du lot */}
       <View className="border-t border-paper3 px-5 pb-4 pt-3">
-        <Button label="Appliquer au lot" onPress={() => router.back()} />
+        <Button label={t('batchStyle.applyLabel')} onPress={() => router.back()} />
       </View>
     </SafeAreaView>
   );

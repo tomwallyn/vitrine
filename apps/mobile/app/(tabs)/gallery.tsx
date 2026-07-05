@@ -17,26 +17,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { useApi } from '@/lib/api';
 import { useActiveGenerations, type TrackedGeneration } from '@/lib/generation-tracker';
+import { t } from '@/lib/i18n';
+import { renderTypeLabel } from '@/lib/i18n/labels';
 import {
   colors,
   GALLERY_FILTERS,
-  RENDER_TYPE_LABELS,
   type GalleryFilter,
   type GalleryItem,
   type GallerySort,
 } from '@vitrine/shared';
 
 const FILTER_LABELS: Record<GalleryFilter, string> = {
-  all: 'Tout',
-  vetement: 'Vêtements',
-  objet: 'Objets',
-  model: 'Sur modèle',
-  hanger: 'Cintre',
+  all: t('gallery.filterAll'),
+  vetement: t('gallery.filterVetement'),
+  objet: t('gallery.filterObjet'),
+  model: t('gallery.filterModel'),
+  hanger: t('gallery.filterHanger'),
 };
 
 /** « 38 visuels générés » (compteur sous le titre, maquette 06). */
 function counterLabel(total: number): string {
-  return total > 1 ? `${total} visuels générés` : `${total} visuel généré`;
+  return t('gallery.visualsCount', { count: total });
 }
 
 /**
@@ -53,30 +54,30 @@ function ActiveGenerationTile({ gen }: { gen: TrackedGeneration }) {
             source={{ uri: gen.sourceImageUrl }}
             className="absolute h-full w-full opacity-15"
             resizeMode="cover"
-            accessibilityLabel="Photo source du rendu en cours"
+            accessibilityLabel={t('gallery.sourcePhotoLabel')}
           />
         ) : null}
         {inFlight ? (
           <>
             <ActivityIndicator size="small" color={colors.ink} />
-            <Text className="mt-2.5 font-body-semibold text-xs text-ink">En cours…</Text>
+            <Text className="mt-2.5 font-body-semibold text-xs text-ink">{t('gallery.inProgress')}</Text>
           </>
         ) : gen.status === 'done' ? (
           <>
             <View className="h-8 w-8 items-center justify-center rounded-full bg-ink">
               <Ionicons name="checkmark" size={16} color={colors.offwhite} />
             </View>
-            <Text className="mt-2.5 font-body-semibold text-xs text-ink">Terminé</Text>
+            <Text className="mt-2.5 font-body-semibold text-xs text-ink">{t('gallery.done')}</Text>
           </>
         ) : (
           <>
             <Ionicons name="alert-circle-outline" size={24} color={colors.gray2} />
-            <Text className="mt-2.5 font-body-semibold text-xs text-gray2">Échec</Text>
+            <Text className="mt-2.5 font-body-semibold text-xs text-gray2">{t('gallery.failed')}</Text>
           </>
         )}
       </View>
       <Text className="mt-1.5 font-body text-xs text-gray">
-        {RENDER_TYPE_LABELS[gen.renderType]}
+        {renderTypeLabel(gen.renderType)}
       </Text>
     </View>
   );
@@ -87,7 +88,7 @@ function GalleryTile({ item, onPress }: { item: GalleryItem; onPress: () => void
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${item.title} — voir le visuel`}
+      accessibilityLabel={t('gallery.viewVisual', { title: item.title })}
       onPress={onPress}
       className="mb-4 w-[48%] active:opacity-80"
     >
@@ -111,7 +112,7 @@ function GalleryTile({ item, onPress }: { item: GalleryItem; onPress: () => void
         </View>
       </View>
       <Text className="mt-1.5 font-body text-xs text-gray">
-        {RENDER_TYPE_LABELS[item.renderType]}
+        {renderTypeLabel(item.renderType)}
       </Text>
     </Pressable>
   );
@@ -162,14 +163,14 @@ export default function GalleryScreen() {
         {/* Header : titre + compteur + tri ⇅ */}
         <View className="flex-row items-end justify-between pt-4">
           <View>
-            <Text className="font-heading-bold text-2xl text-ink">Mes créations</Text>
+            <Text className="font-heading-bold text-2xl text-ink">{t('gallery.title')}</Text>
             <Text className="mt-1 font-body-medium text-xs text-gray">
               {total !== undefined ? counterLabel(total) : ' '}
             </Text>
           </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={sort === 'recent' ? 'Trier du plus ancien' : 'Trier du plus récent'}
+            accessibilityLabel={sort === 'recent' ? t('gallery.sortOldest') : t('gallery.sortRecent')}
             onPress={() => setSort((s) => (s === 'recent' ? 'oldest' : 'recent'))}
             className="h-9 w-9 items-center justify-center rounded-xl border border-paper3 bg-white active:bg-paper2"
           >
@@ -183,7 +184,7 @@ export default function GalleryScreen() {
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Rechercher une création…"
+            placeholder={t('gallery.searchPlaceholder')}
             placeholderTextColor={colors.gray}
             className="flex-1 font-body text-sm text-ink"
             returnKeyType="search"
@@ -192,7 +193,7 @@ export default function GalleryScreen() {
           {search ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Effacer la recherche"
+              accessibilityLabel={t('gallery.clearSearch')}
               hitSlop={8}
               onPress={() => setSearch('')}
             >
@@ -240,17 +241,17 @@ export default function GalleryScreen() {
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-6">
             <Text className="text-center font-heading-bold text-lg text-ink">
-              Galerie indisponible
+              {t('gallery.unavailableTitle')}
             </Text>
             <Text className="mt-2 text-center font-body text-sm text-gray2">
-              {error instanceof Error ? error.message : 'Réessayez dans un instant.'}
+              {error instanceof Error ? error.message : t('gallery.unavailableDefault')}
             </Text>
             <Pressable
               accessibilityRole="button"
               onPress={() => refetch()}
               className="mt-4 py-2"
             >
-              <Text className="font-body-semibold text-sm text-ink underline">Réessayer</Text>
+              <Text className="font-body-semibold text-sm text-ink underline">{t('common.retry')}</Text>
             </Pressable>
           </View>
         ) : (
@@ -293,18 +294,18 @@ export default function GalleryScreen() {
               <View className="flex-1 items-center justify-center px-8">
                 <Text className="text-4xl">🪞</Text>
                 <Text className="mt-4 text-center font-heading-bold text-lg text-ink">
-                  {query ? 'Aucun résultat' : 'Aucune création'}
+                  {query ? t('gallery.noResults') : t('gallery.noCreations')}
                 </Text>
                 <Text className="mt-2 text-center font-body text-sm text-gray2">
                   {query
-                    ? `Rien ne correspond à « ${query} ».`
+                    ? t('gallery.noResultsFor', { query })
                     : filter === 'all'
-                      ? 'Photographiez votre premier produit pour créer votre vitrine.'
-                      : 'Aucun visuel de ce type pour le moment.'}
+                      ? t('gallery.emptyAllSubtitle')
+                      : t('gallery.emptyFilteredSubtitle')}
                 </Text>
                 {filter === 'all' && !query ? (
                   <Button
-                    label="Créer un visuel"
+                    label={t('gallery.ctaCreate')}
                     className="mt-6 self-stretch"
                     onPress={() => router.push('/product-type')}
                   />
@@ -318,7 +319,7 @@ export default function GalleryScreen() {
       {/* FAB + — nouveau visuel → hub d'import (1 photo / angles / lot) */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Nouveau visuel"
+        accessibilityLabel={t('gallery.newVisual')}
         onPress={() => router.push('/product-type')}
         className="absolute bottom-6 right-5 h-14 w-14 items-center justify-center rounded-full bg-ink shadow-lg active:opacity-90"
       >

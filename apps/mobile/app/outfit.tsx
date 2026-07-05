@@ -7,12 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
+import { t } from '@/lib/i18n';
+import { garmentTypeLabel, slotLabel } from '@/lib/i18n/labels';
 import {
   completionSlots,
-  GARMENT_TYPE_LABEL,
   outfitUploading,
   requiredSlotFilled,
-  SLOT_LABEL,
 } from '@/lib/outfit';
 import { useRenderDraft } from '@/lib/render-draft';
 import { useOutfitTarget, type OutfitTarget } from '@/lib/use-outfit-target';
@@ -52,31 +52,33 @@ export default function OutfitScreen() {
   const requiredSlot = slots.find((s) => s.required)?.slot;
   const canFinish = requiredSlotFilled(ctrl.garmentType, ctrl.outfit) && !outfitUploading(ctrl.outfit);
   const ctaLabel = canFinish
-    ? 'Valider la tenue'
-    : `Choisissez un ${requiredSlot ? SLOT_LABEL[requiredSlot].toLowerCase() : 'élément'} pour continuer`;
+    ? t('outfit.ctaValidate')
+    : t('outfit.ctaChoose', {
+        slot: requiredSlot ? slotLabel(requiredSlot).toLowerCase() : t('outfit.genericElement'),
+      });
 
   const openPicker = (slot: GarmentSlot) =>
     router.push(`/outfit-picker?slot=${slot}&target=${target}`);
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title="La tenue" />
+      <ScreenHeader title={t('outfit.title')} />
 
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-6">
-        <Text className="font-heading text-xl text-ink">Habillez le mannequin</Text>
+        <Text className="font-heading text-xl text-ink">{t('outfit.heading')}</Text>
         <Text className="mt-1.5 font-body text-[12.5px] leading-5 text-gray">
-          Votre pièce sera portée sur un modèle. Complétez le reste de la tenue pour un rendu naturel.
+          {t('outfit.subtitle')}
         </Text>
 
         {/* Type générique de la pièce importée — deviné (auto), corrigeable en 1 clic */}
         <View className="mb-2 mt-6 flex-row items-center gap-2">
           <Text className="font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
-            Votre pièce
+            {t('outfit.yourPieceLabel')}
           </Text>
           {detecting ? (
             <>
               <ActivityIndicator size="small" color={colors.gray} />
-              <Text className="font-body text-[10px] text-gray">détection…</Text>
+              <Text className="font-body text-[10px] text-gray">{t('outfit.detecting')}</Text>
             </>
           ) : null}
         </View>
@@ -98,7 +100,7 @@ export default function OutfitScreen() {
                     selected ? 'text-offwhite' : 'text-ink'
                   }`}
                 >
-                  {GARMENT_TYPE_LABEL[type]}
+                  {garmentTypeLabel(type)}
                 </Text>
               </Pressable>
             );
@@ -122,10 +124,10 @@ export default function OutfitScreen() {
             </View>
             <View className="flex-1">
               <Text className="font-heading text-[10px] uppercase tracking-[1.5px] text-gray">
-                {GARMENT_TYPE_LABEL[ctrl.garmentType].toUpperCase()} · VOTRE PIÈCE
+                {garmentTypeLabel(ctrl.garmentType).toUpperCase()} · {t('outfit.yourPieceUpper')}
               </Text>
               <Text className="mt-0.5 font-body-bold text-[13px] text-offwhite">
-                {target === 'batch' ? 'Vos pièces du lot' : 'Pièce importée'}
+                {target === 'batch' ? t('outfit.batchPieces') : t('outfit.importedPiece')}
               </Text>
             </View>
             <Ionicons name="lock-closed" size={16} color={colors.offwhite} />
@@ -139,7 +141,11 @@ export default function OutfitScreen() {
               <Pressable
                 key={slot}
                 accessibilityRole="button"
-                accessibilityLabel={`${SLOT_LABEL[slot]} — ${piece?.url ? 'modifier' : 'choisir'}`}
+                accessibilityLabel={
+                  piece?.url
+                    ? t('outfit.slotEditA11y', { slot: slotLabel(slot) })
+                    : t('outfit.slotChooseA11y', { slot: slotLabel(slot) })
+                }
                 onPress={() => openPicker(slot)}
                 className={`flex-row items-center gap-3 rounded-2xl bg-white p-3 ${
                   required && !piece?.url ? 'border-[1.5px] border-ink' : 'border border-paper3'
@@ -159,7 +165,7 @@ export default function OutfitScreen() {
                 <View className="flex-1">
                   <View className="flex-row items-center gap-1.5">
                     <Text className="font-heading text-[10px] uppercase tracking-[1.5px] text-ink">
-                      {SLOT_LABEL[slot]}
+                      {slotLabel(slot)}
                     </Text>
                     <View className={`rounded-full px-1.5 py-0.5 ${required ? 'bg-ink' : 'bg-paper3'}`}>
                       <Text
@@ -167,20 +173,20 @@ export default function OutfitScreen() {
                           required ? 'text-offwhite' : 'text-gray'
                         }`}
                       >
-                        {required ? 'Requis' : 'Optionnel'}
+                        {required ? t('outfit.required') : t('outfit.optional')}
                       </Text>
                     </View>
                   </View>
                   <Text className="mt-0.5 font-body-semibold text-[13px] text-gray">
                     {uploading
-                      ? 'Envoi…'
+                      ? t('outfit.statusUploading')
                       : piece?.status === 'error'
-                        ? '⚠️ Envoi impossible'
+                        ? t('outfit.statusError')
                         : piece?.url
-                          ? 'Sélectionné'
+                          ? t('outfit.statusSelected')
                           : required
-                            ? 'À choisir'
-                            : 'Aucune'}
+                            ? t('outfit.statusToChoose')
+                            : t('outfit.statusNone')}
                   </Text>
                 </View>
                 {uploading ? (
@@ -188,15 +194,17 @@ export default function OutfitScreen() {
                 ) : piece?.url ? (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Retirer ${SLOT_LABEL[slot]}`}
+                    accessibilityLabel={t('outfit.removeSlotA11y', { slot: slotLabel(slot) })}
                     hitSlop={8}
                     onPress={() => ctrl.clearOutfitPiece(slot)}
                   >
-                    <Text className="font-body-bold text-[12px] text-gray underline">Retirer</Text>
+                    <Text className="font-body-bold text-[12px] text-gray underline">
+                      {t('common.remove')}
+                    </Text>
                   </Pressable>
                 ) : (
                   <Text className="font-body-bold text-[12px] text-ink underline">
-                    {required ? 'Choisir' : 'Ajouter'}
+                    {required ? t('outfit.choose') : t('common.add')}
                   </Text>
                 )}
               </Pressable>
@@ -208,7 +216,8 @@ export default function OutfitScreen() {
         <View className="mt-4 flex-row items-center gap-2.5 rounded-2xl bg-paper2 px-3 py-3">
           <Ionicons name="file-tray-full-outline" size={18} color={colors.ink} />
           <Text className="flex-1 font-body text-[11.5px] leading-4 text-gray2">
-            Réutilisez vos pièces enregistrées depuis <Text className="font-body-bold text-ink">Ma garde-robe</Text>.
+            {t('outfit.wardrobeHint')}{' '}
+            <Text className="font-body-bold text-ink">{t('outfit.wardrobeName')}</Text>.
           </Text>
         </View>
       </ScrollView>

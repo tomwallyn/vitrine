@@ -27,10 +27,11 @@ import { CreditBadge } from '@/components/CreditBadge';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { isInsufficientCredits, useApi } from '@/lib/api';
 import { useResultExport } from '@/lib/export';
+import { t } from '@/lib/i18n';
+import { renderTypeLabel } from '@/lib/i18n/labels';
 import {
   colors,
   GENERATION_COST_CREDITS,
-  RENDER_TYPE_LABELS,
   RENDER_TYPES,
   type Generation,
   type GetGenerationResponse,
@@ -40,29 +41,33 @@ import {
 } from '@vitrine/shared';
 
 const MANNEQUIN_LABELS: Record<Generation['mannequinOption'], string> = {
-  femme: 'Femme',
-  homme: 'Homme',
-  silhouette: 'Silhouette',
-  studio: 'Studio',
+  femme: t('result.mannequinFemme'),
+  homme: t('result.mannequinHomme'),
+  silhouette: t('result.mannequinSilhouette'),
+  studio: t('result.mannequinStudio'),
 };
 
 /** « Sur modèle · Femme · Fond studio » — récap de la configuration du rendu. */
 function configSummary(generation: Generation): string {
-  const parts = [RENDER_TYPE_LABELS[generation.renderType]];
+  const parts = [renderTypeLabel(generation.renderType)];
   if (generation.renderType === 'model') {
     parts.push(MANNEQUIN_LABELS[generation.mannequinOption]);
   }
-  parts.push(generation.backgroundOption === 'custom' ? 'Fond personnalisé' : 'Fond studio');
+  parts.push(
+    generation.backgroundOption === 'custom'
+      ? t('result.backgroundCustom')
+      : t('result.backgroundStudio'),
+  );
   return parts.join(' · ');
 }
 
 /** Lignes clé-valeur de la fiche produit (seuls les champs lus sont affichés). */
 const PRODUCT_INFO_ROWS: { key: keyof Omit<ProductInfo, 'description'>; label: string }[] = [
-  { key: 'matiere', label: 'Matière' },
-  { key: 'taille', label: 'Taille' },
-  { key: 'couleur', label: 'Couleur' },
-  { key: 'composition', label: 'Composition' },
-  { key: 'entretien', label: 'Entretien' },
+  { key: 'matiere', label: t('result.productLabelMatiere') },
+  { key: 'taille', label: t('result.productLabelTaille') },
+  { key: 'couleur', label: t('result.productLabelCouleur') },
+  { key: 'composition', label: t('result.productLabelComposition') },
+  { key: 'entretien', label: t('result.productLabelEntretien') },
 ];
 
 /** Fiche produit OCR (étiquette/détail) — carte sous l'avant/après. */
@@ -73,7 +78,7 @@ function ProductInfoCard({ info }: { info: ProductInfo }) {
       <View className="flex-row items-center gap-2">
         <Ionicons name="pricetag-outline" size={14} color={colors.gray2} />
         <Text className="font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
-          Fiche produit
+          {t('result.productSheetTitle')}
         </Text>
       </View>
 
@@ -190,13 +195,13 @@ export default function ResultScreen() {
 
   const creditError = (err: unknown, fallbackTitle: string) => {
     if (isInsufficientCredits(err)) {
-      Alert.alert('Crédits insuffisants', 'Rechargez votre solde pour continuer.', [
-        { text: 'Plus tard', style: 'cancel' },
-        { text: 'Recharger', onPress: () => router.push('/(tabs)/credits') },
+      Alert.alert(t('result.insufficientCreditsTitle'), t('result.insufficientCreditsMessage'), [
+        { text: t('result.later'), style: 'cancel' },
+        { text: t('result.rechargeCta'), onPress: () => router.push('/(tabs)/credits') },
       ]);
       return;
     }
-    Alert.alert(fallbackTitle, err instanceof Error ? err.message : 'Réessayez dans un instant.');
+    Alert.alert(fallbackTitle, err instanceof Error ? err.message : t('result.retryMessage'));
   };
 
   /** ↻ Régénérer — mêmes paramètres, nouvelle génération (1 crédit). */
@@ -209,7 +214,7 @@ export default function ResultScreen() {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       router.replace(`/generating/${next.id}`);
     },
-    onError: (err) => creditError(err, 'Régénération impossible'),
+    onError: (err) => creditError(err, t('result.regenerateErrorTitle')),
   });
 
   /** ⊞ Variantes — autres types de rendu (1 crédit par variante). */
@@ -228,15 +233,15 @@ export default function ResultScreen() {
       const first = generations[0];
       if (first) router.replace(`/generating/${first.id}`);
     },
-    onError: (err) => creditError(err, 'Variantes impossibles'),
+    onError: (err) => creditError(err, t('result.variantsErrorTitle')),
   });
 
   /** ↓ Exporter — partage ou enregistrement (filigrane selon settings.watermark). */
   const onExport = (source: Generation) => {
-    Alert.alert('Exporter le visuel', 'Choisissez une destination.', [
-      { text: 'Partager…', onPress: () => void share(source) },
-      { text: 'Enregistrer dans Photos', onPress: () => void saveToPhotos(source) },
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('result.exportTitle'), t('result.exportMessage'), [
+      { text: t('result.shareOption'), onPress: () => void share(source) },
+      { text: t('result.saveToPhotosOption'), onPress: () => void saveToPhotos(source) },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
@@ -253,8 +258,8 @@ export default function ResultScreen() {
     },
     onError: (err) =>
       Alert.alert(
-        'Ajout impossible',
-        err instanceof Error ? err.message : 'Réessayez dans un instant.',
+        t('result.addErrorTitle'),
+        err instanceof Error ? err.message : t('result.retryMessage'),
       ),
   });
   const savedToGallery = galleryMutation.isSuccess;
@@ -281,17 +286,17 @@ export default function ResultScreen() {
   if (error || !generation) {
     return (
       <SafeAreaView className="flex-1 bg-paper">
-        <ScreenHeader title="Résultat" />
+        <ScreenHeader title={t('result.title')} />
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-center font-heading-bold text-xl text-ink">
-            Résultat introuvable
+            {t('result.notFoundTitle')}
           </Text>
           <Text className="mt-2 text-center font-body text-sm text-gray2">
-            {error instanceof Error ? error.message : 'Cette génération est inaccessible.'}
+            {error instanceof Error ? error.message : t('result.notFoundMessage')}
           </Text>
         </View>
         <View className="px-6 pb-6">
-          <Button label="Retour" onPress={() => router.replace('/(tabs)')} />
+          <Button label={t('common.back')} onPress={() => router.replace('/(tabs)')} />
         </View>
       </SafeAreaView>
     );
@@ -308,8 +313,8 @@ export default function ResultScreen() {
   return (
     <SafeAreaView className="flex-1 bg-paper">
       <ScreenHeader
-        title="Résultat"
-        subtitle="Étape 3/3"
+        title={t('result.title')}
+        subtitle={t('result.stepSubtitle')}
         right={<CreditBadge credits={me?.credits ?? 0} />}
       />
 
@@ -321,14 +326,14 @@ export default function ResultScreen() {
               source={{ uri: generation.resultImageUrl }}
               className="absolute inset-0 h-full w-full"
               resizeMode="cover"
-              accessibilityLabel="Rendu IA"
+              accessibilityLabel={t('result.aiRenderAlt')}
             />
           ) : (
             <View className="absolute inset-0 items-center justify-center">
-              <Text className="font-body text-sm text-gray">Rendu indisponible</Text>
+              <Text className="font-body text-sm text-gray">{t('result.renderUnavailable')}</Text>
             </View>
           )}
-          <Badge label="Après · Rendu IA" className="absolute left-3 top-3" />
+          <Badge label={t('result.afterBadge')} className="absolute left-3 top-3" />
 
           {/* Vignette AVANT (photo source) */}
           <View className="absolute bottom-3 right-3 h-[98px] w-[74px] overflow-hidden rounded-xl border-2 border-white bg-paper3 shadow-lg">
@@ -336,11 +341,11 @@ export default function ResultScreen() {
               source={{ uri: generation.sourceImageUrl }}
               className="h-full w-full"
               resizeMode="cover"
-              accessibilityLabel="Photo avant"
+              accessibilityLabel={t('result.beforePhotoAlt')}
             />
             <View className="absolute bottom-0 left-0 right-0 items-center bg-ink/60 py-0.5">
               <Text className="font-heading text-[8px] uppercase tracking-[1px] text-white">
-                Avant
+                {t('result.beforeLabel')}
               </Text>
             </View>
           </View>
@@ -354,14 +359,18 @@ export default function ResultScreen() {
         <View className="mt-6 flex-row gap-3">
           <ActionChip
             icon="refresh"
-            label="Régénérer"
+            label={t('result.actionRegenerate')}
             busy={regenerateMutation.isPending}
             onPress={() => regenerateMutation.mutate()}
           />
-          <ActionChip icon="albums-outline" label="Variantes" onPress={openVariants} />
+          <ActionChip
+            icon="albums-outline"
+            label={t('result.actionVariants')}
+            onPress={openVariants}
+          />
           <ActionChip
             icon="download-outline"
-            label="Exporter"
+            label={t('result.actionExport')}
             busy={exporting}
             disabled={!generation.resultImageUrl}
             onPress={() => onExport(generation)}
@@ -378,16 +387,18 @@ export default function ResultScreen() {
         {alreadyInGallery ? (
           <View className="h-14 flex-row items-center justify-center gap-2">
             <Ionicons name="checkmark-circle" size={18} color={colors.gray2} />
-            <Text className="font-body-semibold text-sm text-gray2">Déjà dans la galerie</Text>
+            <Text className="font-body-semibold text-sm text-gray2">
+              {t('result.alreadyInGalleryLabel')}
+            </Text>
           </View>
         ) : (
           <Button
             label={
               savedToGallery
-                ? 'Ajouté ✓'
+                ? t('result.addedToGallery')
                 : galleryMutation.isPending
-                  ? 'Ajout…'
-                  : 'Ajouter à ma galerie'
+                  ? t('result.addingToGallery')
+                  : t('result.addToGalleryCta')
             }
             disabled={savedToGallery || galleryMutation.isPending}
             onPress={() => galleryMutation.mutate()}
@@ -409,7 +420,7 @@ export default function ResultScreen() {
         <GestureHandlerRootView style={{ flex: 1 }}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Fermer"
+            accessibilityLabel={t('common.close')}
             className="flex-1 justify-end bg-ink/40"
             onPress={closeVariants}
           >
@@ -421,10 +432,11 @@ export default function ResultScreen() {
                   onPress={() => {}}
                 >
                   <View className="mb-4 h-1 w-10 self-center rounded-full bg-paper3" />
-                  <Text className="font-heading-bold text-lg text-ink">Variantes</Text>
+                  <Text className="font-heading-bold text-lg text-ink">
+                    {t('result.actionVariants')}
+                  </Text>
                   <Text className="mt-1 font-body text-xs text-gray2">
-                    Générez le même vêtement sous d&apos;autres styles · {GENERATION_COST_CREDITS}{' '}
-                    crédit par variante
+                    {t('result.variantsSubtitle', { cost: GENERATION_COST_CREDITS })}
                   </Text>
 
                   <View className="mt-4 gap-2.5">
@@ -445,7 +457,7 @@ export default function ResultScreen() {
                               selected ? 'text-offwhite' : 'text-ink'
                             }`}
                           >
-                            {RENDER_TYPE_LABELS[renderType]}
+                            {renderTypeLabel(renderType)}
                           </Text>
                           <Ionicons
                             name={selected ? 'checkmark-circle' : 'ellipse-outline'}
@@ -461,10 +473,10 @@ export default function ResultScreen() {
                     className="mt-5"
                     label={
                       variantsMutation.isPending
-                        ? 'Lancement des variantes…'
+                        ? t('result.launchingVariants')
                         : selectedVariants.length > 0
-                          ? `Générer ${selectedVariants.length} variante${selectedVariants.length > 1 ? 's' : ''} · ${variantsCost} crédit${variantsCost > 1 ? 's' : ''}`
-                          : 'Sélectionnez un style'
+                          ? `${t('result.generateVariantsCount', { count: selectedVariants.length })} · ${t('common.credits', { count: variantsCost })}`
+                          : t('result.selectStyle')
                     }
                     disabled={selectedVariants.length === 0 || variantsMutation.isPending}
                     onPress={() => variantsMutation.mutate(selectedVariants)}

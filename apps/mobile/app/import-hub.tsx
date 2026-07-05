@@ -12,6 +12,7 @@ import { CreditBadge } from '@/components/CreditBadge';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
 import { useBatchDraft } from '@/lib/batch-draft';
+import { t } from '@/lib/i18n';
 import { useRenderDraft } from '@/lib/render-draft';
 import { uploadImageAsync } from '@/lib/upload';
 import { colors, type MeResponse } from '@vitrine/shared';
@@ -31,26 +32,26 @@ type ModeCard = {
 
 /** Modes d'import adaptés au sujet (vêtement/objet). */
 function buildModes(isObjet: boolean): ModeCard[] {
-  const noun = isObjet ? 'objet' : 'vêtement';
+  const noun = isObjet ? t('importHub.nounObjet') : t('importHub.nounVetement');
   return [
     {
       value: 'single',
       icon: 'image-outline',
-      title: 'Une seule photo',
-      description: `Le plus rapide — 1 ${noun}.`,
+      title: t('importHub.modeSingleTitle'),
+      description: t('importHub.modeSingleDescription', { noun }),
     },
     {
       value: 'angles',
       icon: 'layers-outline',
-      title: 'Plusieurs angles',
-      description: 'Plusieurs vues = rendu plus fidèle.',
+      title: t('importHub.modeAnglesTitle'),
+      description: t('importHub.modeAnglesDescription'),
     },
     {
       value: 'batch',
       icon: 'albums-outline',
-      title: isObjet ? "Lot d'objets" : 'Lot de vêtements',
-      description: "Tout votre stock, généré d'un coup.",
-      badge: 'Rapide',
+      title: isObjet ? t('importHub.modeBatchTitleObjet') : t('importHub.modeBatchTitleVetement'),
+      description: t('importHub.modeBatchDescription'),
+      badge: t('importHub.badgeFast'),
     },
   ];
 }
@@ -94,7 +95,7 @@ export default function ImportHubScreen() {
       .catch((err: unknown) =>
         useRenderDraft
           .getState()
-          .setSourceUploadFailed(err instanceof Error ? err.message : 'Envoi impossible'),
+          .setSourceUploadFailed(err instanceof Error ? err.message : t('importHub.uploadError')),
       );
   };
 
@@ -122,14 +123,15 @@ export default function ImportHubScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title="Nouveau visuel" right={<CreditBadge credits={me?.credits ?? 0} />} />
+      <ScreenHeader
+        title={t('importHub.headerTitle')}
+        right={<CreditBadge credits={me?.credits ?? 0} />}
+      />
 
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-6">
-        <Text className="mt-2 font-heading-bold text-2xl text-ink">
-          Que voulez-vous importer ?
-        </Text>
+        <Text className="mt-2 font-heading-bold text-2xl text-ink">{t('importHub.heading')}</Text>
         <Text className="mt-1.5 font-body text-sm leading-5 text-gray2">
-          Choisissez selon votre besoin, le style se règle ensuite.
+          {t('importHub.subtitle')}
         </Text>
 
         {/* 3 cartes de mode — sélection unique */}
@@ -191,13 +193,13 @@ export default function ImportHubScreen() {
 
         {/* SOURCE — appareil photo / galerie (mode « Une seule photo ») */}
         <Text className="mb-3 mt-8 font-body-bold text-[11px] uppercase tracking-[3px] text-gray2">
-          Source
+          {t('importHub.sourceLabel')}
         </Text>
         <View className={`flex-row gap-3 ${sourceRelevant ? '' : 'opacity-40'}`}>
           {(
             [
-              { value: 'camera', icon: 'camera-outline', label: 'Appareil photo' },
-              { value: 'gallery', icon: 'images-outline', label: 'Galerie' },
+              { value: 'camera', icon: 'camera-outline', label: t('importHub.sourceCamera') },
+              { value: 'gallery', icon: 'images-outline', label: t('importHub.sourceGallery') },
             ] as const
           ).map((item) => {
             const selected = source === item.value;
@@ -232,15 +234,15 @@ export default function ImportHubScreen() {
         {!sourceRelevant ? (
           <Text className="mt-2 font-body text-xs text-gray">
             {mode === 'angles'
-              ? 'La source se choisit vue par vue à l’étape suivante.'
-              : 'La source se choisit à l’étape suivante.'}
+              ? t('importHub.sourceHintAngles')
+              : t('importHub.sourceHintDefault')}
           </Text>
         ) : null}
       </ScrollView>
 
       {/* CTA */}
       <View className="border-t border-paper3 px-5 pb-4 pt-3">
-        <Button label="Continuer" onPress={onContinue} />
+        <Button label={t('common.continue')} onPress={onContinue} />
       </View>
     </SafeAreaView>
   );

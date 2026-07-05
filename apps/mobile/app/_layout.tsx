@@ -1,4 +1,5 @@
 import '../global.css';
+import '@/lib/i18n'; // initialise la locale (langue du device) au démarrage
 
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';

@@ -10,6 +10,7 @@ import { ObjectRenderTypeSelector } from '@/components/ObjectRenderTypeSelector'
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { isInsufficientCredits, useApi } from '@/lib/api';
 import { useGenerationTracker } from '@/lib/generation-tracker';
+import { t } from '@/lib/i18n';
 import { useRenderDraft } from '@/lib/render-draft';
 import { sceneToPayload, sceneUploading } from '@/lib/scene';
 import { uploadImageAsync } from '@/lib/upload';
@@ -29,9 +30,9 @@ import {
 } from '@vitrine/shared';
 
 const LIGHTING_LABELS: Record<SceneLighting, string> = {
-  douce: 'Douce',
-  doree: 'Dorée',
-  contrastee: 'Contrastée',
+  douce: t('objectConfig.lightingSoft'),
+  doree: t('objectConfig.lightingGolden'),
+  contrastee: t('objectConfig.lightingContrast'),
 };
 
 function SectionTitle({ children }: { children: string }) {
@@ -71,18 +72,18 @@ export default function ObjectConfigScreen() {
     onError: (err) => {
       if (isInsufficientCredits(err)) {
         Alert.alert(
-          'Crédits insuffisants',
-          `Il faut ${GENERATION_COST_CREDITS} crédit pour générer un visuel. Rechargez votre solde pour continuer.`,
+          t('objectConfig.insufficientCreditsTitle'),
+          t('objectConfig.insufficientCreditsMessage', { count: GENERATION_COST_CREDITS }),
           [
-            { text: 'Plus tard', style: 'cancel' },
-            { text: 'Recharger', onPress: () => router.push('/(tabs)/credits') },
+            { text: t('objectConfig.later'), style: 'cancel' },
+            { text: t('objectConfig.reload'), onPress: () => router.push('/(tabs)/credits') },
           ],
         );
         return;
       }
       Alert.alert(
-        'Génération impossible',
-        err instanceof Error ? err.message : 'Réessayez dans un instant.',
+        t('objectConfig.generationErrorTitle'),
+        err instanceof Error ? err.message : t('objectConfig.generationErrorFallback'),
       );
     },
   });
@@ -98,7 +99,7 @@ export default function ObjectConfigScreen() {
       .catch((err: unknown) =>
         useRenderDraft
           .getState()
-          .setSourceUploadFailed(err instanceof Error ? err.message : 'Envoi impossible'),
+          .setSourceUploadFailed(err instanceof Error ? err.message : t('objectConfig.uploadErrorFallback')),
       );
   };
 
@@ -129,22 +130,23 @@ export default function ObjectConfigScreen() {
   // Résumé de la scène pour la carte d'entrée (preset OU texte libre).
   const sceneParts = [
     draft.scene.decor?.url
-      ? 'Décor perso'
+      ? t('objectConfig.customDecor')
       : (presetName(OBJECT_SCENES, draft.scene.background) ?? draft.scene.background),
     presetName(OBJECT_SURFACES, draft.scene.surface) ?? draft.scene.surface,
     presetName(OBJECT_ACCESSORIES, draft.scene.accessoires) ?? draft.scene.accessoires,
   ].filter(Boolean);
-  const sceneSubtitle = sceneParts.length > 0 ? sceneParts.join(' · ') : 'Surface, arrière-plan, accessoires';
+  const sceneSubtitle =
+    sceneParts.length > 0 ? sceneParts.join(' · ') : t('objectConfig.sceneSubtitlePlaceholder');
 
   const generateLabel = generateMutation.isPending
-    ? 'Lancement du rendu…'
+    ? t('objectConfig.generatingLabel')
     : draft.sourceUploadStatus === 'uploading'
-      ? 'Envoi de la photo…'
-      : `Générer le visuel · ${GENERATION_COST_CREDITS} crédit`;
+      ? t('objectConfig.uploadingPhotoLabel')
+      : t('objectConfig.generateLabel', { count: GENERATION_COST_CREDITS });
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title="Rendu · Objet" right={<CreditBadge credits={me?.credits ?? 0} />} />
+      <ScreenHeader title={t('objectConfig.title')} right={<CreditBadge credits={me?.credits ?? 0} />} />
 
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-6">
         {/* Photo importée */}
@@ -154,28 +156,28 @@ export default function ObjectConfigScreen() {
               source={{ uri: draft.localUri }}
               className="h-28 w-24 rounded-2xl bg-paper3"
               resizeMode="cover"
-              accessibilityLabel="Photo de l'objet"
+              accessibilityLabel={t('objectConfig.photoAccessibilityLabel')}
             />
             <View className="flex-1">
-              <Text className="font-body-semibold text-sm text-ink">Photo importée</Text>
+              <Text className="font-body-semibold text-sm text-ink">{t('objectConfig.photoImportedLabel')}</Text>
               {draft.sourceUploadStatus === 'uploading' ? (
                 <View className="mt-1 flex-row items-center gap-2">
                   <ActivityIndicator size="small" color={colors.ink} />
-                  <Text className="font-body text-xs text-gray2">Envoi en cours…</Text>
+                  <Text className="font-body text-xs text-gray2">{t('objectConfig.uploading')}</Text>
                 </View>
               ) : draft.sourceUploadStatus === 'done' ? (
                 <View className="mt-1 flex-row items-center gap-1.5">
                   <Ionicons name="checkmark-circle" size={14} color={colors.ink} />
-                  <Text className="font-body text-xs text-gray2">Photo envoyée</Text>
+                  <Text className="font-body text-xs text-gray2">{t('objectConfig.uploaded')}</Text>
                 </View>
               ) : draft.sourceUploadStatus === 'error' ? (
                 <View className="mt-1">
                   <Text className="font-body text-xs text-ink" numberOfLines={2}>
-                    ⚠️ {draft.sourceUploadError ?? 'Envoi impossible'}
+                    ⚠️ {draft.sourceUploadError ?? t('objectConfig.uploadErrorFallback')}
                   </Text>
                   <Pressable accessibilityRole="button" onPress={retrySourceUpload}>
                     <Text className="mt-1 font-body-semibold text-xs text-ink underline">
-                      Réessayer
+                      {t('common.retry')}
                     </Text>
                   </Pressable>
                 </View>
@@ -185,14 +187,14 @@ export default function ObjectConfigScreen() {
                 onPress={changePhoto}
                 className="mt-3 self-start rounded-full border border-ink px-4 py-1.5 active:bg-paper3"
               >
-                <Text className="font-body-semibold text-xs text-ink">Changer</Text>
+                <Text className="font-body-semibold text-xs text-ink">{t('common.change')}</Text>
               </Pressable>
             </View>
           </View>
         ) : null}
 
         {/* TYPE DE RENDU */}
-        <SectionTitle>Type de rendu</SectionTitle>
+        <SectionTitle>{t('objectConfig.renderTypeSection')}</SectionTitle>
         <ObjectRenderTypeSelector
           value={draft.renderType as ObjectRenderType}
           onChange={draft.setRenderType}
@@ -200,7 +202,7 @@ export default function ObjectConfigScreen() {
         />
 
         {/* AMBIANCE LUMIÈRE */}
-        <SectionTitle>Ambiance lumière</SectionTitle>
+        <SectionTitle>{t('objectConfig.lightingSection')}</SectionTitle>
         <View className="mb-6 flex-row gap-2">
           {SCENE_LIGHTINGS.map((l) => {
             const selected = draft.lighting === l;
@@ -229,7 +231,7 @@ export default function ObjectConfigScreen() {
         {/* COMPLÉTER LA SCÈNE */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Compléter la scène"
+          accessibilityLabel={t('objectConfig.completeSceneLabel')}
           onPress={() => router.push('/scene?target=single')}
           className="flex-row items-center gap-3 rounded-2xl border border-paper3 bg-white p-3 active:bg-paper2"
         >
@@ -237,14 +239,14 @@ export default function ObjectConfigScreen() {
             <Ionicons name="cube-outline" size={20} color={colors.ink} />
           </View>
           <View className="flex-1">
-            <Text className="font-body-bold text-[13px] text-ink">Compléter la scène</Text>
+            <Text className="font-body-bold text-[13px] text-ink">{t('objectConfig.completeSceneLabel')}</Text>
             <Text className="mt-0.5 font-body text-xs text-gray" numberOfLines={1}>
               {sceneSubtitle}
             </Text>
           </View>
           <View className="rounded-full bg-ink px-3 py-1.5">
             <Text className="font-body-bold text-[11px] text-offwhite">
-              {sceneParts.length > 0 ? 'Modifier' : 'Configurer'}
+              {sceneParts.length > 0 ? t('common.modify') : t('common.configure')}
             </Text>
           </View>
         </Pressable>

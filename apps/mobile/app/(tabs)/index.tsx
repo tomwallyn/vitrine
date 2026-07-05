@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { CreditBadge } from '@/components/CreditBadge';
 import { useApi } from '@/lib/api';
+import { t } from '@/lib/i18n';
 import { colors, formatTimeSaved, type GalleryItem, type MeResponse } from '@vitrine/shared';
 
 /** Nombre de vignettes « Dernières créations » affichées sur l'accueil. */
@@ -80,12 +81,12 @@ function ErrorRow({ message, onRetry }: { message: string; onRetry: () => void }
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Réessayer"
+      accessibilityLabel={t('common.retry')}
       onPress={onRetry}
       className="flex-row items-center justify-between rounded-2xl border border-paper3 bg-white px-4 py-3 active:bg-paper2"
     >
       <Text className="flex-1 pr-3 font-body text-xs text-gray2">{message}</Text>
-      <Text className="font-body-semibold text-xs text-ink underline">Réessayer</Text>
+      <Text className="font-body-semibold text-xs text-ink underline">{t('common.retry')}</Text>
     </Pressable>
   );
 }
@@ -118,7 +119,7 @@ export default function HomeScreen() {
   const shopLine = me
     ? [me.shop.name, me.shop.city].filter(Boolean).join(' · ')
     : meError
-      ? 'Boutique indisponible'
+      ? t('home.shopUnavailable')
       : ' ';
 
   return (
@@ -144,7 +145,7 @@ export default function HomeScreen() {
         {meError ? (
           <View className="mt-4">
             <ErrorRow
-              message="Impossible de charger votre boutique."
+              message={t('home.shopError')}
               onRetry={() => void refetchMe()}
             />
           </View>
@@ -153,7 +154,7 @@ export default function HomeScreen() {
         {/* Hero CTA — nouveau visuel → hub d'import (1 photo / angles / lot) */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Nouveau visuel"
+          accessibilityLabel={t('home.ctaTitle')}
           onPress={() => router.push('/product-type')}
           className="mt-6 overflow-hidden rounded-3xl bg-ink px-6 pb-7 pt-7 active:opacity-90"
         >
@@ -165,10 +166,11 @@ export default function HomeScreen() {
               <Ionicons name="arrow-forward" size={16} color={colors.offwhite} />
             </View>
           </View>
-          <Text className="mt-6 font-heading-bold text-2xl text-offwhite">Nouveau visuel</Text>
+          <Text className="mt-6 font-heading-bold text-2xl text-offwhite">
+            {t('home.ctaTitle')}
+          </Text>
           <Text className="mt-1.5 font-body text-sm leading-5 text-gray">
-            Photographiez un vêtement sur cintre, obtenez un visuel prêt à publier en quelques
-            secondes.
+            {t('home.ctaSubtitle')}
           </Text>
         </Pressable>
 
@@ -177,25 +179,25 @@ export default function HomeScreen() {
           <StatCard
             icon="images-outline"
             value={me ? String(me.stats.visualsCount) : meError ? '—' : undefined}
-            label="Visuels créés"
+            label={t('home.statsVisuals')}
           />
           <StatCard
             icon="time-outline"
             value={me ? formatTimeSaved(me.stats.timeSavedMinutes) : meError ? '—' : undefined}
-            label="Temps gagné"
+            label={t('home.statsTimeSaved')}
           />
         </View>
 
         {/* Dernières créations — GET /gallery (tri récent, 6 max) */}
         <View className="mt-8 flex-row items-center justify-between">
-          <Text className="font-heading text-base text-ink">Dernières créations</Text>
+          <Text className="font-heading text-base text-ink">{t('home.recentTitle')}</Text>
           {recent.length > 0 ? (
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push('/(tabs)/gallery')}
               className="py-1"
             >
-              <Text className="font-body-semibold text-xs text-gray2">Tout voir</Text>
+              <Text className="font-body-semibold text-xs text-gray2">{t('home.seeAll')}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -212,7 +214,7 @@ export default function HomeScreen() {
         ) : recentError ? (
           <View className="mt-3">
             <ErrorRow
-              message="Impossible de charger vos créations."
+              message={t('home.recentError')}
               onRetry={() => void refetchRecent()}
             />
           </View>
@@ -222,13 +224,13 @@ export default function HomeScreen() {
               <Ionicons name="shirt-outline" size={20} color={colors.gray2} />
             </View>
             <Text className="mt-4 text-center font-heading-bold text-base text-ink">
-              Aucune création
+              {t('home.emptyTitle')}
             </Text>
             <Text className="mt-1.5 text-center font-body text-sm text-gray2">
-              Photographiez votre premier vêtement pour lancer votre vitrine.
+              {t('home.emptySubtitle')}
             </Text>
             <Button
-              label="Photographier un vêtement"
+              label={t('home.emptyCta')}
               className="mt-5 self-stretch"
               onPress={() => router.push('/capture')}
             />

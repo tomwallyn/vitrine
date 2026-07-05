@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
+import { t } from '@/lib/i18n';
 import { colors, type MeResponse, type UpdateMeRequest } from '@vitrine/shared';
 
 /** Ma boutique — édition du nom et de la ville (PATCH /me). */
@@ -56,15 +57,15 @@ export default function MyShopScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title="Ma boutique" />
+      <ScreenHeader title={t('myShop.title')} />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView className="flex-1 px-6" contentContainerClassName="pt-6 pb-8" keyboardShouldPersistTaps="handled">
-          <Text className="font-heading-bold text-3xl text-ink">Votre vitrine.</Text>
+          <Text className="font-heading-bold text-3xl text-ink">{t('myShop.heading')}</Text>
           <Text className="mt-2 font-body text-base text-gray2">
-            Le nom et la ville apparaissent sur votre profil et vos exports.
+            {t('myShop.subtitle')}
           </Text>
 
           {isPending && !hydrated ? (
@@ -76,10 +77,10 @@ export default function MyShopScreen() {
               <View className="mt-8 gap-3">
                 <View>
                   <Text className="mb-2 font-body-semibold text-xs uppercase tracking-widest text-gray2">
-                    Nom de la boutique
+                    {t('myShop.nameLabel')}
                   </Text>
                   <TextInput
-                    placeholder="L'Atelier Nord"
+                    placeholder={t('myShop.namePlaceholder')}
                     placeholderTextColor={colors.gray}
                     value={name}
                     onChangeText={setName}
@@ -88,10 +89,10 @@ export default function MyShopScreen() {
                 </View>
                 <View>
                   <Text className="mb-2 font-body-semibold text-xs uppercase tracking-widest text-gray2">
-                    Ville
+                    {t('myShop.cityLabel')}
                   </Text>
                   <TextInput
-                    placeholder="Lille"
+                    placeholder={t('myShop.cityPlaceholder')}
                     placeholderTextColor={colors.gray}
                     value={city}
                     onChangeText={setCity}
@@ -102,12 +103,12 @@ export default function MyShopScreen() {
 
               {mutation.isError ? (
                 <Text className="mt-4 font-body-medium text-sm text-ink">
-                  ⚠️ {mutation.error instanceof Error ? mutation.error.message : 'Enregistrement impossible.'}
+                  ⚠️ {mutation.error instanceof Error ? mutation.error.message : t('myShop.saveError')}
                 </Text>
               ) : null}
 
               <Button
-                label={mutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+                label={mutation.isPending ? t('myShop.saving') : t('common.save')}
                 className="mt-8"
                 disabled={!name.trim() || mutation.isPending}
                 onPress={onSave}

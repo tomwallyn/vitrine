@@ -8,12 +8,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useApi } from '@/lib/api';
 import { useCaptureResult } from '@/lib/capture-result';
+import { t } from '@/lib/i18n';
 import { useRenderDraft } from '@/lib/render-draft';
 import { uploadImageAsync } from '@/lib/upload';
 import { colors } from '@vitrine/shared';
 
 const FLASH_SEQUENCE: FlashMode[] = ['auto', 'on', 'off'];
-const FLASH_LABELS: Record<FlashMode, string> = { auto: 'Auto', on: 'On', off: 'Off' };
+const flashLabel = (mode: FlashMode) =>
+  mode === 'on' ? t('capture.flashOn') : mode === 'off' ? t('capture.flashOff') : t('capture.flashAuto');
 
 /** 02 — PHOTOGRAPHIER : preview expo-camera plein écran + import galerie. */
 export default function CaptureScreen() {
@@ -58,7 +60,7 @@ export default function CaptureScreen() {
       .catch((err: unknown) =>
         useRenderDraft
           .getState()
-          .setSourceUploadFailed(err instanceof Error ? err.message : 'Envoi impossible'),
+          .setSourceUploadFailed(err instanceof Error ? err.message : t('capture.uploadFailedError')),
       );
   };
 
@@ -122,7 +124,7 @@ export default function CaptureScreen() {
         <View className="flex-row items-center justify-between px-5 py-3">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Fermer"
+            accessibilityLabel={t('common.close')}
             onPress={() => router.back()}
             hitSlop={12}
             className="h-11 w-11 items-center justify-center rounded-full bg-gray3/60 active:bg-gray3/80"
@@ -130,7 +132,7 @@ export default function CaptureScreen() {
             <Ionicons name="close" size={24} color={colors.offwhite} />
           </Pressable>
           <Text className="font-heading text-sm uppercase tracking-[2px] text-offwhite">
-            Photographier
+            {t('capture.title')}
           </Text>
           <View className="w-11" />
         </View>
@@ -138,10 +140,10 @@ export default function CaptureScreen() {
         <View className="flex-1 items-center justify-center px-8">
           <Ionicons name="camera-outline" size={48} color={colors.gray} />
           <Text className="mt-6 text-center font-heading text-lg text-offwhite">
-            Accès caméra requis
+            {t('capture.permissionTitle')}
           </Text>
           <Text className="mt-2 text-center font-body text-sm leading-5 text-gray">
-            VITRINE utilise la caméra pour photographier vos vêtements sur cintre.
+            {t('capture.permissionSubtitle')}
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -152,12 +154,12 @@ export default function CaptureScreen() {
             className="mt-8 h-14 items-center justify-center self-stretch rounded-full bg-offwhite px-8 active:opacity-80"
           >
             <Text className="font-heading text-base tracking-wide text-ink">
-              {permission.canAskAgain ? 'Autoriser la caméra' : 'Ouvrir les réglages'}
+              {permission.canAskAgain ? t('capture.allowCamera') : t('capture.openSettings')}
             </Text>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={pickFromGallery} className="mt-4 py-2">
             <Text className="font-body-semibold text-sm text-gray underline">
-              Importer depuis la galerie
+              {t('capture.importFromGallery')}
             </Text>
           </Pressable>
         </View>
@@ -180,7 +182,7 @@ export default function CaptureScreen() {
         <View className="flex-row items-center justify-between px-5 py-3">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Fermer"
+            accessibilityLabel={t('common.close')}
             onPress={() => router.back()}
             hitSlop={12}
             className="h-11 w-11 items-center justify-center rounded-full bg-ink/60 active:bg-ink/80"
@@ -188,16 +190,16 @@ export default function CaptureScreen() {
             <Ionicons name="close" size={24} color={colors.offwhite} />
           </Pressable>
           <Text className="font-heading text-sm uppercase tracking-[2px] text-offwhite">
-            Photographier
+            {t('capture.title')}
           </Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Flash : ${FLASH_LABELS[flash]}`}
+            accessibilityLabel={t('capture.flashAccessibility', { state: flashLabel(flash) })}
             onPress={cycleFlash}
             hitSlop={8}
             className="h-11 min-w-[44px] flex-row items-center justify-center rounded-full bg-ink/60 px-4 active:bg-ink/80"
           >
-            <Text className="font-body-bold text-xs text-offwhite">⚡ {FLASH_LABELS[flash]}</Text>
+            <Text className="font-body-bold text-xs text-offwhite">⚡ {flashLabel(flash)}</Text>
           </Pressable>
         </View>
 
@@ -207,8 +209,8 @@ export default function CaptureScreen() {
           <View className="mt-4 rounded-full bg-ink/60 px-4 py-2">
             <Text className="text-center font-body-medium text-xs text-offwhite">
               {subjectType === 'objet'
-                ? 'Placez l’objet bien centré, fond dégagé'
-                : 'Placez le vêtement bien à plat, cintre centré'}
+                ? t('capture.frameObjet')
+                : t('capture.frameVetement')}
             </Text>
           </View>
         </View>
@@ -220,7 +222,7 @@ export default function CaptureScreen() {
         >
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Importer depuis la galerie"
+            accessibilityLabel={t('capture.importFromGallery')}
             onPress={pickFromGallery}
             className="h-12 w-12 items-center justify-center rounded-full bg-ink/50 active:opacity-70"
           >
@@ -229,7 +231,7 @@ export default function CaptureScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Prendre la photo"
+            accessibilityLabel={t('capture.takePhoto')}
             onPress={takePicture}
             disabled={busy}
             className="h-20 w-20 items-center justify-center rounded-full border-4 border-offwhite active:opacity-80"
@@ -243,7 +245,7 @@ export default function CaptureScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Changer de caméra"
+            accessibilityLabel={t('capture.switchCamera')}
             onPress={() => setFacing((current) => (current === 'back' ? 'front' : 'back'))}
             className="h-12 w-12 items-center justify-center rounded-full bg-ink/50 active:opacity-70"
           >
@@ -260,7 +262,7 @@ export default function CaptureScreen() {
             <View className="flex-row items-center justify-between px-5 py-3">
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Reprendre la photo"
+                accessibilityLabel={t('capture.retakePhotoLabel')}
                 onPress={() => setPreview(null)}
                 hitSlop={12}
                 className="h-11 w-11 items-center justify-center rounded-full bg-ink/60 active:bg-ink/80"
@@ -268,7 +270,7 @@ export default function CaptureScreen() {
                 <Ionicons name="close" size={24} color={colors.offwhite} />
               </Pressable>
               <Text className="font-heading text-sm uppercase tracking-[2px] text-offwhite">
-                Vérifier la photo
+                {t('capture.verifyTitle')}
               </Text>
               <View className="w-11" />
             </View>
@@ -285,7 +287,7 @@ export default function CaptureScreen() {
                 className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-full border border-offwhite/70 active:opacity-80"
               >
                 <Ionicons name="camera-reverse-outline" size={18} color={colors.offwhite} />
-                <Text className="font-heading text-base tracking-wide text-offwhite">Reprendre</Text>
+                <Text className="font-heading text-base tracking-wide text-offwhite">{t('capture.retake')}</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -293,7 +295,7 @@ export default function CaptureScreen() {
                 className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-full bg-offwhite active:opacity-80"
               >
                 <Ionicons name="checkmark" size={18} color={colors.ink} />
-                <Text className="font-heading text-base tracking-wide text-ink">Valider</Text>
+                <Text className="font-heading text-base tracking-wide text-ink">{t('capture.validate')}</Text>
               </Pressable>
             </View>
           </View>

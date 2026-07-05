@@ -11,6 +11,7 @@ import { CreditBadge } from '@/components/CreditBadge';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useApi } from '@/lib/api';
 import { useCaptureResult } from '@/lib/capture-result';
+import { t } from '@/lib/i18n';
 import { useRenderDraft, type UploadStatus } from '@/lib/render-draft';
 import { uploadImageAsync } from '@/lib/upload';
 import {
@@ -23,11 +24,16 @@ import {
 /** Identifiants des 4 slots — `front` alimente la source, le reste extraImages. */
 type SlotId = 'front' | 'back' | 'detail' | 'label';
 
-const SLOTS: { id: SlotId; name: string; hint: string; required: boolean }[] = [
-  { id: 'front', name: 'Avant', hint: 'Vue principale', required: true },
-  { id: 'back', name: 'Arrière', hint: 'Dos du vêtement', required: false },
-  { id: 'detail', name: 'Détail / matière', hint: 'Texture, motif', required: false },
-  { id: 'label', name: 'Étiquette', hint: 'Composition, taille', required: false },
+const SLOTS: { id: SlotId; nameKey: string; hintKey: string; required: boolean }[] = [
+  { id: 'front', nameKey: 'detailAngles.slotFrontName', hintKey: 'detailAngles.slotFrontHint', required: true },
+  { id: 'back', nameKey: 'detailAngles.slotBackName', hintKey: 'detailAngles.slotBackHint', required: false },
+  {
+    id: 'detail',
+    nameKey: 'detailAngles.slotDetailName',
+    hintKey: 'detailAngles.slotDetailHint',
+    required: false,
+  },
+  { id: 'label', nameKey: 'detailAngles.slotLabelName', hintKey: 'detailAngles.slotLabelHint', required: false },
 ];
 
 type SlotState = {
@@ -76,7 +82,7 @@ export default function DetailAnglesScreen() {
       .catch((err: unknown) =>
         patchSlot(id, {
           status: 'error',
-          error: err instanceof Error ? err.message : 'Envoi impossible',
+          error: err instanceof Error ? err.message : t('detailAngles.uploadFailedTitle'),
         }),
       );
   };
@@ -108,11 +114,15 @@ export default function DetailAnglesScreen() {
   /** Slot vide (ou remplacement) : choix caméra / galerie. */
   const chooseSource = (id: SlotId) => {
     const slot = SLOTS.find((s) => s.id === id);
-    Alert.alert(slot ? `Vue « ${slot.name} »` : 'Ajouter une vue', 'Choisissez une source.', [
-      { text: 'Prendre une photo', onPress: () => void pickFromCamera(id) },
-      { text: 'Choisir dans la galerie', onPress: () => void pickFromGallery(id) },
-      { text: 'Annuler', style: 'cancel' },
-    ]);
+    Alert.alert(
+      slot ? t('detailAngles.chooseSourceTitle', { name: t(slot.nameKey) }) : t('detailAngles.addViewTitle'),
+      t('detailAngles.chooseSourceMessage'),
+      [
+        { text: t('detailAngles.takePhoto'), onPress: () => void pickFromCamera(id) },
+        { text: t('detailAngles.pickFromGallery'), onPress: () => void pickFromGallery(id) },
+        { text: t('common.cancel'), style: 'cancel' },
+      ],
+    );
   };
 
   /** Slot rempli : remplacer ou retirer la vue. */
@@ -120,24 +130,24 @@ export default function DetailAnglesScreen() {
     const state = slots[id];
     if (state.status === 'uploading') return;
     if (state.localUri && state.status !== 'error') {
-      Alert.alert('Modifier cette vue', undefined, [
-        { text: 'Remplacer', onPress: () => chooseSource(id) },
+      Alert.alert(t('detailAngles.editViewTitle'), undefined, [
+        { text: t('detailAngles.replace'), onPress: () => chooseSource(id) },
         {
-          text: 'Retirer',
+          text: t('common.remove'),
           style: 'destructive',
           onPress: () => setSlots((prev) => ({ ...prev, [id]: EMPTY_SLOT })),
         },
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
       ]);
       return;
     }
     if (state.status === 'error' && state.localUri) {
       // Échec d'upload : réessaie le même fichier ou repart d'une autre source.
-      Alert.alert('Envoi impossible', state.error ?? undefined, [
-        { text: 'Réessayer', onPress: () => uploadSlot(id, state.localUri!) },
-        { text: 'Changer de photo', onPress: () => chooseSource(id) },
+      Alert.alert(t('detailAngles.uploadFailedTitle'), state.error ?? undefined, [
+        { text: t('common.retry'), onPress: () => uploadSlot(id, state.localUri!) },
+        { text: t('detailAngles.changePhoto'), onPress: () => chooseSource(id) },
         {
-          text: 'Retirer',
+          text: t('common.remove'),
           style: 'destructive',
           onPress: () => setSlots((prev) => ({ ...prev, [id]: EMPTY_SLOT })),
         },
@@ -169,19 +179,19 @@ export default function DetailAnglesScreen() {
   };
 
   const continueLabel = anyUploading
-    ? 'Envoi des vues…'
-    : `Continuer · ${GENERATION_COST_CREDITS} crédit`;
+    ? t('detailAngles.sendingViews')
+    : `${t('common.continue')} · ${t('common.credits', { count: GENERATION_COST_CREDITS })}`;
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
       <ScreenHeader
-        title="Angles du vêtement"
+        title={t('detailAngles.title')}
         right={<CreditBadge credits={me?.credits ?? 0} />}
       />
 
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-6">
         <Text className="mt-2 font-body text-sm leading-5 text-gray2">
-          Ajoutez plusieurs vues de la même pièce. L&apos;IA les combine pour un rendu plus juste.
+          {t('detailAngles.subtitle')}
         </Text>
 
         {/* 4 slots nommés — grille 2 × 2 */}
@@ -189,11 +199,16 @@ export default function DetailAnglesScreen() {
           {SLOTS.map((slot) => {
             const state = slots[slot.id];
             const filled = !!state.localUri;
+            const slotName = t(slot.nameKey);
             return (
               <Pressable
                 key={slot.id}
                 accessibilityRole="button"
-                accessibilityLabel={`Vue ${slot.name}${slot.required ? ' (obligatoire)' : ''}`}
+                accessibilityLabel={
+                  slot.required
+                    ? t('detailAngles.slotAccessibleLabelRequired', { name: slotName })
+                    : t('detailAngles.slotAccessibleLabel', { name: slotName })
+                }
                 onPress={() => onSlotPress(slot.id)}
                 className="mb-4 w-[48%]"
               >
@@ -209,7 +224,7 @@ export default function DetailAnglesScreen() {
                       source={{ uri: state.localUri }}
                       className="absolute h-full w-full"
                       resizeMode="cover"
-                      accessibilityLabel={`Photo ${slot.name}`}
+                      accessibilityLabel={t('detailAngles.photoLabel', { name: slotName })}
                     />
                   ) : null}
 
@@ -217,17 +232,17 @@ export default function DetailAnglesScreen() {
                     <View className="items-center rounded-2xl bg-ink/50 px-4 py-3">
                       <ActivityIndicator size="small" color={colors.offwhite} />
                       <Text className="mt-1.5 font-body-semibold text-xs text-offwhite">
-                        Envoi…
+                        {t('detailAngles.sending')}
                       </Text>
                     </View>
                   ) : state.status === 'error' ? (
                     <View className="items-center rounded-2xl bg-ink/60 px-3 py-3">
                       <Ionicons name="alert-circle-outline" size={20} color={colors.offwhite} />
                       <Text className="mt-1 text-center font-body-semibold text-xs text-offwhite">
-                        Envoi impossible
+                        {t('detailAngles.uploadFailedTitle')}
                       </Text>
                       <Text className="mt-0.5 font-body text-[10px] text-offwhite underline">
-                        Appuyez pour réessayer
+                        {t('detailAngles.tapToRetry')}
                       </Text>
                     </View>
                   ) : state.status === 'done' ? (
@@ -239,19 +254,23 @@ export default function DetailAnglesScreen() {
                       <View className="h-9 w-9 items-center justify-center rounded-full bg-white">
                         <Ionicons name="add" size={18} color={colors.ink} />
                       </View>
-                      <Text className="mt-2 font-body-semibold text-xs text-ink">+ Ajouter</Text>
+                      <Text className="mt-2 font-body-semibold text-xs text-ink">
+                        {t('detailAngles.addSlot')}
+                      </Text>
                       <Text className="mt-0.5 text-center font-body text-[10px] text-gray">
-                        {slot.hint}
+                        {t(slot.hintKey)}
                       </Text>
                     </View>
                   )}
                 </View>
                 <View className="mt-1.5 flex-row items-center gap-1">
                   <Text className="font-body-bold text-[10px] uppercase tracking-[2px] text-gray2">
-                    {slot.name}
+                    {slotName}
                   </Text>
                   {slot.required ? (
-                    <Text className="font-body text-[10px] text-gray">· obligatoire</Text>
+                    <Text className="font-body text-[10px] text-gray">
+                      {t('detailAngles.requiredBadge')}
+                    </Text>
                   ) : null}
                 </View>
               </Pressable>
@@ -263,7 +282,7 @@ export default function DetailAnglesScreen() {
         <View className="flex-row items-center gap-2.5 rounded-2xl border border-paper3 bg-paper2 px-4 py-3">
           <Ionicons name="information-circle-outline" size={18} color={colors.gray3} />
           <Text className="flex-1 font-body text-xs leading-4 text-gray2">
-            L&apos;ensemble compte comme 1 seul visuel.
+            {t('detailAngles.infoBanner')}
           </Text>
         </View>
       </ScrollView>

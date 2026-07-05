@@ -28,6 +28,7 @@
     "expo-image-manipulator": "~14.0.8",
     "expo-image-picker": "~17.0.11",
     "expo-linking": "~8.0.12",
+    "expo-localization": "~17.0.9",
     "expo-media-library": "~18.2.1",
     "expo-notifications": "~0.32.17",
     "expo-router": "~6.0.24",
@@ -37,6 +38,7 @@
     "expo-status-bar": "~3.0.9",
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.11",
+    "i18n-js": "^4.5.3",
     "nativewind": "^4.1.23",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -63,7 +65,9 @@
   "expo": {
     "install": {
       "comment": "Écart de version mineur assumé (fonctionne avec le SDK 54) — évite l'échec expo-doctor.",
-      "exclude": ["@react-navigation/bottom-tabs"]
+      "exclude": [
+        "@react-navigation/bottom-tabs"
+      ]
     }
   }
 }

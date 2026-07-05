@@ -5,6 +5,7 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { t } from '@/lib/i18n';
 import { colors } from '@vitrine/shared';
 
 /** Adresse de contact support — à faire pointer vers la vraie boîte en M6b. */
@@ -20,12 +21,12 @@ const APP_VERSION = Constants.expoConfig?.version ?? '0.1.0';
 export default function SupportScreen() {
   const contactSupport = async () => {
     const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-      `VITRINE ${APP_VERSION} — demande de support`,
+      t('support.emailSubject', { version: APP_VERSION }),
     )}`;
     try {
       await Linking.openURL(url);
     } catch {
-      Alert.alert('Email indisponible', `Écrivez-nous à ${SUPPORT_EMAIL}`);
+      Alert.alert(t('support.emailUnavailableTitle'), t('support.emailUnavailableMessage', { email: SUPPORT_EMAIL }));
     }
   };
 
@@ -38,21 +39,21 @@ export default function SupportScreen() {
   }[] = [
     {
       icon: 'mail-outline',
-      label: 'Nous contacter',
+      label: t('support.contactLabel'),
       hint: SUPPORT_EMAIL,
       onPress: () => void contactSupport(),
     },
-    { icon: 'document-text-outline', label: "Conditions d'utilisation", soon: true },
-    { icon: 'shield-checkmark-outline', label: 'Politique de confidentialité', soon: true },
+    { icon: 'document-text-outline', label: t('support.termsLabel'), soon: true },
+    { icon: 'shield-checkmark-outline', label: t('support.privacyLabel'), soon: true },
   ];
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
-      <ScreenHeader title="Aide & support" />
+      <ScreenHeader title={t('support.title')} />
       <ScrollView className="flex-1 px-5" contentContainerClassName="pt-2 pb-8">
-        <Text className="font-heading-bold text-3xl text-ink">Besoin d{"'"}aide ?</Text>
+        <Text className="font-heading-bold text-3xl text-ink">{t('support.heading')}</Text>
         <Text className="mt-2 font-body text-base text-gray2">
-          Une question, un rendu raté, un souci de crédits — écrivez-nous, on répond vite.
+          {t('support.subtitle')}
         </Text>
 
         <View className="mt-8 overflow-hidden rounded-3xl border border-paper3 bg-white">
@@ -74,7 +75,7 @@ export default function SupportScreen() {
               {row.soon ? (
                 <View className="rounded-full bg-paper2 px-3 py-1">
                   <Text className="font-body-semibold text-[10px] uppercase tracking-widest text-gray2">
-                    Bientôt
+                    {t('support.comingSoon')}
                   </Text>
                 </View>
               ) : (
@@ -86,16 +87,14 @@ export default function SupportScreen() {
 
         {/* Confidentialité — purge RGPD des photos sources (infra/gcs) */}
         <View className="mt-4 rounded-3xl border border-paper3 bg-paper2 px-5 py-4">
-          <Text className="font-body-semibold text-sm text-ink">Vos photos</Text>
+          <Text className="font-body-semibold text-sm text-ink">{t('support.photosCardTitle')}</Text>
           <Text className="mt-1 font-body text-xs text-gray2">
-            Les photos sources envoyées pour un rendu sont supprimées automatiquement de nos
-            serveurs après 30 jours. Les visuels générés (mannequins synthétiques) restent dans
-            votre galerie.
+            {t('support.photosCardBody')}
           </Text>
         </View>
 
         <Text className="mt-8 text-center font-body text-xs text-gray">
-          VITRINE {APP_VERSION}
+          {t('support.footerVersion', { version: APP_VERSION })}
         </Text>
       </ScrollView>
     </SafeAreaView>

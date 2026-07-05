@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { t } from '@/lib/i18n';
 import { packDiscountPercent, type CreditPackOffer } from '@vitrine/shared';
 
 type PackCardProps = {
@@ -37,16 +38,18 @@ export function PackCard({ pack, selected, onPress, priceLabel }: PackCardProps)
       {pack.popular ? (
         <View className="absolute -top-2.5 left-4 rounded-full bg-ink px-2.5 py-1">
           <Text className="font-heading-bold text-[9px] uppercase tracking-widest text-white">
-            Populaire{discount > 0 ? ` · −${discount}%` : ''}
+            {discount > 0 ? t('packCard.popularBadgeDiscount', { discount }) : t('packCard.popularBadge')}
           </Text>
         </View>
       ) : null}
       <View>
-        <Text className="font-heading-bold text-base text-ink">{pack.credits} crédits</Text>
+        <Text className="font-heading-bold text-base text-ink">
+          {t('common.credits', { count: pack.credits })}
+        </Text>
         <Text
           className={`mt-0.5 font-body-medium text-[11px] ${selected ? 'text-ink' : 'text-gray'}`}
         >
-          {formatEur(pack.pricePerCreditEur)} / visuel
+          {t('packCard.pricePerVisual', { price: formatEur(pack.pricePerCreditEur) })}
         </Text>
       </View>
       <View className={`rounded-xl px-3.5 py-2 ${selected ? 'bg-ink' : 'bg-paper2'}`}>

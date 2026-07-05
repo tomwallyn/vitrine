@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { t } from '@/lib/i18n';
 import { colors, MANNEQUINS, type MannequinOption } from '@vitrine/shared';
 
 const CATEGORIES: { value: MannequinOption; label: string }[] = [
-  { value: 'femme', label: 'Femme' },
-  { value: 'homme', label: 'Homme' },
-  { value: 'silhouette', label: 'Silhouette' },
-  { value: 'studio', label: 'Studio' },
+  { value: 'femme', label: t('mannequinSelector.categoryFemale') },
+  { value: 'homme', label: t('mannequinSelector.categoryMale') },
+  { value: 'silhouette', label: t('mannequinSelector.categorySilhouette') },
+  { value: 'studio', label: t('mannequinSelector.categoryStudio') },
 ];
 
 type MannequinSelectorProps = {

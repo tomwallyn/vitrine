@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { useApi } from '@/lib/api';
 import { useGenerationTracker } from '@/lib/generation-tracker';
+import { t } from '@/lib/i18n';
 import { colors, type GenerationStatus } from '@vitrine/shared';
 
 /** Cadence du polling GET /generations/:id tant que le rendu est en cours. */
@@ -21,12 +22,6 @@ const MIN_DISPLAY_MS = 13_000;
 
 /** Cadence de rafraîchissement de la barre de progression. */
 const PROGRESS_TICK_MS = 150;
-
-const STEP_LABELS = [
-  'Analyse de la photo',
-  'Mise en scène',
-  'Rendu final & lumière',
-] as const;
 
 /**
  * Plafond de progression dicté par le status serveur (le backend n'expose
@@ -44,6 +39,12 @@ export default function GeneratingScreen() {
   const router = useRouter();
   const api = useApi();
   const { id } = useLocalSearchParams<{ id: string }>();
+
+  const STEP_LABELS = [
+    t('generating.stepAnalyze'),
+    t('generating.stepStaging'),
+    t('generating.stepFinal'),
+  ] as const;
 
   const { data, error } = useQuery({
     queryKey: ['generation', id],
@@ -150,11 +151,10 @@ export default function GeneratingScreen() {
             <Ionicons name="alert" size={28} color={colors.ink} />
           </View>
           <Text className="mt-6 text-center font-heading-bold text-2xl text-ink">
-            La génération a échoué
+            {t('generating.failedTitle')}
           </Text>
           <Text className="mt-3 text-center font-body text-sm text-gray2">
-            Ton crédit a été remboursé automatiquement. Reprends la configuration et relance le
-            rendu.
+            {t('generating.failedSubtitle')}
           </Text>
           {generation?.error ? (
             <Text className="mt-2 text-center font-body text-xs text-gray" numberOfLines={3}>
@@ -163,7 +163,7 @@ export default function GeneratingScreen() {
           ) : null}
         </View>
         <View className="px-6 pb-6">
-          <Button label="Réessayer" onPress={retry} />
+          <Button label={t('common.retry')} onPress={retry} />
         </View>
       </SafeAreaView>
     );
@@ -179,12 +179,12 @@ export default function GeneratingScreen() {
         <View className="h-[150px] w-[150px] items-center justify-center rounded-full border-[6px] border-paper3">
           <Text className="font-heading-bold text-4xl text-ink">{Math.round(progress)}%</Text>
           <Text className="mt-1 font-heading text-[10px] uppercase tracking-[2px] text-gray">
-            Rendu IA
+            {t('generating.badge')}
           </Text>
         </View>
 
         <Text className="mt-9 text-center font-heading-bold text-[22px] text-ink">
-          Génération en cours…
+          {t('generating.heading')}
         </Text>
 
         {/* Barre de progression */}
@@ -225,11 +225,11 @@ export default function GeneratingScreen() {
 
       <View className="px-6 pb-6">
         <Text className="mb-4 text-center font-body-medium text-xs text-gray">
-          Temps estimé · ~15 secondes
+          {t('generating.estimatedTime')}
         </Text>
         {/* Quitter l'écran sans interrompre le rendu (suivi via le tracker). */}
         <Button
-          label="Continuer en arrière-plan"
+          label={t('generating.continueBackground')}
           variant="secondary"
           onPress={continueInBackground}
         />

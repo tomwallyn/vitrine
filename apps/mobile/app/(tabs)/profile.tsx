@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, Switch, Text, View } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useApi } from '@/lib/api';
+import { t } from '@/lib/i18n';
 import { colors, formatTimeSaved, type MeResponse } from '@vitrine/shared';
 
 /** Initiales de la boutique (« L'Atelier Nord » → « AN »). */
@@ -75,28 +76,28 @@ export default function ProfileScreen() {
   }[] = [
     {
       icon: 'storefront-outline',
-      label: 'Ma boutique',
-      hint: 'Nom et ville',
+      label: t('profile.menuShopLabel'),
+      hint: t('profile.menuShopHint'),
       href: '/my-shop',
     },
     {
       icon: 'options-outline',
-      label: 'Préréglages de rendu',
-      hint: 'Style, mannequin et fond par défaut',
+      label: t('profile.menuPresetsLabel'),
+      hint: t('profile.menuPresetsHint'),
       href: '/render-presets',
     },
     {
       icon: 'water-outline',
-      label: 'Export & filigrane',
+      label: t('profile.menuWatermarkLabel'),
       hint: shop
         ? watermark
-          ? 'Filigrane « VITRINE » activé'
-          : 'Filigrane désactivé'
+          ? t('profile.watermarkOn')
+          : t('profile.watermarkOff')
         : undefined,
       onPress: shop ? () => watermarkMutation.mutate(!watermark) : undefined,
       right: (
         <Switch
-          accessibilityLabel="Filigrane à l'export"
+          accessibilityLabel={t('profile.watermarkA11yLabel')}
           value={watermark}
           disabled={!shop}
           onValueChange={(next) => watermarkMutation.mutate(next)}
@@ -108,14 +109,14 @@ export default function ProfileScreen() {
     },
     {
       icon: 'card-outline',
-      label: 'Facturation',
-      hint: "Historique d'achats — packs de crédits",
+      label: t('profile.menuBillingLabel'),
+      hint: t('profile.menuBillingHint'),
       href: '/billing',
     },
     {
       icon: 'help-circle-outline',
-      label: 'Aide & support',
-      hint: 'Contact, confidentialité, version',
+      label: t('profile.menuSupportLabel'),
+      hint: t('profile.menuSupportHint'),
       href: '/support',
     },
   ];
@@ -129,7 +130,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-paper">
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-6">
-        <Text className="pt-4 font-heading-bold text-2xl text-ink">Profil</Text>
+        <Text className="pt-4 font-heading-bold text-2xl text-ink">{t('profile.title')}</Text>
 
         {/* Boutique — GET /me (shop créé à la première connexion) */}
         {isPending ? (
@@ -138,9 +139,9 @@ export default function ProfileScreen() {
           </View>
         ) : isError || !shop ? (
           <View className="mt-4 items-center rounded-3xl border border-paper3 bg-white px-5 py-6">
-            <Text className="font-body text-sm text-gray2">Impossible de charger votre boutique.</Text>
+            <Text className="font-body text-sm text-gray2">{t('profile.loadError')}</Text>
             <Pressable accessibilityRole="button" onPress={() => refetch()} className="mt-3">
-              <Text className="font-body-semibold text-sm text-ink underline">Réessayer</Text>
+              <Text className="font-body-semibold text-sm text-ink underline">{t('common.retry')}</Text>
             </Pressable>
           </View>
         ) : (
@@ -155,7 +156,8 @@ export default function ProfileScreen() {
             <View className="flex-1">
               <Text className="font-heading-bold text-lg text-ink">{shop.name}</Text>
               <Text className="font-body text-sm text-gray2">
-                {shop.city ? `${shop.city} · ` : ''}membre depuis {memberSince}
+                {shop.city ? `${shop.city} · ` : ''}
+                {t('profile.memberSince', { year: memberSince })}
               </Text>
             </View>
             <Ionicons name="pencil-outline" size={18} color={colors.gray2} />
@@ -165,11 +167,11 @@ export default function ProfileScreen() {
         {/* Stats GET /me : Visuels (générations done) / Crédits / Temps gagné (~15 min par visuel) */}
         <View className="mt-4 flex-row gap-3">
           {[
-            { value: data ? String(data.stats.visualsCount) : '—', label: 'Visuels' },
-            { value: data ? String(data.credits) : '—', label: 'Crédits' },
+            { value: data ? String(data.stats.visualsCount) : '—', label: t('profile.statVisuals') },
+            { value: data ? String(data.credits) : '—', label: t('profile.statCredits') },
             {
               value: data ? formatTimeSaved(data.stats.timeSavedMinutes) : '—',
-              label: 'Temps gagné',
+              label: t('profile.statTimeSaved'),
             },
           ].map((stat) => (
             <View
@@ -211,7 +213,7 @@ export default function ProfileScreen() {
           onPress={onSignOut}
           className="mt-6 items-center rounded-2xl border border-paper3 py-4 active:bg-paper2"
         >
-          <Text className="font-body-semibold text-sm text-gray3">Se déconnecter</Text>
+          <Text className="font-body-semibold text-sm text-gray3">{t('profile.signOut')}</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
