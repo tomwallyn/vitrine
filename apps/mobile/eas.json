@@ -13,10 +13,10 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
+      "node": "22.13.1",
       "ios": { "simulator": true },
       "android": { "buildType": "apk" },
       "env": {
-        "COREPACK_INTEGRITY_KEYS": "0",
         "EXPO_PUBLIC_API_URL": "https://vitrine-api-dev-yqii5p5dqa-ew.a.run.app",
         "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_dG9sZXJhbnQtbGFkeWJpcmQtMTguY2xlcmsuYWNjb3VudHMuZGV2JA"
       }
@@ -24,10 +24,10 @@
     "production": {
       "channel": "production",
       "autoIncrement": true,
+      "node": "22.13.1",
       "ios": { "simulator": true },
       "android": { "buildType": "apk" },
       "env": {
-        "COREPACK_INTEGRITY_KEYS": "0",
         "EXPO_PUBLIC_API_URL": "https://REPLACE_ME_PROD_CLOUD_RUN_URL",
         "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_REPLACE_ME"
       }
