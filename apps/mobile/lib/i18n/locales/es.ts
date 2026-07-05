@@ -54,6 +54,7 @@ export default {
     wordmark: 'Vitrine',
     exampleBadge: 'Ejemplo',
     heroA11y: 'Ejemplo de visual de producto creado con Vitrine',
+    tagline: 'Moda y objetos · Render de estudio',
     heading: 'Una foto.\nUn escaparate pro.',
     subtitle:
       'Fotografía tus productos y la IA los convierte en visuales profesionales. Sin estudio, sin sesiones de fotos.',

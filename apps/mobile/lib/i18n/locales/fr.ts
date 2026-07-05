@@ -53,6 +53,7 @@ export default {
     wordmark: 'Vitrine',
     exampleBadge: 'Exemple',
     heroA11y: 'Exemple de visuel produit créé avec Vitrine',
+    tagline: 'Mode & objets · Rendu studio',
     heading: 'Une photo.\nUne vitrine pro.',
     subtitle:
       "Photographiez vos produits, l'IA en fait un visuel professionnel. Sans studio, sans shooting.",

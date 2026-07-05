@@ -54,6 +54,7 @@ export default {
     wordmark: 'Vitrine',
     exampleBadge: 'Example',
     heroA11y: 'Example of a product visual created with Vitrine',
+    tagline: 'Fashion & objects · Studio render',
     heading: 'One photo.\nA pro shopfront.',
     subtitle:
       'Snap your products and AI turns them into professional visuals. No studio, no photo shoot.',

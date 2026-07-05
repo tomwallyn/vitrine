@@ -53,6 +53,7 @@ export default {
     wordmark: 'Vitrine',
     exampleBadge: 'Beispiel',
     heroA11y: 'Beispiel eines mit Vitrine erstellten Produktvisuals',
+    tagline: 'Mode & Objekte · Studio-Render',
     heading: 'Ein Foto.\nEin Profi-Visual.',
     subtitle:
       'Fotografiere deine Produkte, die KI macht daraus ein professionelles Visual. Ohne Studio, ohne Shooting.',

@@ -3,12 +3,12 @@ import { Pressable, Text } from 'react-native';
 type ButtonProps = {
   label: string;
   onPress?: () => void;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'light';
   disabled?: boolean;
   className?: string;
 };
 
-/** Bouton charte VITRINE — primary (encre) / secondary (contour). */
+/** Bouton charte VITRINE — primary (encre) / secondary (contour) / light (crème, sur fond sombre). */
 export function Button({
   label,
   onPress,
@@ -20,7 +20,9 @@ export function Button({
   const styles =
     variant === 'primary'
       ? 'bg-ink active:opacity-80'
-      : 'border border-ink bg-transparent active:bg-paper2';
+      : variant === 'light'
+        ? 'bg-offwhite active:opacity-80'
+        : 'border border-ink bg-transparent active:bg-paper2';
   const textStyles = variant === 'primary' ? 'text-offwhite' : 'text-ink';
 
   return (
