@@ -1,0 +1,7 @@
+# Dossiers natifs — générés par `expo prebuild` / EAS (workflow managé/CNG).
+# Ne jamais committer : ils sont reconstruits à chaque build.
+/ios
+/android
+
+# Divers
+.expo/
