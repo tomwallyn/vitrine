@@ -1,3 +1,4 @@
+import { GENERATION_COST_CREDITS } from '@vitrine/shared';
 import { eq, sql } from 'drizzle-orm';
 
 import type { Db, TxDb } from '../db/client.js';
@@ -7,14 +8,16 @@ import { creditsLedger, shops } from '../db/schema.js';
  * Ledger de crédits — design M3a :
  *
  * - Le ledger est append-only ; le solde = SUM(delta) (source de vérité unique).
- * - **Le hold EST le débit** : la ligne `generation_hold` (delta -1) posée à la
- *   création de la génération débite immédiatement le solde. Il n'y a PAS de
- *   ligne `generation_commit` au succès (la raison reste dans l'enum pour un
- *   éventuel futur split réservation/confirmation, mais elle est inutilisée) :
- *   un succès ne change pas le solde, seul un échec le re-crédite.
- * - **Refund idempotent** : à l'échec, une ligne `refund` (delta +1, ref =
- *   generation_id) n'est insérée QUE si aucun refund n'existe déjà pour cette
- *   génération — rejouer le webhook fal ne re-crédite pas deux fois.
+ * - **Le hold EST le débit** : la ligne `generation_hold` (delta
+ *   -GENERATION_COST_CREDITS) posée à la création de la génération débite
+ *   immédiatement le solde. Il n'y a PAS de ligne `generation_commit` au succès
+ *   (la raison reste dans l'enum pour un éventuel futur split réservation/
+ *   confirmation, mais elle est inutilisée) : un succès ne change pas le solde,
+ *   seul un échec le re-crédite.
+ * - **Refund idempotent** : à l'échec, une ligne `refund` (delta
+ *   +GENERATION_COST_CREDITS, ref = generation_id) n'est insérée QUE si aucun
+ *   refund n'existe déjà pour cette génération — rejouer le webhook fal ne
+ *   re-crédite pas deux fois.
  */
 
 /** Solde insuffisant pour réserver un crédit (→ HTTP 402 côté route). */
@@ -43,7 +46,8 @@ export async function getBalance(db: Db, shopId: string): Promise<number> {
 }
 
 /**
- * Réserve (= débite, cf. design ci-dessus) 1 crédit pour une génération.
+ * Réserve (= débite, cf. design ci-dessus) GENERATION_COST_CREDITS crédits pour
+ * une génération (le coût d'un visuel).
  *
  * Transaction interactive (driver WebSocket, cf. getTxDb) avec verrou
  * `SELECT ... FOR UPDATE` sur la ligne du shop : deux générations simultanées
@@ -51,7 +55,7 @@ export async function getBalance(db: Db, shopId: string): Promise<number> {
  * (anti double-dépense).
  *
  * @returns l'id de la ligne de ledger du hold (à stocker en hold_ledger_id).
- * @throws InsufficientCreditsError si le solde est < 1.
+ * @throws InsufficientCreditsError si le solde est < GENERATION_COST_CREDITS.
  */
 export async function holdCredit(
   txDb: TxDb,
@@ -64,13 +68,18 @@ export async function holdCredit(
 
     const [row] = await balanceQuery(tx, shopId);
     const balance = row?.balance ?? 0;
-    if (balance < 1) {
+    if (balance < GENERATION_COST_CREDITS) {
       throw new InsufficientCreditsError(shopId, balance);
     }
 
     const [hold] = await tx
       .insert(creditsLedger)
-      .values({ shopId, delta: -1, reason: 'generation_hold', ref: generationId })
+      .values({
+        shopId,
+        delta: -GENERATION_COST_CREDITS,
+        reason: 'generation_hold',
+        ref: generationId,
+      })
       .returning({ id: creditsLedger.id });
     if (!hold) {
       throw new Error(`Insertion du hold impossible (shop ${shopId}, génération ${generationId})`);
@@ -80,7 +89,8 @@ export async function holdCredit(
 }
 
 /**
- * Re-crédite 1 crédit après l'échec d'une génération. **Idempotent** : la
+ * Re-crédite GENERATION_COST_CREDITS crédits après l'échec d'une génération.
+ * **Idempotent** : la
  * ligne `refund` n'est insérée que s'il existe un hold pour cette génération
  * ET qu'aucun refund n'existe déjà (statement SQL unique et atomique —
  * rejouer le webhook fal est sans effet).
@@ -95,7 +105,7 @@ export async function refundCredit(
 ): Promise<string | null> {
   const result = await db.execute(sql`
     insert into credits_ledger (shop_id, delta, reason, ref)
-    select ${shopId}, 1, 'refund', ${generationId}
+    select ${shopId}, ${GENERATION_COST_CREDITS}, 'refund', ${generationId}
     where exists (
       select 1 from credits_ledger
       where shop_id = ${shopId} and reason = 'generation_hold' and ref = ${generationId}
