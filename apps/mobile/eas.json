@@ -28,7 +28,8 @@
       "android": { "buildType": "app-bundle" },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://vitrine-api-prod-664682346621.europe-west1.run.app",
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuYXBwLXZpdHJpbmUuY29tJA"
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuYXBwLXZpdHJpbmUuY29tJA",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_rcCyAPfUcsbPTQNEIFGRRaoZOVL"
       }
     }
   },
