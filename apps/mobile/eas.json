@@ -28,8 +28,8 @@
       "ios": { "simulator": true },
       "android": { "buildType": "apk" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE_ME_PROD_CLOUD_RUN_URL",
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_REPLACE_ME"
+        "EXPO_PUBLIC_API_URL": "https://vitrine-api-prod-664682346621.europe-west1.run.app",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuYXBwLXZpdHJpbmUuY29tJA"
       }
     }
   },
