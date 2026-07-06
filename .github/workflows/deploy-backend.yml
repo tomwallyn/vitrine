@@ -37,6 +37,9 @@ jobs:
             echo "bucket=${{ vars.GCS_BUCKET_PROD }}" >>"$GITHUB_OUTPUT"
             echo "db_secret=vitrine-database-url-prod" >>"$GITHUB_OUTPUT"
             echo "clerk_secret=vitrine-clerk-secret-prod" >>"$GITHUB_OUTPUT"
+            echo "fal_key_secret=vitrine-fal-key-prod" >>"$GITHUB_OUTPUT"
+            echo "fal_webhook_secret=vitrine-fal-webhook-secret-prod" >>"$GITHUB_OUTPUT"
+            echo "rc_webhook_secret=vitrine-revenuecat-webhook-secret-prod" >>"$GITHUB_OUTPUT"
             # prod : min=1 garde une instance chaude (pas de cold start ~10s) ;
             #        max=3 plafonne la facture tout en absorbant les pics.
             echo "min=1" >>"$GITHUB_OUTPUT"
@@ -47,6 +50,9 @@ jobs:
             echo "bucket=${{ vars.GCS_BUCKET_DEV }}" >>"$GITHUB_OUTPUT"
             echo "db_secret=vitrine-database-url-dev" >>"$GITHUB_OUTPUT"
             echo "clerk_secret=vitrine-clerk-secret-dev" >>"$GITHUB_OUTPUT"
+            echo "fal_key_secret=vitrine-fal-key" >>"$GITHUB_OUTPUT"
+            echo "fal_webhook_secret=vitrine-fal-webhook-secret" >>"$GITHUB_OUTPUT"
+            echo "rc_webhook_secret=vitrine-revenuecat-webhook-secret" >>"$GITHUB_OUTPUT"
             # dev : min=0 (scale-to-zero, gratuit à l'idle), max=1 (1 instance partagée).
             echo "min=0" >>"$GITHUB_OUTPUT"
             echo "max=1" >>"$GITHUB_OUTPUT"
@@ -93,7 +99,7 @@ jobs:
             --max-instances="${{ steps.env.outputs.max }}" \
             --concurrency=80 --memory=512Mi --cpu=1 --timeout=300 \
             --set-env-vars="NODE_ENV=production,GCS_PROJECT_ID=${{ vars.GCP_PROJECT_ID }},GCS_BUCKET=${{ steps.env.outputs.bucket }}" \
-            --set-secrets="DATABASE_URL=${{ steps.env.outputs.db_secret }}:latest,CLERK_SECRET_KEY=${{ steps.env.outputs.clerk_secret }}:latest,FAL_KEY=vitrine-fal-key:latest,FAL_WEBHOOK_SECRET=vitrine-fal-webhook-secret:latest,REVENUECAT_WEBHOOK_SECRET=vitrine-revenuecat-webhook-secret:latest"
+            --set-secrets="DATABASE_URL=${{ steps.env.outputs.db_secret }}:latest,CLERK_SECRET_KEY=${{ steps.env.outputs.clerk_secret }}:latest,FAL_KEY=${{ steps.env.outputs.fal_key_secret }}:latest,FAL_WEBHOOK_SECRET=${{ steps.env.outputs.fal_webhook_secret }}:latest,REVENUECAT_WEBHOOK_SECRET=${{ steps.env.outputs.rc_webhook_secret }}:latest"
 
       # API_PUBLIC_URL = l'URL publique du service (webhooks fal/RevenueCat).
       - name: Fixer API_PUBLIC_URL
