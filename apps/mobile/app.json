@@ -2,7 +2,7 @@
   "expo": {
     "name": "VITRINE",
     "slug": "vitrine",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "vitrine",
     "userInterfaceStyle": "light",
@@ -10,18 +10,22 @@
     "backgroundColor": "#f5f3ec",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "app.vitrine.mobile"
+      "bundleIdentifier": "app.vitrine.mobile",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "app.vitrine.mobile",
       "edgeToEdgeEnabled": true,
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d0d0d"
       },
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
@@ -51,13 +55,15 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "VITRINE utilise la caméra pour photographier vos vêtements sur cintre."
+          "cameraPermission": "VITRINE utilise la caméra pour photographier vos produits (vêtements, objets…).",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "VITRINE accède à vos photos pour importer un vêtement ou un fond personnalisé."
+          "photosPermission": "VITRINE accède à vos photos pour importer un produit ou un fond personnalisé."
         }
       ],
       [
