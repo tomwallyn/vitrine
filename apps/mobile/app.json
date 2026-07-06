@@ -85,6 +85,12 @@
       },
       "router": {}
     },
-    "owner": "tomwallyn"
+    "owner": "tomwallyn",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2ad22f21-62e4-4851-aef8-068f53077249"
+    }
   }
 }
