@@ -88,6 +88,9 @@ export default {
     buyCta: 'Buy {{credits}} credits · {{price}}',
   },
   gallery: {
+    deleteTitle: 'Delete this visual?',
+    deleteMessage: 'It will be removed from your gallery.',
+    deleteConfirm: 'Delete',
     filterAll: 'All',
     filterVetement: 'Clothing',
     filterObjet: 'Objects',

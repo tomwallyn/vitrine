@@ -3,7 +3,6 @@ import {
   addToGalleryResponseSchema,
   galleryQuerySchema,
   galleryResponseSchema,
-  RENDER_TYPE_LABELS,
   type GalleryItem,
   type RenderType,
 } from '@vitrine/shared';
@@ -12,6 +11,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { getDb, getTxDb } from '../db/client.js';
 import { galleryItems, generations } from '../db/schema.js';
+import { ensureGalleryItem } from '../services/gallery.js';
 import { findOwnedGeneration } from '../services/generations.js';
 import { upsertShopByAuthId } from '../services/shops.js';
 import { trySignedReadUrl } from '../services/storage.js';
@@ -41,19 +41,14 @@ async function serializeGalleryItem(
   };
 }
 
-/** Titre par défaut : type de rendu + date (« Sur modèle · 02/07/2026 »). */
-function defaultTitle(renderType: RenderType, when: Date): string {
-  return `${RENDER_TYPE_LABELS[renderType]} · ${when.toLocaleDateString('fr-FR')}`;
-}
-
 /**
  * Galerie « Mes créations » (écran 06) :
- * - GET  /gallery?filter=all|model|hanger : items du shop joints à leur
- *   génération (vignette = result_image_url + render_type), paginés, filtrés
- *   par type de rendu, triés par date (⇅ recent|oldest).
- * - POST /gallery : « Ajouter à ma galerie » (écran 05). Vérifie que la
- *   génération appartient au shop et est `done` ; idempotent grâce à la
- *   contrainte unique (shop_id, generation_id) → jamais de doublon.
+ * - GET    /gallery?filter=… : items du shop joints à leur génération (vignette
+ *   = result_image_url + render_type), paginés, filtrés, triés par date.
+ * - POST   /gallery : ajout manuel (compat) — idempotent. Depuis l'auto-save,
+ *   tout visuel réussi est déjà ajouté à la finalisation ; cette route reste
+ *   pour ré-ajouter un visuel supprimé.
+ * - DELETE /gallery/:id : retire un visuel de la galerie du shop.
  */
 export function registerGalleryRoutes(app: FastifyInstance): void {
   app.get('/gallery', async (req, reply) => {
@@ -137,37 +132,10 @@ export function registerGalleryRoutes(app: FastifyInstance): void {
         .send({ error: 'Generation not done', status: generation.status });
     }
 
-    const [inserted] = await db
-      .insert(galleryItems)
-      .values({
-        shopId: shop.id,
-        generationId: generation.id,
-        // Titre = choix explicite > nom auto IA > « type de rendu · date ».
-        title:
-          parsed.data.title ?? generation.name ?? defaultTitle(generation.renderType, new Date()),
-        // Tag par défaut = type de rendu (aligné sur les filtres de l'écran 06).
-        tags: parsed.data.tags ?? [generation.renderType],
-      })
-      // Idempotent-ish : la même génération n'est jamais dupliquée.
-      .onConflictDoNothing({ target: [galleryItems.shopId, galleryItems.generationId] })
-      .returning();
-
-    let row = inserted;
-    const created = !!inserted;
-    if (!row) {
-      // Conflit → l'item existe déjà : on le renvoie tel quel (200).
-      const [existing] = await db
-        .select()
-        .from(galleryItems)
-        .where(
-          and(
-            eq(galleryItems.shopId, shop.id),
-            eq(galleryItems.generationId, generation.id),
-          ),
-        );
-      if (!existing) throw new Error('gallery_items introuvable après conflit ON CONFLICT');
-      row = existing;
-    }
+    const { row, created } = await ensureGalleryItem(db, shop.id, generation, {
+      title: parsed.data.title,
+      tags: parsed.data.tags,
+    });
 
     const payload = addToGalleryResponseSchema.parse({
       item: await serializeGalleryItem(row, {
@@ -177,5 +145,20 @@ export function registerGalleryRoutes(app: FastifyInstance): void {
       created,
     });
     return reply.code(created ? 201 : 200).send(payload);
+  });
+
+  app.delete('/gallery/:id', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const db = getDb();
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
+
+    // Ne supprime que l'item galerie du shop courant (la génération + le rendu
+    // stocké restent — retrait de la vue « Mes créations » uniquement).
+    const [deleted] = await db
+      .delete(galleryItems)
+      .where(and(eq(galleryItems.id, id), eq(galleryItems.shopId, shop.id)))
+      .returning({ id: galleryItems.id });
+    if (!deleted) return reply.code(404).send({ error: 'Not Found' });
+    return reply.code(200).send({ ok: true });
   });
 }

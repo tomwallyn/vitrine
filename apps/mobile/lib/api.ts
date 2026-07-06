@@ -171,9 +171,11 @@ export function useApi() {
           if (params.offset !== undefined) query.set('offset', String(params.offset));
           return request<GalleryResponse>('GET', `/gallery?${query.toString()}`);
         },
-        /** POST /gallery — « Ajouter à ma galerie » (idempotent, jamais de doublon). */
+        /** POST /gallery — ré-ajout manuel (idempotent). L'auto-save couvre le cas nominal. */
         add: (payload: AddToGalleryRequest) =>
           request<AddToGalleryResponse>('POST', '/gallery', payload),
+        /** DELETE /gallery/:id — retire un visuel de la galerie. */
+        remove: (id: string) => request<{ ok: boolean }>('DELETE', `/gallery/${id}`),
       },
 
       /** Fonds personnalisés réutilisables (écran 03 — FOND). */

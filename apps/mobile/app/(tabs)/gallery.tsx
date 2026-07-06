@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   Pressable,
@@ -83,13 +84,24 @@ function ActiveGenerationTile({ gen }: { gen: TrackedGeneration }) {
   );
 }
 
-/** Vignette cliquable → écran Résultat (comparateur + re-téléchargement). */
-function GalleryTile({ item, onPress }: { item: GalleryItem; onPress: () => void }) {
+/** Vignette cliquable → écran Résultat (comparateur + re-téléchargement).
+ *  Appui long → confirmation de suppression de la galerie. */
+function GalleryTile({
+  item,
+  onPress,
+  onLongPress,
+}: {
+  item: GalleryItem;
+  onPress: () => void;
+  onLongPress: () => void;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t('gallery.viewVisual', { title: item.title })}
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={350}
       className="mb-4 w-[48%] active:opacity-80"
     >
       <View className="aspect-[3/4] overflow-hidden rounded-2xl border border-paper3 bg-paper2">
@@ -156,6 +168,27 @@ export default function GalleryScreen() {
 
   const items = data?.pages.flatMap((page) => page.items) ?? [];
   const total = data?.pages[0]?.total;
+
+  // Suppression d'un visuel (appui long → confirmation). Invalide la galerie.
+  const queryClient = useQueryClient();
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.gallery.remove(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gallery'] }),
+    onError: (err) =>
+      Alert.alert(
+        t('gallery.unavailableTitle'),
+        err instanceof Error ? err.message : t('gallery.unavailableDefault'),
+      ),
+  });
+  const confirmDelete = (item: GalleryItem) =>
+    Alert.alert(t('gallery.deleteTitle'), t('gallery.deleteMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('gallery.deleteConfirm'),
+        style: 'destructive',
+        onPress: () => deleteMutation.mutate(item.id),
+      },
+    ]);
 
   return (
     <SafeAreaView className="flex-1 bg-paper">
@@ -262,6 +295,7 @@ export default function GalleryScreen() {
               <GalleryTile
                 item={item}
                 onPress={() => router.push(`/result/${item.generationId}?fromGallery=1`)}
+                onLongPress={() => confirmDelete(item)}
               />
             )}
             numColumns={2}

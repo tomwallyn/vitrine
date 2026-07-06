@@ -87,6 +87,9 @@ export default {
     buyCta: 'Acheter {{credits}} crédits · {{price}}',
   },
   gallery: {
+    deleteTitle: 'Supprimer ce visuel ?',
+    deleteMessage: 'Il sera retiré de ta galerie.',
+    deleteConfirm: 'Supprimer',
     filterAll: 'Tout',
     filterVetement: 'Vêtements',
     filterObjet: 'Objets',

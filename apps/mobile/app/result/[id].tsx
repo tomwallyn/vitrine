@@ -143,10 +143,7 @@ export default function ResultScreen() {
   const router = useRouter();
   const api = useApi();
   const queryClient = useQueryClient();
-  const { id, fromGallery } = useLocalSearchParams<{ id: string; fromGallery?: string }>();
-  // Ouvert depuis la galerie (écran 06 / accueil) : l'item y est déjà,
-  // le CTA « Ajouter à ma galerie » est donc remplacé par un état passif.
-  const alreadyInGallery = fromGallery === '1';
+  const { id } = useLocalSearchParams<{ id: string }>();
 
   const [variantsOpen, setVariantsOpen] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<RenderType[]>([]);
@@ -244,25 +241,6 @@ export default function ResultScreen() {
       { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
-
-  /**
-   * CTA « Ajouter à ma galerie » — POST /gallery (titre par défaut dérivé
-   * côté API, idempotent), puis invalidation du cache galerie (écran 06).
-   */
-  const galleryMutation = useMutation({
-    mutationFn: () => api.gallery.add({ generationId: id! }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gallery'] });
-      // Retour sur la galerie : la nouvelle création y apparaît (fin du flux).
-      router.replace('/(tabs)/gallery');
-    },
-    onError: (err) =>
-      Alert.alert(
-        t('result.addErrorTitle'),
-        err instanceof Error ? err.message : t('result.retryMessage'),
-      ),
-  });
-  const savedToGallery = galleryMutation.isSuccess;
 
   const toggleVariant = (renderType: RenderType) => {
     setSelectedVariants((prev) =>
@@ -381,29 +359,14 @@ export default function ResultScreen() {
         {generation.productInfo ? <ProductInfoCard info={generation.productInfo} /> : null}
       </ScrollView>
 
-      {/* CTA principal — POST /gallery (« Ajouté ✓ » une fois enregistré) ;
-          depuis la galerie : simple rappel « Déjà dans la galerie ». */}
+      {/* Auto-save : tout visuel réussi est déjà dans la galerie → simple rappel. */}
       <View className="border-t border-paper3 px-5 pb-4 pt-3">
-        {alreadyInGallery ? (
-          <View className="h-14 flex-row items-center justify-center gap-2">
-            <Ionicons name="checkmark-circle" size={18} color={colors.gray2} />
-            <Text className="font-body-semibold text-sm text-gray2">
-              {t('result.alreadyInGalleryLabel')}
-            </Text>
-          </View>
-        ) : (
-          <Button
-            label={
-              savedToGallery
-                ? t('result.addedToGallery')
-                : galleryMutation.isPending
-                  ? t('result.addingToGallery')
-                  : t('result.addToGalleryCta')
-            }
-            disabled={savedToGallery || galleryMutation.isPending}
-            onPress={() => galleryMutation.mutate()}
-          />
-        )}
+        <View className="h-14 flex-row items-center justify-center gap-2">
+          <Ionicons name="checkmark-circle" size={18} color={colors.gray2} />
+          <Text className="font-body-semibold text-sm text-gray2">
+            {t('result.alreadyInGalleryLabel')}
+          </Text>
+        </View>
       </View>
 
       {/* Vue offscreen du filigrane (capturée par react-native-view-shot) */}

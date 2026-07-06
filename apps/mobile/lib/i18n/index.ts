@@ -47,7 +47,7 @@ i18n.locale = resolveLocale();
 
 /**
  * Traduit une clé de catalogue.
- * - interpolation : `t('common.creditsCost', { count: 1 })` → « 1 crédit »
+ * - interpolation : `t('common.credits', { count: 10 })` → « 10 crédits »
  * - pluriel : clés `{ one, other }` pilotées par `count`.
  */
 export function t(key: string, options?: Record<string, unknown>): string {

@@ -5,13 +5,14 @@ import type { CreateGenerationRequest, Generation } from '@vitrine/shared';
 import { and, eq, sql } from 'drizzle-orm';
 
 import { getTxDb, type Db } from '../db/client.js';
-import { generations, shops } from '../db/schema.js';
+import { galleryItems, generations, shops } from '../db/schema.js';
 import { ADAPTERS } from './ai/adapters.js';
 import { getFalQueueResult, getFalQueueStatus, submitToFal } from './ai/client.js';
 import { endpointForProvider, resolveAiRoute } from './ai/config.js';
 import { generateProductName } from './ai/name-product.js';
 import { extractProductInfo } from './ai/product-ocr.js';
 import { holdCredit, refundCredit } from './credits.js';
+import { ensureGalleryItem } from './gallery.js';
 import { sendPushToShop } from './push.js';
 import { signedReadUrl, trySignedReadUrl, uploadResultImage } from './storage.js';
 
@@ -310,6 +311,15 @@ export async function finalizeGenerationSuccess(
   log.info({ generationId: row.id, resultImageUrl }, 'Génération terminée (done)');
   const doneRow = done ?? { ...row, status: 'done' as const, resultImageUrl, error: null };
 
+  // Auto-save : tout visuel réussi rejoint la galerie (idempotent). Best-effort
+  // — un échec d'insertion ne doit pas faire échouer la finalisation déjà
+  // commitée (le rendu reste `done` et accessible via /generations/:id).
+  try {
+    await ensureGalleryItem(db, row.shopId, doneRow);
+  } catch (err) {
+    log.warn({ generationId: row.id, error: errorMessage(err) }, 'Auto-ajout galerie échoué');
+  }
+
   // Push Expo fire-and-forget (jamais de throw ni de blocage, cf. push.ts) —
   // envoyé même app au premier plan (le handler de notifs côté client filtre).
   void sendPushToShop(
@@ -349,6 +359,9 @@ export async function generateAndStoreName(
     const name = await generateProductName(signed, row.subjectType, log);
     if (!name) return;
     await db.update(generations).set({ name }).where(eq(generations.id, row.id));
+    // Répercute le nom sur le titre de l'item galerie auto-ajouté à la
+    // finalisation (qui portait un titre par défaut « type · date »).
+    await db.update(galleryItems).set({ title: name }).where(eq(galleryItems.generationId, row.id));
     log.info({ generationId: row.id, name }, 'Nom auto du produit stocké');
   } catch (err) {
     log.warn(
