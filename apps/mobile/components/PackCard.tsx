@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { t } from '@/lib/i18n';
-import { GENERATION_COST_CREDITS, packDiscountPercent, type CreditPackOffer } from '@vitrine/shared';
+import { packDiscountPercent, type CreditPackOffer } from '@vitrine/shared';
 
 type PackCardProps = {
   pack: CreditPackOffer;
@@ -12,15 +12,10 @@ type PackCardProps = {
   priceLabel?: string;
 };
 
-/** « 0.9 » → « 0,90 € » (format FR de la maquette). */
-function formatEur(value: number): string {
-  return `${value.toFixed(2).replace('.', ',')} €`;
-}
-
 /**
- * Carte d'un pack de crédits (écran 07 — RECHARGER), fidèle maquette :
- * « 50 crédits · 0,68 € / visuel · 34 € », badge flottant « POPULAIRE · −25 % »
- * sur le pack mis en avant, bordure encre quand sélectionné.
+ * Carte d'un pack de crédits (écran 07 — RECHARGER) : nombre de crédits + prix,
+ * badge flottant « POPULAIRE · −25 % » sur le pack mis en avant, bordure encre
+ * quand sélectionné.
  */
 export function PackCard({ pack, selected, onPress, priceLabel }: PackCardProps) {
   const discount = packDiscountPercent(pack);
@@ -52,13 +47,6 @@ export function PackCard({ pack, selected, onPress, priceLabel }: PackCardProps)
       <View>
         <Text className="font-heading-bold text-base text-ink">
           {t('common.credits', { count: pack.credits })}
-        </Text>
-        <Text
-          className={`mt-0.5 font-body-medium text-[11px] ${selected ? 'text-ink' : 'text-gray'}`}
-        >
-          {t('packCard.pricePerVisual', {
-            price: formatEur((pack.priceEur * GENERATION_COST_CREDITS) / pack.credits),
-          })}
         </Text>
       </View>
       <View className={`rounded-xl px-3.5 py-2 ${selected ? 'bg-ink' : 'bg-paper2'}`}>
