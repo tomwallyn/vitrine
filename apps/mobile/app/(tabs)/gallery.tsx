@@ -326,8 +326,28 @@ export default function GalleryScreen() {
             }
             ListEmptyComponent={
               <View className="flex-1 items-center justify-center px-8">
-                <Text className="text-4xl">🪞</Text>
-                <Text className="mt-4 text-center font-heading-bold text-lg text-ink">
+                {query ? (
+                  // Aucun résultat de recherche → loupe encadrée (charte crème, sans emoji).
+                  <View className="h-[88px] w-[88px] items-center justify-center rounded-[26px] border border-paper3 bg-paper2">
+                    <Ionicons name="search-outline" size={34} color={colors.gray2} />
+                  </View>
+                ) : (
+                  // Galerie vide → « pile de visuels » stylisée (cartes empilées + étincelle IA).
+                  <View className="h-28 w-28 items-center justify-center">
+                    <View
+                      className="absolute h-[76px] w-[76px] -rotate-6 rounded-2xl border border-paper3 bg-paper2"
+                      style={{ top: 18, left: 18 }}
+                    />
+                    <View
+                      className="absolute h-[76px] w-[76px] rotate-6 rounded-2xl border border-paper3 bg-paper2"
+                      style={{ top: 18, left: 18 }}
+                    />
+                    <View className="h-[76px] w-[76px] items-center justify-center rounded-2xl border border-paper3 bg-white">
+                      <Ionicons name="sparkles" size={26} color={colors.ink} />
+                    </View>
+                  </View>
+                )}
+                <Text className="mt-5 text-center font-heading-bold text-lg text-ink">
                   {query ? t('gallery.noResults') : t('gallery.noCreations')}
                 </Text>
                 <Text className="mt-2 text-center font-body text-sm text-gray2">
