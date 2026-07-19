@@ -316,19 +316,7 @@ export default function ResultScreen() {
       <ScreenHeader
         title={t('result.title')}
         subtitle={t('result.stepSubtitle')}
-        right={
-          <View className="flex-row items-center gap-3">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('gallery.deleteConfirm')}
-              hitSlop={8}
-              onPress={confirmDelete}
-            >
-              <Ionicons name="trash-outline" size={20} color={colors.ink} />
-            </Pressable>
-            <CreditBadge credits={me?.credits ?? 0} />
-          </View>
-        }
+        right={<CreditBadge credits={me?.credits ?? 0} />}
       />
 
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-6">
@@ -394,14 +382,25 @@ export default function ResultScreen() {
         {generation.productInfo ? <ProductInfoCard info={generation.productInfo} /> : null}
       </ScrollView>
 
-      {/* Auto-save : tout visuel réussi est déjà dans la galerie → simple rappel. */}
-      <View className="border-t border-paper3 px-5 pb-4 pt-3">
-        <View className="h-14 flex-row items-center justify-center gap-2">
+      {/* Auto-save : rappel « dans ta galerie » à gauche + action Supprimer à droite. */}
+      <View className="flex-row items-center justify-between border-t border-paper3 px-5 pb-4 pt-3">
+        <View className="flex-row items-center gap-2">
           <Ionicons name="checkmark-circle" size={18} color={colors.gray2} />
           <Text className="font-body-semibold text-sm text-gray2">
             {t('result.alreadyInGalleryLabel')}
           </Text>
         </View>
+        <Pressable
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={confirmDelete}
+          className="flex-row items-center gap-1.5 py-1.5 active:opacity-60"
+        >
+          <Ionicons name="trash-outline" size={16} color={colors.gray} />
+          <Text className="font-body-semibold text-sm text-gray">
+            {t('gallery.deleteConfirm')}
+          </Text>
+        </Pressable>
       </View>
 
       {/* Vue offscreen du filigrane (capturée par react-native-view-shot) */}

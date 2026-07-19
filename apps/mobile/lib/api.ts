@@ -78,7 +78,9 @@ export function useApi() {
       const res = await fetch(`${API_URL}${path}`, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          // Content-Type seulement s'il y a un body : sinon Fastify rejette un
+          // DELETE/GET « application/json » à corps vide (FST_ERR_CTP_EMPTY_JSON_BODY).
+          ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
