@@ -174,8 +174,11 @@ export function useApi() {
         /** POST /gallery — ré-ajout manuel (idempotent). L'auto-save couvre le cas nominal. */
         add: (payload: AddToGalleryRequest) =>
           request<AddToGalleryResponse>('POST', '/gallery', payload),
-        /** DELETE /gallery/:id — retire un visuel de la galerie. */
+        /** DELETE /gallery/:id — retire un visuel de la galerie (par id d'item). */
         remove: (id: string) => request<{ ok: boolean }>('DELETE', `/gallery/${id}`),
+        /** DELETE /gallery/generation/:id — retire par id de génération (écran résultat). */
+        removeByGeneration: (generationId: string) =>
+          request<{ ok: boolean }>('DELETE', `/gallery/generation/${generationId}`),
       },
 
       /** Fonds personnalisés réutilisables (écran 03 — FOND). */

@@ -161,4 +161,19 @@ export function registerGalleryRoutes(app: FastifyInstance): void {
     if (!deleted) return reply.code(404).send({ error: 'Not Found' });
     return reply.code(200).send({ ok: true });
   });
+
+  // Retrait par génération (l'écran résultat n'a que l'id de génération, pas l'id
+  // de l'item galerie). Supprime l'item galerie du shop pour cette génération.
+  app.delete('/gallery/generation/:generationId', async (req, reply) => {
+    const { generationId } = req.params as { generationId: string };
+    const db = getDb();
+    const shop = await upsertShopByAuthId(getTxDb(), req.authUserId);
+
+    const [deleted] = await db
+      .delete(galleryItems)
+      .where(and(eq(galleryItems.generationId, generationId), eq(galleryItems.shopId, shop.id)))
+      .returning({ id: galleryItems.id });
+    if (!deleted) return reply.code(404).send({ error: 'Not Found' });
+    return reply.code(200).send({ ok: true });
+  });
 }

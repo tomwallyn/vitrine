@@ -233,6 +233,29 @@ export default function ResultScreen() {
     onError: (err) => creditError(err, t('result.variantsErrorTitle')),
   });
 
+  /** 🗑 Supprimer de la galerie — retire ce visuel (l'appui long en galerie fait pareil). */
+  const deleteMutation = useMutation({
+    mutationFn: () => api.gallery.removeByGeneration(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      router.replace('/(tabs)/gallery');
+    },
+    onError: (err) =>
+      Alert.alert(
+        t('gallery.deleteTitle'),
+        err instanceof Error ? err.message : t('result.retryMessage'),
+      ),
+  });
+  const confirmDelete = () =>
+    Alert.alert(t('gallery.deleteTitle'), t('gallery.deleteMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('gallery.deleteConfirm'),
+        style: 'destructive',
+        onPress: () => deleteMutation.mutate(),
+      },
+    ]);
+
   /** ↓ Exporter — partage ou enregistrement (filigrane selon settings.watermark). */
   const onExport = (source: Generation) => {
     Alert.alert(t('result.exportTitle'), t('result.exportMessage'), [
@@ -293,7 +316,19 @@ export default function ResultScreen() {
       <ScreenHeader
         title={t('result.title')}
         subtitle={t('result.stepSubtitle')}
-        right={<CreditBadge credits={me?.credits ?? 0} />}
+        right={
+          <View className="flex-row items-center gap-3">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('gallery.deleteConfirm')}
+              hitSlop={8}
+              onPress={confirmDelete}
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.ink} />
+            </Pressable>
+            <CreditBadge credits={me?.credits ?? 0} />
+          </View>
+        }
       />
 
       <ScrollView className="flex-1 px-5" contentContainerClassName="pb-6">
