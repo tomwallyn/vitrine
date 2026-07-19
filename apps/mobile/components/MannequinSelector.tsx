@@ -7,8 +7,6 @@ import { colors, MANNEQUINS, type MannequinOption } from '@vitrine/shared';
 const CATEGORIES: { value: MannequinOption; label: string }[] = [
   { value: 'femme', label: t('mannequinSelector.categoryFemale') },
   { value: 'homme', label: t('mannequinSelector.categoryMale') },
-  { value: 'silhouette', label: t('mannequinSelector.categorySilhouette') },
-  { value: 'studio', label: t('mannequinSelector.categoryStudio') },
 ];
 
 type MannequinSelectorProps = {
