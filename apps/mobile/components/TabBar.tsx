@@ -17,9 +17,10 @@ const TAB_ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> 
 };
 
 /**
- * Tab bar custom VITRINE — charte N&B « chaud » :
- * fond blanc, fine bordure haute crème, ombre très légère, safe-area bottom,
- * onglet actif = icône filled encre sur pastille crème + label Manrope 600.
+ * Tab bar custom VITRINE — charte N&B « chaud », minimale et premium :
+ * fond blanc, fine bordure haute + ombre légère, safe-area bottom. Onglet actif =
+ * petit point encre en tête + icône filled encre + label Manrope 600 ; inactif =
+ * icône outline grise + label gris. Pas de pastille (rendu plus léger).
  */
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -28,7 +29,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
   return (
     <View
-      className="flex-row border-t border-paper3 bg-white px-2 pt-2"
+      className="flex-row border-t border-paper3 bg-white px-2 pt-1.5"
       style={{
         paddingBottom: Math.max(insets.bottom, 10),
         shadowColor: colors.ink,
@@ -75,22 +76,21 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             onPress={onPress}
             onLongPress={onLongPress}
             hitSlop={6}
-            className="flex-1 items-center gap-1 py-1"
+            className="flex-1 items-center gap-1 pb-1 pt-1 active:opacity-70"
           >
-            {/* Pastille crème arrondie sous l'icône active */}
-            <View
-              className={`h-8 w-16 items-center justify-center rounded-full ${
-                focused ? 'bg-paper2' : 'bg-transparent'
-              }`}
-            >
+            {/* Indicateur d'onglet actif : petit point encre (hauteur réservée → pas de saut). */}
+            <View className="h-1.5 items-center justify-center">
+              {focused ? <View className="h-1.5 w-1.5 rounded-full bg-ink" /> : null}
+            </View>
+            <View className="relative items-center justify-center">
               <Ionicons
                 name={focused ? icons.active : icons.inactive}
-                size={21}
+                size={23}
                 color={focused ? colors.ink : colors.gray}
               />
-              {/* Point « génération en cours » sur l'onglet Galerie */}
+              {/* Point « génération en cours » sur l'onglet Galerie. */}
               {route.name === 'gallery' && activeGenerationCount > 0 ? (
-                <View className="absolute right-3.5 top-0.5 h-2 w-2 rounded-full border border-white bg-ink" />
+                <View className="absolute -right-2 -top-1 h-2 w-2 rounded-full border border-white bg-ink" />
               ) : null}
             </View>
             <Text
