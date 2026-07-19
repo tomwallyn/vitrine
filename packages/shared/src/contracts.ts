@@ -484,12 +484,12 @@ export const shopSchema = z.object({
 });
 export type Shop = z.infer<typeof shopSchema>;
 
-/** Stats du profil (écran 08) : visuels générés + temps gagné estimé. */
+/** Stats accueil/profil : visuels produits (total + ce mois). */
 export const meStatsSchema = z.object({
-  /** Nombre de générations `done` du shop (= visuels réellement produits). */
+  /** Nombre total de générations `done` du shop (= visuels réellement produits). */
   visualsCount: z.number().int().min(0),
-  /** visualsCount × MINUTES_SAVED_PER_VISUAL (voir constants.ts). */
-  timeSavedMinutes: z.number().int().min(0),
+  /** Générations `done` finalisées depuis le début du mois calendaire courant. */
+  visualsThisMonth: z.number().int().min(0),
 });
 export type MeStats = z.infer<typeof meStatsSchema>;
 

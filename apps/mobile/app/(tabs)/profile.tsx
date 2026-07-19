@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useApi } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, formatTimeSaved, type MeResponse } from '@vitrine/shared';
+import { colors, type MeResponse } from '@vitrine/shared';
 
 /** Initiales de la boutique (« L'Atelier Nord » → « AN »). */
 function initials(name: string): string {
@@ -164,15 +164,15 @@ export default function ProfileScreen() {
           </Pressable>
         )}
 
-        {/* Stats GET /me : Visuels (générations done) / Crédits / Temps gagné (~15 min par visuel) */}
+        {/* Stats GET /me : ce mois / crédits / total (générations done) */}
         <View className="mt-4 flex-row gap-3">
           {[
-            { value: data ? String(data.stats.visualsCount) : '—', label: t('profile.statVisuals') },
-            { value: data ? String(data.credits) : '—', label: t('profile.statCredits') },
             {
-              value: data ? formatTimeSaved(data.stats.timeSavedMinutes) : '—',
-              label: t('profile.statTimeSaved'),
+              value: data ? String(data.stats.visualsThisMonth) : '—',
+              label: t('profile.statThisMonth'),
             },
+            { value: data ? String(data.credits) : '—', label: t('profile.statCredits') },
+            { value: data ? String(data.stats.visualsCount) : '—', label: t('profile.statTotal') },
           ].map((stat) => (
             <View
               key={stat.label}

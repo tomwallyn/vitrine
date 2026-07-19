@@ -3,7 +3,6 @@ import {
   registerPushTokenRequestSchema,
   registerPushTokenResponseSchema,
   shopSettingsSchema,
-  timeSavedMinutes,
   updateMeRequestSchema,
   type MeResponse,
 } from '@vitrine/shared';
@@ -13,22 +12,23 @@ import type { FastifyInstance } from 'fastify';
 import { getDb, getTxDb, type Db } from '../db/client.js';
 import { pushTokens, shops } from '../db/schema.js';
 import { getBalance } from '../services/credits.js';
-import { countDoneGenerations } from '../services/generations.js';
+import { countDoneGenerations, countDoneGenerationsThisMonth } from '../services/generations.js';
 import { serializeShop, upsertShopByAuthId, type ShopRow } from '../services/shops.js';
 
 /**
- * Shop → MeResponse : solde (SUM du ledger) + stats de l'écran 08
- * (visuels = générations `done`, temps gagné = visuels × 15 min).
+ * Shop → MeResponse : solde (SUM du ledger) + stats (visuels total + ce mois,
+ * = générations `done`).
  */
 async function buildMeResponse(db: Db, shop: ShopRow): Promise<MeResponse> {
-  const [credits, visualsCount] = await Promise.all([
+  const [credits, visualsCount, visualsThisMonth] = await Promise.all([
     getBalance(db, shop.id),
     countDoneGenerations(db, shop.id),
+    countDoneGenerationsThisMonth(db, shop.id),
   ]);
   return meResponseSchema.parse({
     shop: serializeShop(shop),
     credits,
-    stats: { visualsCount, timeSavedMinutes: timeSavedMinutes(visualsCount) },
+    stats: { visualsCount, visualsThisMonth },
   });
 }
 

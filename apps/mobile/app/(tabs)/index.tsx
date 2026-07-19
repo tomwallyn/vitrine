@@ -8,7 +8,7 @@ import { Button } from '@/components/Button';
 import { CreditBadge } from '@/components/CreditBadge';
 import { useApi } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, formatTimeSaved, type GalleryItem, type MeResponse } from '@vitrine/shared';
+import { colors, type GalleryItem, type MeResponse } from '@vitrine/shared';
 
 /** Nombre de vignettes « Dernières créations » affichées sur l'accueil. */
 const RECENT_LIMIT = 6;
@@ -174,17 +174,17 @@ export default function HomeScreen() {
           </Text>
         </Pressable>
 
-        {/* Stats réelles — GET /me (visuels générés + temps gagné estimé) */}
+        {/* Stats — GET /me : visuels ce mois + crédits restants */}
         <View className="mt-4 flex-row gap-3">
           <StatCard
             icon="images-outline"
-            value={me ? String(me.stats.visualsCount) : meError ? '—' : undefined}
-            label={t('home.statsVisuals')}
+            value={me ? String(me.stats.visualsThisMonth) : meError ? '—' : undefined}
+            label={t('home.statsThisMonth')}
           />
           <StatCard
-            icon="time-outline"
-            value={me ? formatTimeSaved(me.stats.timeSavedMinutes) : meError ? '—' : undefined}
-            label={t('home.statsTimeSaved')}
+            icon="diamond-outline"
+            value={me ? String(me.credits) : meError ? '—' : undefined}
+            label={t('home.statsCredits')}
           />
         </View>
 

@@ -498,6 +498,21 @@ export async function countDoneGenerations(db: Db, shopId: string): Promise<numb
   return row?.count ?? 0;
 }
 
+/** Générations `done` finalisées depuis le début du mois calendaire courant. */
+export async function countDoneGenerationsThisMonth(db: Db, shopId: string): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(generations)
+    .where(
+      and(
+        eq(generations.shopId, shopId),
+        eq(generations.status, 'done'),
+        sql`${generations.completedAt} >= date_trunc('month', now())`,
+      ),
+    );
+  return row?.count ?? 0;
+}
+
 /** Génération scopée propriétaire (shop courant) — null si absente/étrangère. */
 export async function findOwnedGeneration(
   db: Db,
