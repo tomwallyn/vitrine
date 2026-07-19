@@ -1,13 +1,16 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
 import { t } from '@/lib/i18n';
-import { type RenderType } from '@vitrine/shared';
+import { colors, type RenderType } from '@vitrine/shared';
 
-const RENDER_STYLES: { value: RenderType; label: string; icon: string }[] = [
-  { value: 'model', label: t('renderTypeSelector.model'), icon: '🧍' },
-  { value: 'hanger', label: t('renderTypeSelector.hanger'), icon: '🧥' },
-  { value: 'folded', label: t('renderTypeSelector.folded'), icon: '🗂️' },
-  { value: 'studio', label: t('renderTypeSelector.studio'), icon: '📦' },
+type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
+const RENDER_STYLES: { value: RenderType; label: string; icon: IconName }[] = [
+  { value: 'model', label: t('renderTypeSelector.model'), icon: 'account-outline' },
+  { value: 'hanger', label: t('renderTypeSelector.hanger'), icon: 'hanger' },
+  { value: 'folded', label: t('renderTypeSelector.folded'), icon: 'tshirt-crew-outline' },
+  { value: 'studio', label: t('renderTypeSelector.studio'), icon: 'image-filter-center-focus' },
 ];
 
 type RenderTypeSelectorProps = {
@@ -32,7 +35,11 @@ export function RenderTypeSelector({ value, onChange, className = '' }: RenderTy
               selected ? 'border-ink bg-ink' : 'border-paper3 bg-white'
             }`}
           >
-            <Text className="text-2xl">{item.icon}</Text>
+            <MaterialCommunityIcons
+              name={item.icon}
+              size={26}
+              color={selected ? colors.offwhite : colors.ink}
+            />
             <Text
               className={`mt-2 font-body-semibold text-sm ${
                 selected ? 'text-offwhite' : 'text-ink'

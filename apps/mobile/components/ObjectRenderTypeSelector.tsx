@@ -1,15 +1,18 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
-import { OBJECT_RENDER_TYPES, type ObjectRenderType } from '@vitrine/shared';
+import { colors, OBJECT_RENDER_TYPES, type ObjectRenderType } from '@vitrine/shared';
 import { renderTypeLabel } from '@/lib/i18n/labels';
 
-const ICONS: Record<ObjectRenderType, string> = {
-  studio_uni: '📦',
-  texture: '🧱',
-  mise_en_situation: '🛋️',
-  ambiance: '🕯️',
-  macro: '🔍',
-  exterieur: '🌿',
+type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
+const ICONS: Record<ObjectRenderType, IconName> = {
+  studio_uni: 'image-filter-center-focus',
+  texture: 'texture-box',
+  mise_en_situation: 'sofa-outline',
+  ambiance: 'lightbulb-on-outline',
+  macro: 'magnify',
+  exterieur: 'image-filter-hdr',
 };
 
 type ObjectRenderTypeSelectorProps = {
@@ -38,7 +41,11 @@ export function ObjectRenderTypeSelector({
               selected ? 'border-ink bg-ink' : 'border-paper3 bg-white'
             }`}
           >
-            <Text className="text-xl">{ICONS[type]}</Text>
+            <MaterialCommunityIcons
+              name={ICONS[type]}
+              size={22}
+              color={selected ? colors.offwhite : colors.ink}
+            />
             <Text
               numberOfLines={1}
               className={`mt-1.5 font-body-semibold text-[10.5px] ${
