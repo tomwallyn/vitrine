@@ -117,7 +117,7 @@ const initialState = {
   sourceUploadError: null,
   extraImages: null as GenerationExtraImages | null,
   subjectType: 'vetement' as SubjectType,
-  renderType: 'model' as RenderType,
+  renderType: 'studio' as RenderType,
   mannequinOption: 'femme' as MannequinOption,
   mannequinId: null as string | null,
   backgroundOption: 'studio' as BackgroundOption,
@@ -148,7 +148,7 @@ export const useRenderDraft = create<RenderDraftState>((set) => ({
     set((s) => ({
       ...initialState,
       subjectType: s.subjectType,
-      renderType: s.subjectType === 'objet' ? 'mise_en_situation' : 'model',
+      renderType: s.subjectType === 'objet' ? 'mise_en_situation' : 'studio',
       localUri,
     })),
   setSourceUploading: () =>
@@ -194,7 +194,7 @@ export const useRenderDraft = create<RenderDraftState>((set) => ({
   setSubjectType: (subjectType) =>
     set({
       subjectType,
-      renderType: subjectType === 'objet' ? 'mise_en_situation' : 'model',
+      renderType: subjectType === 'objet' ? 'mise_en_situation' : 'studio',
       scene: EMPTY_SCENE,
       outfit: {},
       garmentTypeTouched: false,

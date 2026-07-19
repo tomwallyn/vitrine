@@ -77,7 +77,7 @@ type BatchDraftState = {
 
 const defaultStyle: BatchStyle = {
   subjectType: 'vetement',
-  renderType: 'model',
+  renderType: 'studio',
   mannequinOption: 'femme',
   mannequinId: null,
   lighting: 'douce',
@@ -141,7 +141,7 @@ export const useBatchDraft = create<BatchDraftState>((set) => ({
       style: {
         ...state.style,
         subjectType,
-        renderType: subjectType === 'objet' ? 'mise_en_situation' : 'model',
+        renderType: subjectType === 'objet' ? 'mise_en_situation' : 'studio',
       },
       scene: EMPTY_SCENE,
       outfit: {},
